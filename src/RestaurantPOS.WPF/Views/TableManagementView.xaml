@@ -1,0 +1,172 @@
+<UserControl x:Class="RestaurantPOS.WPF.Views.TableManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="#F0F4F8" FontFamily="Segoe UI" Loaded="OnLoaded">
+
+    <UserControl.Resources>
+        <Style x:Key="Btn" TargetType="Button">
+            <Setter Property="FontSize" Value="12"/><Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="34"/><Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Cursor" Value="Hand"/><Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Opacity" Value="0.90"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="RowBtn" TargetType="Button">
+            <Setter Property="Width" Value="28"/><Setter Property="Height" Value="28"/>
+            <Setter Property="Cursor" Value="Hand"/><Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets"/><Setter Property="FontSize" Value="12"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="5" Width="28" Height="28">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Opacity" Value="0.82"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <SolidColorBrush x:Key="RowAlt" Color="#F8FAFC"/>
+    </UserControl.Resources>
+
+    <Grid Margin="16,10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="White" CornerRadius="8" Padding="16,10" Margin="0,0,0,8" BorderBrush="#E2E8F0" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="Tables" FontSize="18" FontWeight="Bold" Foreground="#1A2332" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Background="#1565C0" Style="{StaticResource Btn}" Command="{Binding AddTableCommand}" Margin="0,0,6,0">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Add Table"/></StackPanel>
+                    </Button>
+                    <Button Background="#37474F" Style="{StaticResource Btn}" Command="{Binding AddFloorCommand}" Margin="0,0,6,0">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Add Floor"/></StackPanel>
+                    </Button>
+                    <Button Background="#E53935" Style="{StaticResource Btn}" Command="{Binding RefreshCommand}">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Refresh"/></StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Filters -->
+        <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="12,8" Margin="0,0,0,8" BorderBrush="#E2E8F0" BorderThickness="1">
+            <StackPanel Orientation="Horizontal">
+                <Border Background="#F5F7FA" CornerRadius="6" BorderBrush="#D0D7DE" BorderThickness="1" MinWidth="200" Margin="0,0,12,0">
+                    <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                        <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="#90A4AE" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                        <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" FontSize="12" Height="30" Padding="4,4" VerticalContentAlignment="Center" BorderThickness="0" Background="Transparent"/>
+                    </Grid>
+                </Border>
+                <TextBlock Text="Floor" FontSize="11" FontWeight="SemiBold" Foreground="#78909C" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <ComboBox FontSize="12" Height="30" MinWidth="120" Padding="6,3" ItemsSource="{Binding FilterFloors}" SelectedItem="{Binding FilterFloor}" DisplayMemberPath="Name" Margin="0,0,12,0"/>
+                <TextBlock Text="Status" FontSize="11" FontWeight="SemiBold" Foreground="#78909C" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                <ComboBox FontSize="12" Height="30" MinWidth="100" Padding="6,3" ItemsSource="{Binding StatusOptions}" SelectedItem="{Binding StatusFilter}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Table grid -->
+        <Border Grid.Row="2" Background="White" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1" ClipToBounds="True">
+            <DataGrid ItemsSource="{Binding Tables}" SelectedItem="{Binding SelectedTable}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#EDF2F7" BorderThickness="0" FontSize="12" RowHeight="36"
+                      HeadersVisibility="Column" SelectionMode="Single" SelectionUnit="FullRow" AlternationCount="2"
+                      VirtualizingPanel.IsVirtualizing="True">
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="#1E3A5F"/><Setter Property="Foreground" Value="White"/>
+                        <Setter Property="FontSize" Value="11"/><Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="Padding" Value="8,7"/><Setter Property="BorderBrush" Value="#2A4A6E"/><Setter Property="BorderThickness" Value="0,0,1,0"/>
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
+                <DataGrid.RowStyle>
+                    <Style TargetType="DataGridRow">
+                        <Setter Property="Background" Value="White"/>
+                        <Style.Triggers>
+                            <Trigger Property="AlternationIndex" Value="1"><Setter Property="Background" Value="{StaticResource RowAlt}"/></Trigger>
+                            <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#DBEAFE"/></Trigger>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#EBF5FF"/></Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.RowStyle>
+                <DataGrid.CellStyle>
+                    <Style TargetType="DataGridCell">
+                        <Setter Property="Padding" Value="8,4"/><Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="DataGridCell">
+                                    <Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                        <ContentPresenter VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers><Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="#1A2332"/></Trigger></Style.Triggers>
+                    </Style>
+                </DataGrid.CellStyle>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*">
+                        <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Foreground" Value="#1A2332"/></Style></DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Floor" Binding="{Binding FloorPlan.Name}" Width="*"/>
+                    <DataGridTextColumn Header="Capacity" Binding="{Binding Capacity}" Width="80"/>
+                    <DataGridTextColumn Header="Shape" Binding="{Binding Shape}" Width="90"/>
+                    <DataGridTemplateColumn Header="Status" Width="90">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="8" Padding="6,2" HorizontalAlignment="Center" Background="#E3F2FD">
+                                    <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="Bold" Foreground="#1565C0" HorizontalAlignment="Center"/>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Order" Binding="{Binding DisplayOrder}" Width="55"/>
+                    <DataGridTemplateColumn Header="" Width="72">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                    <Button Background="#1565C0" Style="{StaticResource RowBtn}" Content="&#xE70F;"
+                                            Command="{Binding DataContext.EditTableCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}" ToolTip="Edit" Margin="0,0,4,0"/>
+                                    <Button Background="#DC2626" Style="{StaticResource RowBtn}" Content="&#xE74D;"
+                                            Command="{Binding DataContext.DeleteTableCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}" ToolTip="Delete"/>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <!-- Status -->
+        <Border Grid.Row="3" Background="White" CornerRadius="8" Padding="12,6" Margin="0,8,0,0" BorderBrush="#E2E8F0" BorderThickness="1">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="#64748B"/>
+                <TextBlock Grid.Column="1" FontSize="11" Foreground="#475569"><Run Text="Total: "/><Run Text="{Binding ItemCountText, Mode=OneWay}" FontWeight="SemiBold"/></TextBlock>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

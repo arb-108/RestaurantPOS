@@ -1,0 +1,174 @@
+<Window x:Class="RestaurantPOS.WPF.Views.CloseShiftWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Close Shift" Width="540" Height="700"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="#F0F2F5" FontFamily="Segoe UI">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Background="White" BorderBrush="#E5E7EB" BorderThickness="0,0,0,1" Padding="28,18,28,14">
+            <StackPanel>
+                <TextBlock Text="Close Shift" FontSize="20" FontWeight="Bold" Foreground="#111827"/>
+                <TextBlock x:Name="TxtShiftInfo" FontSize="12" Foreground="#6B7280" Margin="0,4,0,0"/>
+            </StackPanel>
+        </Border>
+
+        <!-- Scrollable Content -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel Margin="28,16,28,16">
+                <!-- Shift Summary Card -->
+                <TextBlock Text="SHIFT SUMMARY" FontSize="10" Foreground="#6B7280"
+                           FontWeight="SemiBold" Margin="0,0,0,6"/>
+                <Border Background="White" CornerRadius="10" Padding="18,14" Margin="0,0,0,16"
+                        BorderBrush="#E5E7EB" BorderThickness="1">
+                    <StackPanel>
+                        <!-- Orders + Total Sales row -->
+                        <Grid Margin="0,0,0,12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <StackPanel>
+                                <TextBlock Text="Total Orders" FontSize="10" Foreground="#9CA3AF" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="TxtOrders" FontSize="22" FontWeight="Bold" Foreground="#111827" Margin="0,2,0,0"/>
+                            </StackPanel>
+                            <StackPanel Grid.Column="1">
+                                <TextBlock Text="Total Sales" FontSize="10" Foreground="#9CA3AF" FontWeight="SemiBold"/>
+                                <TextBlock x:Name="TxtTotalSales" FontSize="22" FontWeight="Bold" Foreground="#059669" Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Grid>
+
+                        <Border Height="1" Background="#F3F4F6" Margin="0,0,0,12"/>
+
+                        <!-- Payment Breakdown -->
+                        <TextBlock Text="PAYMENT BREAKDOWN" FontSize="10" Foreground="#9CA3AF"
+                                   FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Cash Sales" FontSize="13" Foreground="#374151"/>
+                            <TextBlock x:Name="TxtCashSales" Grid.Column="1" FontSize="13" FontWeight="SemiBold" Foreground="#111827"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,6">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Card / Digital" FontSize="13" Foreground="#374151"/>
+                            <TextBlock x:Name="TxtCardSales" Grid.Column="1" FontSize="13" FontWeight="SemiBold" Foreground="#6366F1"/>
+                        </Grid>
+
+                        <Border Height="1" Background="#F3F4F6" Margin="0,6,0,8"/>
+
+                        <!-- Cash Drawer -->
+                        <TextBlock Text="CASH DRAWER" FontSize="10" Foreground="#9CA3AF"
+                                   FontWeight="SemiBold" Margin="0,0,0,8"/>
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Opening Balance" FontSize="13" Foreground="#374151"/>
+                            <TextBlock x:Name="TxtOpening" Grid.Column="1" FontSize="13" Foreground="#111827"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="+ Cash Sales" FontSize="13" Foreground="#059669"/>
+                            <TextBlock x:Name="TxtCashIn" Grid.Column="1" FontSize="13" FontWeight="SemiBold" Foreground="#059669"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="+ Pay-Ins" FontSize="13" Foreground="#2196F3"/>
+                            <TextBlock x:Name="TxtPayIns" Grid.Column="1" FontSize="13" FontWeight="SemiBold" Foreground="#2196F3"/>
+                        </Grid>
+                        <Grid Margin="0,0,0,5">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="- Pay-Outs" FontSize="13" Foreground="#DC2626"/>
+                            <TextBlock x:Name="TxtPayOuts" Grid.Column="1" FontSize="13" FontWeight="SemiBold" Foreground="#DC2626"/>
+                        </Grid>
+
+                        <Border Height="1" Background="#E5E7EB" Margin="0,8,0,8"/>
+
+                        <Grid>
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="Expected in Drawer" FontSize="14" FontWeight="Bold" Foreground="#111827"/>
+                            <TextBlock x:Name="TxtExpected" Grid.Column="1" FontSize="14" FontWeight="Bold" Foreground="#1D4ED8"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- Cash Count -->
+                <TextBlock Text="COUNT CASH IN DRAWER (RS)" FontSize="10" Foreground="#6B7280"
+                           FontWeight="SemiBold" Margin="0,0,0,6"/>
+                <TextBox x:Name="TxtCountedCash" FontSize="22" FontWeight="Bold"
+                         Padding="14,10" Background="White" BorderBrush="#D97706"
+                         BorderThickness="2" Text="0" TextAlignment="Right"
+                         TextChanged="TxtCountedCash_TextChanged">
+                    <TextBox.Resources>
+                        <Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style>
+                    </TextBox.Resources>
+                </TextBox>
+
+                <!-- Discrepancy -->
+                <Border x:Name="DiscrepancyBorder" Background="#FEF3C7" CornerRadius="8"
+                        Padding="14,10" Margin="0,10,0,14">
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Discrepancy: " FontSize="13" Foreground="#92400E" VerticalAlignment="Center"/>
+                        <TextBlock x:Name="TxtDiscrepancy" FontSize="15" FontWeight="Bold"
+                                   Foreground="#92400E" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Closing Notes -->
+                <TextBlock Text="CLOSING NOTES (OPTIONAL)" FontSize="10" Foreground="#6B7280"
+                           FontWeight="SemiBold" Margin="0,0,0,6"/>
+                <TextBox x:Name="TxtNotes" FontSize="13" Padding="10,8" Background="White"
+                         BorderBrush="#D1D5DB" BorderThickness="1" Height="60"
+                         TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto">
+                    <TextBox.Resources>
+                        <Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style>
+                    </TextBox.Resources>
+                </TextBox>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Fixed Buttons at Bottom -->
+        <Border Grid.Row="2" BorderBrush="#E5E7EB" BorderThickness="0,1,0,0" Background="#F9FAFB" Padding="28,14">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel" Width="100" Height="38" FontSize="13" FontWeight="SemiBold"
+                        Background="Transparent" BorderBrush="#D1D5DB" BorderThickness="1"
+                        Foreground="#4B5563" Cursor="Hand" Click="CancelClick" Margin="0,0,10,0">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="1" CornerRadius="8" Padding="12,6">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#F3F4F6"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+                <Button Content="Close Shift" Width="140" Height="38" FontSize="13" FontWeight="Bold"
+                        Background="#DC2626" Foreground="White" BorderThickness="0" Cursor="Hand" Click="CloseClick">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                    CornerRadius="8" Padding="12,6">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="#B91C1C"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

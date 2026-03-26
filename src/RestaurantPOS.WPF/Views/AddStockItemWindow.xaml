@@ -1,0 +1,114 @@
+<Window x:Class="RestaurantPOS.WPF.Views.AddStockItemWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Add Stock Item" Width="480" Height="560"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="#F4F5F7" FontFamily="Segoe UI">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Title -->
+        <TextBlock x:Name="TitleText" Text="+ Add Stock Item" FontSize="18" FontWeight="Bold" Foreground="#111827" Margin="0,0,0,16"/>
+
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- Item Name -->
+                <TextBlock Text="ITEM NAME" FontSize="11" Foreground="#6B7280" FontFamily="Consolas" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtName" FontSize="13" Padding="10,8" Background="#F0F1F4" BorderBrush="#D1D5DB" BorderThickness="1" Margin="0,0,0,12">
+                    <TextBox.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></TextBox.Resources>
+                </TextBox>
+
+                <!-- Category -->
+                <TextBlock Text="CATEGORY" FontSize="11" Foreground="#6B7280" FontFamily="Consolas" Margin="0,0,0,4"/>
+                <ComboBox x:Name="CmbCategory" FontSize="13" Padding="10,8" Background="#F0F1F4" BorderBrush="#D1D5DB" BorderThickness="1" Margin="0,0,0,12">
+                    <ComboBoxItem Content="Dry Goods" IsSelected="True"/>
+                    <ComboBoxItem Content="Cold / Chilled"/>
+                    <ComboBoxItem Content="Sauces &amp; Condiments"/>
+                    <ComboBoxItem Content="Beverages"/>
+                    <ComboBoxItem Content="Packaging"/>
+                </ComboBox>
+
+                <!-- Qty + Unit row -->
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="CURRENT QTY" FontSize="11" Foreground="#6B7280" FontFamily="Consolas" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TxtQty" FontSize="13" Padding="10,8" Background="#F0F1F4" BorderBrush="#D1D5DB" BorderThickness="1" Text="0">
+                            <TextBox.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></TextBox.Resources>
+                        </TextBox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="UNIT" FontSize="11" Foreground="#6B7280" FontFamily="Consolas" Margin="0,0,0,4"/>
+                        <ComboBox x:Name="CmbUnit" FontSize="13" Padding="10,8" Background="#F0F1F4" BorderBrush="#D1D5DB" BorderThickness="1">
+                            <ComboBoxItem Content="kg" IsSelected="True"/>
+                            <ComboBoxItem Content="L"/>
+                            <ComboBoxItem Content="bottles"/>
+                            <ComboBoxItem Content="packets"/>
+                            <ComboBoxItem Content="crates"/>
+                            <ComboBoxItem Content="cans"/>
+                            <ComboBoxItem Content="pcs"/>
+                        </ComboBox>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Min Level + Unit Cost row -->
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="12"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="MIN LEVEL (REORDER AT)" FontSize="11" Foreground="#6B7280" FontFamily="Consolas" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TxtMinLevel" FontSize="13" Padding="10,8" Background="#F0F1F4" BorderBrush="#D1D5DB" BorderThickness="1" Text="0">
+                            <TextBox.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></TextBox.Resources>
+                        </TextBox>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="UNIT COST (RS)" FontSize="11" Foreground="#6B7280" FontFamily="Consolas" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TxtCost" FontSize="13" Padding="10,8" Background="#F0F1F4" BorderBrush="#D1D5DB" BorderThickness="1" Text="0">
+                            <TextBox.Resources><Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style></TextBox.Resources>
+                        </TextBox>
+                    </StackPanel>
+                </Grid>
+
+                <!-- Supplier -->
+                <TextBlock Text="SUPPLIER" FontSize="11" Foreground="#6B7280" FontFamily="Consolas" Margin="0,0,0,4"/>
+                <ComboBox x:Name="CmbSupplier" FontSize="13" Padding="10,8" Background="#F0F1F4" BorderBrush="#D1D5DB" BorderThickness="1" DisplayMemberPath="Name" Margin="0,0,0,12"/>
+
+                <!-- Cost Preview -->
+                <Border Background="#E5E7EB" CornerRadius="8" Padding="12,8" Margin="0,0,0,8">
+                    <TextBlock x:Name="TxtPreview" FontSize="12" Foreground="#6B7280" FontFamily="Consolas" Text="Total stock value: Rs 0"/>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,16,0,0">
+            <Button Content="Cancel" Width="90" Height="36" FontSize="13" FontWeight="SemiBold"
+                    Background="Transparent" BorderBrush="#D1D5DB" BorderThickness="1" Foreground="#4B5563"
+                    Cursor="Hand" Click="CancelClick" Margin="0,0,10,0">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1" CornerRadius="8" Padding="12,6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+            <Button Content="Save Item" Width="110" Height="36" FontSize="13" FontWeight="Bold"
+                    Background="#D97706" Foreground="White" BorderThickness="0" Cursor="Hand" Click="SaveClick">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="8" Padding="12,6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Background" Value="#B45309"/></Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

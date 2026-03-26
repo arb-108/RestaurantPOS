@@ -1,0 +1,127 @@
+<Window x:Class="RestaurantPOS.WPF.Views.QuickSettleWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Quick Settle Payment"
+        Height="380" Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#DAEDF4"
+        FontFamily="Segoe UI">
+
+    <Grid Margin="20,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,14">
+            <TextBlock Text="&#xE8C7;" FontFamily="Segoe MDL2 Assets"
+                       FontSize="26" Foreground="#2E7D32"
+                       VerticalAlignment="Center" Margin="0,0,10,0"/>
+            <TextBlock Text="Quick Settle Payment"
+                       FontSize="18" FontWeight="Bold" Foreground="#2E7D32"
+                       VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Order Info -->
+        <Border Grid.Row="1" Background="White" CornerRadius="6" Padding="14,10" Margin="0,0,0,14"
+                BorderBrush="#E0E0E0" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <StackPanel Grid.Column="0">
+                    <TextBlock x:Name="TxtOrderNumber" FontSize="14" FontWeight="Bold" Foreground="#333"/>
+                    <TextBlock x:Name="TxtOrderType" Text="Delivery Order" FontSize="11" Foreground="#888" Margin="0,2,0,0"/>
+                </StackPanel>
+                <StackPanel Grid.Column="1" HorizontalAlignment="Right">
+                    <TextBlock Text="Net Amount (incl. GST)" FontSize="10" Foreground="#888" HorizontalAlignment="Right"/>
+                    <TextBlock x:Name="TxtAmount" FontSize="20" FontWeight="Bold" Foreground="#2E7D32"
+                               HorizontalAlignment="Right"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Payment Method Label -->
+        <TextBlock Grid.Row="2" Text="Select Payment Method" FontSize="14" FontWeight="SemiBold"
+                   Foreground="#333" Margin="0,0,0,8"/>
+
+        <!-- Payment Methods -->
+        <StackPanel Grid.Row="3" Margin="0,0,0,10">
+            <RadioButton x:Name="RbCash" GroupName="PayMethod" IsChecked="True"
+                         Margin="0,4" FontSize="13" Foreground="#333">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE7F0;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                               Foreground="#FF9800" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Cash" VerticalAlignment="Center"/>
+                </StackPanel>
+            </RadioButton>
+            <RadioButton x:Name="RbCard" GroupName="PayMethod"
+                         Margin="0,4" FontSize="13" Foreground="#333">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE8C7;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                               Foreground="#1976D2" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Card / Credit" VerticalAlignment="Center"/>
+                </StackPanel>
+            </RadioButton>
+            <RadioButton x:Name="RbOnline" GroupName="PayMethod"
+                         Margin="0,4" FontSize="13" Foreground="#333">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE774;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                               Foreground="#7B1FA2" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Online Payment" VerticalAlignment="Center"/>
+                </StackPanel>
+            </RadioButton>
+            <RadioButton x:Name="RbCOD" GroupName="PayMethod"
+                         Margin="0,4" FontSize="13" Foreground="#333">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock Text="&#xE7BF;" FontFamily="Segoe MDL2 Assets" FontSize="16"
+                               Foreground="#E65100" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="Cash on Delivery" VerticalAlignment="Center"/>
+                </StackPanel>
+            </RadioButton>
+        </StackPanel>
+
+        <!-- Buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Cancel" Click="Cancel_Click"
+                    Width="100" Height="38" FontSize="14" FontWeight="Bold"
+                    Foreground="White" Cursor="Hand" Margin="0,0,10,0">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="#9E9E9E" CornerRadius="4" Padding="8,4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <Button Content="Settle Payment" Click="Settle_Click"
+                    Width="140" Height="38" FontSize="14" FontWeight="Bold"
+                    Foreground="White" Cursor="Hand">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="#2E7D32" CornerRadius="4" Padding="8,4">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </StackPanel>
+    </Grid>
+</Window>

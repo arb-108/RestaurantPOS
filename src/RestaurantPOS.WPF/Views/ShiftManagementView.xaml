@@ -1,0 +1,571 @@
+<UserControl x:Class="RestaurantPOS.WPF.Views.ShiftManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:RestaurantPOS.WPF.Converters"
+             Background="#F0F2F5" Loaded="OnLoaded">
+
+    <UserControl.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:BoolInverterConverter x:Key="BoolInvert"/>
+        <conv:UtcToLocalConverter x:Key="UtcToLocal"/>
+        <conv:PaisaToCurrencyConverter x:Key="PaisaToCurrency"/>
+
+        <!-- Stat Card -->
+        <Style x:Key="StatCard" TargetType="Border">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="20,16"/>
+            <Setter Property="Margin" Value="0,0,10,0"/>
+            <Setter Property="Effect">
+                <Setter.Value>
+                    <DropShadowEffect BlurRadius="8" ShadowDepth="1" Opacity="0.06" Color="#000"/>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Action button -->
+        <Style x:Key="ShiftActionBtn" TargetType="Button">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="34"/>
+            <Setter Property="Padding" Value="16,0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}"
+                                CornerRadius="8" Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.35"/>
+                                <Setter Property="Cursor" Value="Arrow"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- POS Folder Tab Style -->
+        <Style x:Key="FolderTab" TargetType="TabItem">
+            <Setter Property="FontSize" Value="14"/><Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Cursor" Value="Hand"/><Setter Property="MinWidth" Value="120"/>
+            <Setter Property="Margin" Value="0,0,-4,0"/>
+            <Setter Property="Template"><Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Grid x:Name="TabRoot" Margin="0,0,0,-1" Height="35">
+                        <Border x:Name="TabShape" CornerRadius="3,3,0,0" Margin="3,2,3,0">
+                            <Border.Background><SolidColorBrush Color="#283593"/></Border.Background>
+                        </Border>
+                        <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="20,6"/>
+                    </Grid>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="TabShape" Property="Background" Value="#D5D9DD"/>
+                            <Setter TargetName="TabShape" Property="BorderBrush" Value="#B0B8BF"/>
+                            <Setter TargetName="TabShape" Property="BorderThickness" Value="1,1,1,0"/>
+                            <Setter Property="Foreground" Value="#333333"/>
+                            <Setter TargetName="TabRoot" Property="Panel.ZIndex" Value="10"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="False">
+                            <Setter TargetName="TabShape" Property="Background" Value="#283593"/>
+                            <Setter TargetName="TabShape" Property="BorderThickness" Value="0"/>
+                            <Setter Property="Foreground" Value="White"/>
+                        </Trigger>
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="IsSelected" Value="False"/>
+                            </MultiTrigger.Conditions>
+                            <Setter TargetName="TabShape" Property="Background" Value="#3949AB"/>
+                        </MultiTrigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value></Setter>
+        </Style>
+
+        <!-- DataGrid Header -->
+        <Style x:Key="ShiftDGHeader" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#F9FAFB"/>
+            <Setter Property="Foreground" Value="#6B7280"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="14,10"/>
+            <Setter Property="BorderThickness" Value="0,0,0,1"/>
+            <Setter Property="BorderBrush" Value="#E5E7EB"/>
+        </Style>
+
+        <!-- DataGrid Cell -->
+        <Style x:Key="ShiftDGCell" TargetType="DataGridCell">
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="FontSize" Value="12.5"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#EBF5FF"/>
+                    <Setter Property="Foreground" Value="#111827"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- DataGrid Row -->
+        <Style x:Key="ShiftDGRow" TargetType="DataGridRow">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Style.Triggers>
+                <Trigger Property="AlternationIndex" Value="1">
+                    <Setter Property="Background" Value="#FAFBFC"/>
+                </Trigger>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F0F7FF"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="24,16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>  <!-- Header -->
+            <RowDefinition Height="Auto"/>  <!-- Status banner -->
+            <RowDefinition Height="Auto"/>  <!-- Stats cards -->
+            <RowDefinition Height="Auto"/>  <!-- Tabs -->
+            <RowDefinition Height="Auto"/>  <!-- Action bar -->
+            <RowDefinition Height="*"/>     <!-- Content area -->
+        </Grid.RowDefinitions>
+
+        <!-- ROW 0: HEADER BAR -->
+        <Border Grid.Row="0" Background="White" CornerRadius="12" Padding="20,12" Margin="0,0,0,10">
+            <Border.Effect>
+                <DropShadowEffect BlurRadius="6" ShadowDepth="1" Opacity="0.04" Color="#000"/>
+            </Border.Effect>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Title -->
+                <StackPanel VerticalAlignment="Center" Margin="0,0,20,0">
+                    <TextBlock Text="Shift Management" FontSize="18" FontWeight="Bold" Foreground="#111827"/>
+                    <TextBlock Text="Manage daily shifts and cash drawer" FontSize="11" Foreground="#9CA3AF" Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <Button Grid.Column="2" Style="{StaticResource ShiftActionBtn}" Background="#6366F1" Foreground="White"
+                        Command="{Binding LoadDataCommand}">
+                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Refresh"/></StackPanel>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- ROW 1: STATUS BANNER -->
+        <Border Grid.Row="1" CornerRadius="10" Padding="16,10" Margin="0,0,0,10">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="#FEF3C7"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding HasActiveShift}" Value="True">
+                            <Setter Property="Background" Value="#D1FAE5"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <Ellipse Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,12,0">
+                    <Ellipse.Style>
+                        <Style TargetType="Ellipse">
+                            <Setter Property="Fill" Value="#D97706"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding HasActiveShift}" Value="True">
+                                    <Setter Property="Fill" Value="#059669"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Ellipse.Style>
+                </Ellipse>
+
+                <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                    <!-- No shift text -->
+                    <TextBlock Text="No Active Shift  --  Open a shift to start processing orders"
+                               FontSize="13" FontWeight="SemiBold" Foreground="#92400E"
+                               Visibility="{Binding HasActiveShift, Converter={StaticResource BoolToVis}, ConverterParameter=Invert}"/>
+                    <!-- Active shift text -->
+                    <TextBlock Visibility="{Binding HasActiveShift, Converter={StaticResource BoolToVis}}"
+                               FontSize="13" FontWeight="SemiBold" Foreground="#065F46">
+                        <Run Text="Shift Active"/>
+                        <Run Text="  |  " Foreground="#34D399"/>
+                        <Run Text="{Binding ShiftUserText, Mode=OneWay}"/>
+                        <Run Text="  |  " Foreground="#34D399"/>
+                        <Run Text="Started: " FontWeight="Normal" Foreground="#047857"/>
+                        <Run Text="{Binding ShiftStartedText, Mode=OneWay}" FontWeight="Normal"/>
+                    </TextBlock>
+                </StackPanel>
+
+                <Border Grid.Column="2" Background="#065F46" CornerRadius="6" Padding="10,4"
+                        VerticalAlignment="Center"
+                        Visibility="{Binding HasActiveShift, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="{Binding ShiftDurationText}" FontSize="13" FontWeight="Bold" Foreground="White"/>
+                </Border>
+            </Grid>
+        </Border>
+
+        <!-- ROW 2: STATS CARDS (visible only when shift active) -->
+        <Grid Grid.Row="2" Margin="0,0,0,10"
+              Visibility="{Binding HasActiveShift, Converter={StaticResource BoolToVis}}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Orders -->
+            <Border Grid.Column="0" Style="{StaticResource StatCard}">
+                <StackPanel>
+                    <TextBlock Text="ORDERS" FontSize="10" Foreground="#9CA3AF" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding ShiftOrderCount}" FontSize="26" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
+                    <TextBlock Text="completed" FontSize="10" Foreground="#9CA3AF"/>
+                </StackPanel>
+            </Border>
+            <!-- Total Sales -->
+            <Border Grid.Column="1" Style="{StaticResource StatCard}">
+                <StackPanel>
+                    <TextBlock Text="TOTAL SALES" FontSize="10" Foreground="#9CA3AF" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding ShiftSalesText}" FontSize="20" FontWeight="Bold" Foreground="#059669" Margin="0,4,0,0"/>
+                    <TextBlock Text="revenue" FontSize="10" Foreground="#9CA3AF"/>
+                </StackPanel>
+            </Border>
+            <!-- Cash Sales -->
+            <Border Grid.Column="2" Style="{StaticResource StatCard}">
+                <StackPanel>
+                    <TextBlock Text="CASH SALES" FontSize="10" Foreground="#9CA3AF" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding ShiftCashText}" FontSize="20" FontWeight="Bold" Foreground="#111827" Margin="0,4,0,0"/>
+                    <TextBlock Text="in cash" FontSize="10" Foreground="#9CA3AF"/>
+                </StackPanel>
+            </Border>
+            <!-- Card / Digital -->
+            <Border Grid.Column="3" Style="{StaticResource StatCard}">
+                <StackPanel>
+                    <TextBlock Text="CARD / DIGITAL" FontSize="10" Foreground="#9CA3AF" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding ShiftCardText}" FontSize="20" FontWeight="Bold" Foreground="#6366F1" Margin="0,4,0,0"/>
+                    <TextBlock Text="non-cash" FontSize="10" Foreground="#9CA3AF"/>
+                </StackPanel>
+            </Border>
+            <!-- Expected Drawer -->
+            <Border Grid.Column="4" Margin="0">
+                <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource StatCard}">
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="Background" Value="#EFF6FF"/>
+                    </Style>
+                </Border.Style>
+                <StackPanel>
+                    <TextBlock Text="EXPECTED DRAWER" FontSize="10" Foreground="#2563EB" FontWeight="SemiBold"/>
+                    <TextBlock Text="{Binding ExpectedDrawerText}" FontSize="20" FontWeight="Bold" Foreground="#1D4ED8" Margin="0,4,0,0"/>
+                    <TextBlock Text="cash in drawer" FontSize="10" Foreground="#60A5FA"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- ROW 3: TABS -->
+        <TabControl x:Name="MainTabControl" Grid.Row="3" SelectedIndex="0" Background="Transparent"
+                    BorderThickness="0" Padding="0" Margin="0,0,0,0"
+                    SelectionChanged="TabChanged">
+            <TabItem Header="Current Shift" Style="{StaticResource FolderTab}"/>
+            <TabItem Header="Orders" Style="{StaticResource FolderTab}"/>
+            <TabItem Header="Drawer Log" Style="{StaticResource FolderTab}"/>
+            <TabItem Header="History" Style="{StaticResource FolderTab}"/>
+        </TabControl>
+
+        <!-- ROW 4: ACTION BAR (below tabs) -->
+        <Border Grid.Row="4" Background="White" CornerRadius="0" Padding="16,10" Margin="0,0,0,0" BorderBrush="#E5E7EB" BorderThickness="1,0,1,1">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Style="{StaticResource ShiftActionBtn}"
+                        Background="#059669" Foreground="White" Content="Open Shift"
+                        Command="{Binding OpenShiftCommand}"
+                        IsEnabled="{Binding HasActiveShift, Converter={StaticResource BoolInvert}}"
+                        Margin="0,0,6,0"/>
+                <Button Style="{StaticResource ShiftActionBtn}"
+                        Background="#DC2626" Foreground="White" Content="Close Shift"
+                        Command="{Binding CloseShiftCommand}"
+                        IsEnabled="{Binding HasActiveShift}"
+                        Margin="0,0,6,0"/>
+                <Button Style="{StaticResource ShiftActionBtn}"
+                        Background="#2196F3" Foreground="White" Content="+ Pay In"
+                        Command="{Binding PayInCommand}"
+                        IsEnabled="{Binding HasActiveShift}"
+                        Margin="0,0,6,0"/>
+                <Button Style="{StaticResource ShiftActionBtn}"
+                        Background="#D97706" Foreground="White" Content="- Pay Out"
+                        Command="{Binding PayOutCommand}"
+                        IsEnabled="{Binding HasActiveShift}"/>
+            </StackPanel>
+        </Border>
+
+        <!-- ROW 5: CONTENT PANELS -->
+        <Grid Grid.Row="5">
+
+            <!-- TAB: Current Shift Overview -->
+            <Border x:Name="PanelCurrent" Background="White" CornerRadius="0,0,12,12"
+                    BorderBrush="#E5E7EB" BorderThickness="1" Visibility="Collapsed">
+                <Border.Effect>
+                    <DropShadowEffect BlurRadius="6" ShadowDepth="1" Opacity="0.04" Color="#000"/>
+                </Border.Effect>
+                <Grid Margin="24,20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <TextBlock Text="Shift Overview" FontSize="16" FontWeight="SemiBold" Foreground="#111827" Margin="0,0,0,20"/>
+
+                    <Grid Grid.Row="1" MaxWidth="500" HorizontalAlignment="Left">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="36"/>
+                            <RowDefinition Height="36"/>
+                            <RowDefinition Height="36"/>
+                            <RowDefinition Height="36"/>
+                            <RowDefinition Height="36"/>
+                            <RowDefinition Height="36"/>
+                            <RowDefinition Height="36"/>
+                            <RowDefinition Height="Auto"/>  <!-- separator -->
+                            <RowDefinition Height="40"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Opening Balance -->
+                        <TextBlock Grid.Row="0" Text="Opening Balance" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding OpeningBalanceText}" FontSize="13" FontWeight="SemiBold" Foreground="#111827" VerticalAlignment="Center"/>
+
+                        <!-- Orders Completed -->
+                        <TextBlock Grid.Row="1" Text="Orders Completed" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ShiftOrderCount}" FontSize="13" FontWeight="SemiBold" Foreground="#111827" VerticalAlignment="Center"/>
+
+                        <!-- Total Revenue -->
+                        <TextBlock Grid.Row="2" Text="Total Revenue" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ShiftSalesText}" FontSize="13" FontWeight="Bold" Foreground="#059669" VerticalAlignment="Center"/>
+
+                        <!-- Cash Received -->
+                        <TextBlock Grid.Row="3" Text="Cash Received" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ShiftCashText}" FontSize="13" FontWeight="SemiBold" Foreground="#111827" VerticalAlignment="Center"/>
+
+                        <!-- Card / Digital -->
+                        <TextBlock Grid.Row="4" Text="Card / Digital" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ShiftCardText}" FontSize="13" FontWeight="SemiBold" Foreground="#6366F1" VerticalAlignment="Center"/>
+
+                        <!-- Pay-Ins -->
+                        <TextBlock Grid.Row="5" Text="Pay-Ins (manual)" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="5" Grid.Column="1" FontSize="13" FontWeight="SemiBold" Foreground="#059669" VerticalAlignment="Center">
+                            <Run Text="{Binding ShiftPayInText, Mode=OneWay}"/>
+                            <Run Text="  (" Foreground="#9CA3AF"/><Run Text="{Binding ShiftPayInCount, Mode=OneWay}" Foreground="#9CA3AF"/><Run Text=")" Foreground="#9CA3AF"/>
+                        </TextBlock>
+
+                        <!-- Pay-Outs -->
+                        <TextBlock Grid.Row="6" Text="Pay-Outs" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="6" Grid.Column="1" FontSize="13" FontWeight="SemiBold" Foreground="#DC2626" VerticalAlignment="Center">
+                            <Run Text="{Binding ShiftPayOutText, Mode=OneWay}"/>
+                            <Run Text="  (" Foreground="#9CA3AF"/><Run Text="{Binding ShiftPayOutCount, Mode=OneWay}" Foreground="#9CA3AF"/><Run Text=")" Foreground="#9CA3AF"/>
+                        </TextBlock>
+
+                        <!-- Separator -->
+                        <Border Grid.Row="7" Grid.ColumnSpan="2" Height="1" Background="#E5E7EB" Margin="0,6"/>
+
+                        <!-- Expected in Drawer -->
+                        <TextBlock Grid.Row="8" Text="Expected in Drawer" FontSize="14" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding ExpectedDrawerText}" FontSize="16" FontWeight="Bold" Foreground="#1D4ED8" VerticalAlignment="Center"/>
+                    </Grid>
+                </Grid>
+            </Border>
+
+            <!-- No-Shift Placeholder -->
+            <Border x:Name="PanelNoShift" Background="White" CornerRadius="0,0,12,12"
+                    BorderBrush="#E5E7EB" BorderThickness="1" Visibility="Collapsed">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,40">
+                    <Border Width="80" Height="80" CornerRadius="40" Background="#F3F4F6"
+                            HorizontalAlignment="Center" Margin="0,0,0,20">
+                        <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="36"
+                                   Foreground="#9CA3AF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="No Active Shift" FontSize="20" FontWeight="SemiBold" Foreground="#374151"
+                               HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                    <TextBlock Text="Open a shift to start tracking orders and cash drawer activity"
+                               FontSize="13" Foreground="#9CA3AF" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+                    <Button Style="{StaticResource ShiftActionBtn}" Background="#059669" Foreground="White"
+                            Content="Open Shift" Height="40" Padding="28,0" FontSize="14"
+                            Command="{Binding OpenShiftCommand}"
+                            IsEnabled="{Binding HasActiveShift, Converter={StaticResource BoolInvert}}"
+                            HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <!-- TAB: Shift Orders -->
+            <Border x:Name="PanelOrders" Background="White" CornerRadius="0,0,12,12"
+                    BorderBrush="#E5E7EB" BorderThickness="1" Visibility="Collapsed">
+                <DataGrid ItemsSource="{Binding ShiftOrders}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              HeadersVisibility="Column" GridLinesVisibility="None"
+                              BorderThickness="0" Background="White"
+                              RowHeight="40" ColumnHeaderHeight="38"
+                              CanUserAddRows="False" CanUserDeleteRows="False"
+                              AlternationCount="2"
+                              ColumnHeaderStyle="{StaticResource ShiftDGHeader}"
+                              CellStyle="{StaticResource ShiftDGCell}"
+                              RowStyle="{StaticResource ShiftDGRow}"
+                              SelectionMode="Single"
+                              VerticalScrollBarVisibility="Auto">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="ORDER #" Width="110" Binding="{Binding OrderNumber}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="Foreground" Value="#111827"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="TIME" Width="100"
+                                                Binding="{Binding CreatedAt, Converter={StaticResource UtcToLocal}, StringFormat='hh:mm tt'}"/>
+                            <DataGridTextColumn Header="TYPE" Width="90" Binding="{Binding OrderType}"/>
+                            <DataGridTextColumn Header="ITEMS" Width="70"
+                                                Binding="{Binding OrderItems.Count}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="HorizontalAlignment" Value="Center"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="SUBTOTAL" Width="110"
+                                                Binding="{Binding SubTotal, Converter={StaticResource PaisaToCurrency}}"/>
+                            <DataGridTextColumn Header="TAX" Width="90"
+                                                Binding="{Binding TaxAmount, Converter={StaticResource PaisaToCurrency}}"/>
+                            <DataGridTextColumn Header="DISCOUNT" Width="100"
+                                                Binding="{Binding DiscountAmount, Converter={StaticResource PaisaToCurrency}}"/>
+                            <DataGridTextColumn Header="TOTAL" Width="120"
+                                                Binding="{Binding GrandTotal, Converter={StaticResource PaisaToCurrency}}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="Foreground" Value="#059669"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="STATUS" Width="90" Binding="{Binding Status}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+            </Border>
+
+            <!-- TAB: Drawer Log -->
+            <Border x:Name="PanelDrawer" Background="White" CornerRadius="0,0,12,12"
+                    BorderBrush="#E5E7EB" BorderThickness="1" Visibility="Collapsed">
+                <DataGrid ItemsSource="{Binding DrawerLogs}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              HeadersVisibility="Column" GridLinesVisibility="None"
+                              BorderThickness="0" Background="White"
+                              RowHeight="40" ColumnHeaderHeight="38"
+                              CanUserAddRows="False" CanUserDeleteRows="False"
+                              AlternationCount="2"
+                              ColumnHeaderStyle="{StaticResource ShiftDGHeader}"
+                              CellStyle="{StaticResource ShiftDGCell}"
+                              RowStyle="{StaticResource ShiftDGRow}"
+                              SelectionMode="Single"
+                              VerticalScrollBarVisibility="Auto">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="TIME" Width="130"
+                                                Binding="{Binding CreatedAt, Converter={StaticResource UtcToLocal}, StringFormat='hh:mm tt'}"/>
+                            <DataGridTextColumn Header="TYPE" Width="120" Binding="{Binding Type}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="AMOUNT" Width="140"
+                                                Binding="{Binding Amount, Converter={StaticResource PaisaToCurrency}}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                        <Setter Property="Foreground" Value="#059669"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="DESCRIPTION" Width="*" Binding="{Binding Description}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+            </Border>
+
+            <!-- TAB: History -->
+            <Border x:Name="PanelHistory" Background="White" CornerRadius="0,0,12,12"
+                    BorderBrush="#E5E7EB" BorderThickness="1" Visibility="Collapsed">
+                <DataGrid ItemsSource="{Binding ShiftHistory}"
+                              AutoGenerateColumns="False" IsReadOnly="True"
+                              HeadersVisibility="Column" GridLinesVisibility="None"
+                              BorderThickness="0" Background="White"
+                              RowHeight="42" ColumnHeaderHeight="38"
+                              CanUserAddRows="False" CanUserDeleteRows="False"
+                              AlternationCount="2"
+                              ColumnHeaderStyle="{StaticResource ShiftDGHeader}"
+                              CellStyle="{StaticResource ShiftDGCell}"
+                              RowStyle="{StaticResource ShiftDGRow}"
+                              SelectionMode="Single"
+                              VerticalScrollBarVisibility="Auto">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="DATE" Width="120"
+                                                Binding="{Binding StartedAt, Converter={StaticResource UtcToLocal}, StringFormat='dd MMM yyyy'}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontWeight" Value="SemiBold"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="OPENED" Width="100"
+                                                Binding="{Binding StartedAt, Converter={StaticResource UtcToLocal}, StringFormat='hh:mm tt'}"/>
+                            <DataGridTextColumn Header="CLOSED" Width="100"
+                                                Binding="{Binding EndedAt, Converter={StaticResource UtcToLocal}, StringFormat='hh:mm tt'}"/>
+                            <DataGridTextColumn Header="USER" Width="120" Binding="{Binding User.FullName}"/>
+                            <DataGridTextColumn Header="OPENING" Width="100"
+                                                Binding="{Binding OpeningBalance, Converter={StaticResource PaisaToCurrency}}"/>
+                            <DataGridTextColumn Header="CLOSING" Width="100"
+                                                Binding="{Binding ClosingBalance, Converter={StaticResource PaisaToCurrency}}"/>
+                            <DataGridTextColumn Header="EXPECTED" Width="100"
+                                                Binding="{Binding ExpectedBalance, Converter={StaticResource PaisaToCurrency}}"/>
+                            <DataGridTextColumn Header="DIFF" Width="90"
+                                                Binding="{Binding Discrepancy, Converter={StaticResource PaisaToCurrency}}">
+                                <DataGridTextColumn.ElementStyle>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                    </Style>
+                                </DataGridTextColumn.ElementStyle>
+                            </DataGridTextColumn>
+                            <DataGridTextColumn Header="NOTES" Width="*" Binding="{Binding Notes}"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

@@ -1,0 +1,217 @@
+<UserControl x:Class="RestaurantPOS.WPF.Views.SupplierManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:RestaurantPOS.WPF.Converters"
+             Background="#F0F4F8" FontFamily="Segoe UI" Loaded="OnLoaded">
+
+    <UserControl.Resources>
+        <conv:PaisaToCurrencyConverter x:Key="PaisaToCurrency"/>
+        <Style x:Key="Btn" TargetType="Button">
+            <Setter Property="FontSize" Value="12"/><Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Height" Value="34"/><Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Cursor" Value="Hand"/><Setter Property="Foreground" Value="White"/><Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+                <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Opacity" Value="0.90"/></Trigger></ControlTemplate.Triggers>
+            </ControlTemplate></Setter.Value></Setter>
+        </Style>
+        <Style x:Key="RowBtn" TargetType="Button">
+            <Setter Property="Width" Value="28"/><Setter Property="Height" Value="28"/><Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="BorderThickness" Value="0"/><Setter Property="FontFamily" Value="Segoe MDL2 Assets"/>
+            <Setter Property="FontSize" Value="12"/><Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="Button">
+                <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="5" Width="28" Height="28">
+                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                </Border>
+                <ControlTemplate.Triggers><Trigger Property="IsMouseOver" Value="True"><Setter TargetName="Bd" Property="Opacity" Value="0.82"/></Trigger></ControlTemplate.Triggers>
+            </ControlTemplate></Setter.Value></Setter>
+        </Style>
+        <SolidColorBrush x:Key="RowAlt" Color="#F8FAFC"/>
+    </UserControl.Resources>
+
+    <Grid Margin="16,10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="White" CornerRadius="8" Padding="16,10" Margin="0,0,0,8" BorderBrush="#E2E8F0" BorderThickness="1">
+            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Width="36" Height="36" CornerRadius="18" Background="#FFF3E0" Margin="0,0,10,0">
+                        <TextBlock Text="&#xE719;" FontFamily="Segoe MDL2 Assets" FontSize="16" Foreground="#E65100" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="Suppliers" FontSize="18" FontWeight="Bold" Foreground="#1A2332" VerticalAlignment="Center"/>
+                </StackPanel>
+                <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button Background="#1565C0" Style="{StaticResource Btn}" Command="{Binding AddSupplierCommand}" Margin="0,0,6,0">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Add Supplier"/></StackPanel>
+                    </Button>
+                    <Button Background="#E65100" Style="{StaticResource Btn}" Command="{Binding AddExpenseCommand}" Margin="0,0,6,0">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Add Expense"/></StackPanel>
+                    </Button>
+                    <Button Background="#E53935" Style="{StaticResource Btn}" Command="{Binding RefreshCommand}">
+                        <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE72C;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Refresh"/></StackPanel>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Tabs -->
+        <TabControl Grid.Row="1" SelectedIndex="{Binding SelectedTab}" BorderThickness="0" Background="Transparent">
+            <!-- ═══ TAB 1: Suppliers ═══ -->
+            <TabItem Header="  Suppliers  " FontSize="13" FontWeight="SemiBold">
+                <Grid Margin="0,8,0,0">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+
+                    <!-- Search -->
+                    <Border Background="White" CornerRadius="8" Padding="12,8" Margin="0,0,0,8" BorderBrush="#E2E8F0" BorderThickness="1">
+                        <Border Background="#F5F7FA" CornerRadius="6" BorderBrush="#D0D7DE" BorderThickness="1" MinWidth="240" HorizontalAlignment="Left">
+                            <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="#90A4AE" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                                <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" FontSize="12" Height="30" Padding="4,4" VerticalContentAlignment="Center" BorderThickness="0" Background="Transparent"/>
+                            </Grid>
+                        </Border>
+                    </Border>
+
+                    <!-- Suppliers Grid -->
+                    <Border Grid.Row="1" Background="White" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1" ClipToBounds="True">
+                        <DataGrid ItemsSource="{Binding Suppliers}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#EDF2F7" BorderThickness="0" FontSize="12" RowHeight="36"
+                                  HeadersVisibility="Column" SelectionMode="Single" SelectionUnit="FullRow" AlternationCount="2">
+                            <DataGrid.ColumnHeaderStyle><Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background" Value="#1E3A5F"/><Setter Property="Foreground" Value="White"/>
+                                <Setter Property="FontSize" Value="11"/><Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="Padding" Value="8,7"/><Setter Property="BorderBrush" Value="#2A4A6E"/><Setter Property="BorderThickness" Value="0,0,1,0"/>
+                            </Style></DataGrid.ColumnHeaderStyle>
+                            <DataGrid.RowStyle><Style TargetType="DataGridRow"><Setter Property="Background" Value="White"/>
+                                <Style.Triggers><Trigger Property="AlternationIndex" Value="1"><Setter Property="Background" Value="{StaticResource RowAlt}"/></Trigger>
+                                    <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#DBEAFE"/></Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#EBF5FF"/></Trigger></Style.Triggers>
+                            </Style></DataGrid.RowStyle>
+                            <DataGrid.CellStyle><Style TargetType="DataGridCell"><Setter Property="Padding" Value="8,4"/><Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="DataGridCell"><Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"><ContentPresenter VerticalAlignment="Center"/></Border></ControlTemplate></Setter.Value></Setter>
+                                <Style.Triggers><Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="#1A2332"/></Trigger></Style.Triggers>
+                            </Style></DataGrid.CellStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*">
+                                    <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="FontWeight" Value="SemiBold"/></Style></DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Contact" Binding="{Binding ContactPerson}" Width="*"/>
+                                <DataGridTextColumn Header="Phone" Binding="{Binding Phone}" Width="110"/>
+                                <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="*"/>
+                                <DataGridTextColumn Header="City" Binding="{Binding City}" Width="90"/>
+                                <DataGridTemplateColumn Header="" Width="72">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Button Background="#1565C0" Style="{StaticResource RowBtn}" Content="&#xE70F;"
+                                                    Command="{Binding DataContext.EditSupplierCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    CommandParameter="{Binding}" Margin="0,0,4,0"/>
+                                            <Button Background="#DC2626" Style="{StaticResource RowBtn}" Content="&#xE74D;"
+                                                    Command="{Binding DataContext.DeleteSupplierCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                    CommandParameter="{Binding}"/>
+                                        </StackPanel>
+                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+
+                    <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="12,6" Margin="0,8,0,0" BorderBrush="#E2E8F0" BorderThickness="1">
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="#64748B"/>
+                            <TextBlock Grid.Column="1" FontSize="11" Foreground="#475569"><Run Text="Total: "/><Run Text="{Binding SupplierCountText, Mode=OneWay}" FontWeight="SemiBold"/></TextBlock>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ═══ TAB 2: Expenses ═══ -->
+            <TabItem Header="  Expenses  " FontSize="13" FontWeight="SemiBold">
+                <Grid Margin="0,8,0,0">
+                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+
+                    <!-- Filters -->
+                    <Border Background="White" CornerRadius="8" Padding="12,8" Margin="0,0,0,8" BorderBrush="#E2E8F0" BorderThickness="1">
+                        <StackPanel Orientation="Horizontal">
+                            <Border Background="#F5F7FA" CornerRadius="6" BorderBrush="#D0D7DE" BorderThickness="1" MinWidth="200" Margin="0,0,12,0">
+                                <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="13" Foreground="#90A4AE" VerticalAlignment="Center" Margin="8,0,4,0"/>
+                                    <TextBox Grid.Column="1" Text="{Binding ExpenseSearch, UpdateSourceTrigger=PropertyChanged}" FontSize="12" Height="30" Padding="4,4" VerticalContentAlignment="Center" BorderThickness="0" Background="Transparent"/>
+                                </Grid>
+                            </Border>
+                            <TextBlock Text="Supplier" FontSize="11" FontWeight="SemiBold" Foreground="#78909C" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <ComboBox FontSize="12" Height="30" MinWidth="140" Padding="6,3" ItemsSource="{Binding ExpenseFilterSuppliers}" SelectedItem="{Binding ExpenseFilterSupplier}" DisplayMemberPath="Name"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Expenses Grid -->
+                    <Border Grid.Row="1" Background="White" CornerRadius="8" BorderBrush="#E2E8F0" BorderThickness="1" ClipToBounds="True">
+                        <DataGrid ItemsSource="{Binding Expenses}" AutoGenerateColumns="False" CanUserAddRows="False" IsReadOnly="True"
+                                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#EDF2F7" BorderThickness="0" FontSize="12" RowHeight="36"
+                                  HeadersVisibility="Column" SelectionMode="Single" SelectionUnit="FullRow" AlternationCount="2">
+                            <DataGrid.ColumnHeaderStyle><Style TargetType="DataGridColumnHeader">
+                                <Setter Property="Background" Value="#1E3A5F"/><Setter Property="Foreground" Value="White"/>
+                                <Setter Property="FontSize" Value="11"/><Setter Property="FontWeight" Value="SemiBold"/>
+                                <Setter Property="Padding" Value="8,7"/><Setter Property="BorderBrush" Value="#2A4A6E"/><Setter Property="BorderThickness" Value="0,0,1,0"/>
+                            </Style></DataGrid.ColumnHeaderStyle>
+                            <DataGrid.RowStyle><Style TargetType="DataGridRow"><Setter Property="Background" Value="White"/>
+                                <Style.Triggers><Trigger Property="AlternationIndex" Value="1"><Setter Property="Background" Value="{StaticResource RowAlt}"/></Trigger>
+                                    <Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="#DBEAFE"/></Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#EBF5FF"/></Trigger></Style.Triggers>
+                            </Style></DataGrid.RowStyle>
+                            <DataGrid.CellStyle><Style TargetType="DataGridCell"><Setter Property="Padding" Value="8,4"/><Setter Property="BorderThickness" Value="0"/>
+                                <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="DataGridCell"><Border Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}"><ContentPresenter VerticalAlignment="Center"/></Border></ControlTemplate></Setter.Value></Setter>
+                                <Style.Triggers><Trigger Property="IsSelected" Value="True"><Setter Property="Background" Value="Transparent"/><Setter Property="Foreground" Value="#1A2332"/></Trigger></Style.Triggers>
+                            </Style></DataGrid.CellStyle>
+                            <DataGrid.Columns>
+                                <DataGridTextColumn Header="Supplier" Binding="{Binding Supplier.Name}" Width="*">
+                                    <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="FontWeight" Value="SemiBold"/></Style></DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="2*"/>
+                                <DataGridTextColumn Header="Amount" Binding="{Binding Amount, Converter={StaticResource PaisaToCurrency}}" Width="100">
+                                    <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="HorizontalAlignment" Value="Right"/><Setter Property="FontWeight" Value="Bold"/><Setter Property="Foreground" Value="#C62828"/><Setter Property="FontFamily" Value="Consolas"/></Style></DataGridTextColumn.ElementStyle>
+                                </DataGridTextColumn>
+                                <DataGridTextColumn Header="Invoice #" Binding="{Binding InvoiceNumber}" Width="90"/>
+                                <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="100"/>
+                                <DataGridTemplateColumn Header="Paid" Width="55">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                        <Border CornerRadius="8" Padding="6,2" HorizontalAlignment="Center">
+                                            <Border.Style><Style TargetType="Border"><Setter Property="Background" Value="#DCFCE7"/>
+                                                <Style.Triggers><DataTrigger Binding="{Binding IsPaid}" Value="False"><Setter Property="Background" Value="#FEF3C7"/></DataTrigger></Style.Triggers>
+                                            </Style></Border.Style>
+                                            <TextBlock FontSize="9" FontWeight="Bold" HorizontalAlignment="Center">
+                                                <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Text" Value="Paid"/><Setter Property="Foreground" Value="#166534"/>
+                                                    <Style.Triggers><DataTrigger Binding="{Binding IsPaid}" Value="False"><Setter Property="Text" Value="Unpaid"/><Setter Property="Foreground" Value="#92400E"/></DataTrigger></Style.Triggers>
+                                                </Style></TextBlock.Style>
+                                            </TextBlock>
+                                        </Border>
+                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="" Width="36">
+                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                        <Button Background="#DC2626" Style="{StaticResource RowBtn}" Content="&#xE74D;"
+                                                Command="{Binding DataContext.DeleteExpenseCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                                CommandParameter="{Binding}" ToolTip="Delete"/>
+                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </Border>
+
+                    <!-- Expense status bar -->
+                    <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="12,6" Margin="0,8,0,0" BorderBrush="#E2E8F0" BorderThickness="1">
+                        <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <TextBlock Text="{Binding StatusMessage}" FontSize="11" Foreground="#64748B"/>
+                            <TextBlock Grid.Column="1" FontSize="11" Foreground="#475569" Margin="0,0,16,0"><Run Text="Total: "/><Run Text="{Binding ExpenseCountText, Mode=OneWay}" FontWeight="SemiBold"/></TextBlock>
+                            <TextBlock Grid.Column="2" FontSize="11" FontWeight="Bold" Foreground="#C62828"><Run Text="Sum: "/><Run Text="{Binding TotalExpenseText, Mode=OneWay}"/></TextBlock>
+                        </Grid>
+                    </Border>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

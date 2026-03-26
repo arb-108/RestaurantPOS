@@ -1,0 +1,81 @@
+<Window x:Class="RestaurantPOS.WPF.Views.OpenShiftWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Open Shift" Width="440" Height="400" 
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="White" FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <Style x:Key="ModernTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="White"/>
+            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+            <Setter Property="Padding" Value="12"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border x:Name="border" CornerRadius="8" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                Background="{TemplateBinding Background}">
+                            <ScrollViewer x:Name="PART_ContentHost" Focusable="false" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsFocused" Value="true">
+                                <Setter Property="BorderBrush" TargetName="border" Value="#2563EB"/>
+                                <Setter Property="BorderThickness" TargetName="border" Value="2"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" Margin="24,24,24,10">
+
+            <TextBlock Text="OPENING CASH BALANCE" FontSize="11" Foreground="#4B5563" FontWeight="Bold" Margin="0,0,0,8"/>
+            <Grid Margin="0,0,0,20">
+                <TextBox x:Name="TxtOpeningBalance" Style="{StaticResource ModernTextBox}"
+                         FontSize="24" FontWeight="Bold" Padding="12,12,50,12"
+                         BorderBrush="#2563EB" BorderThickness="2" Text="0" TextAlignment="Right"/>
+                <TextBlock Text="RS" Foreground="#94A3B8" VerticalAlignment="Center" 
+                           HorizontalAlignment="Right" Margin="0,0,15,0" FontWeight="Bold" IsHitTestVisible="False"/>
+            </Grid>
+
+            <TextBlock Text="NOTES (OPTIONAL)" FontSize="11" Foreground="#4B5563" FontWeight="Bold" Margin="0,0,0,8"/>
+            <TextBox x:Name="TxtNotes" Style="{StaticResource ModernTextBox}"
+                     FontSize="14" Height="100" VerticalContentAlignment="Top"
+                     AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" Background="#F1F5F9" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0" Padding="24,16">
+            <UniformGrid Columns="2">
+                <Button Content="Cancel" Margin="0,0,8,0" Height="48" Background="White" Foreground="#64748B" FontSize="15" FontWeight="SemiBold" Click="CancelClick">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="btnBorder" Background="{TemplateBinding Background}" CornerRadius="10" BorderBrush="#D1D5DB" BorderThickness="1">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <Button Content="Start Shift" Margin="8,0,0,0" Height="48" Background="#2563EB" Foreground="White" FontSize="15" FontWeight="Bold" Click="StartClick">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="btnBorder" Background="{TemplateBinding Background}" CornerRadius="10">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </UniformGrid>
+        </Border>
+    </Grid>
+</Window>

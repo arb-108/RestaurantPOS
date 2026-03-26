@@ -1,0 +1,187 @@
+<UserControl x:Class="RestaurantPOS.WPF.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{StaticResource PrimaryBgBrush}"
+             FontFamily="{StaticResource AppFont}"
+             Loaded="OnLoaded">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="8">
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- General Settings -->
+            <Border Grid.Row="0" Grid.Column="0" Background="White" CornerRadius="6" Padding="16" Margin="0,0,8,8">
+                <StackPanel>
+                    <TextBlock Text="General Settings" FontSize="16" FontWeight="Bold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,12"/>
+
+                    <TextBlock Text="Restaurant Name" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2"/>
+                    <TextBox Text="{Binding RestaurantName, UpdateSourceTrigger=PropertyChanged}" FontSize="13" Padding="6,4" Margin="0,0,0,8"/>
+
+                    <TextBlock Text="Currency" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2"/>
+                    <TextBox Text="{Binding Currency, UpdateSourceTrigger=PropertyChanged}" FontSize="13" Padding="6,4" Margin="0,0,0,8"/>
+
+                    <TextBlock Text="Currency Symbol" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2"/>
+                    <TextBox Text="{Binding CurrencySymbol, UpdateSourceTrigger=PropertyChanged}" FontSize="13" Padding="6,4" Margin="0,0,0,8"/>
+
+                    <TextBlock Text="Receipt Header" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2"/>
+                    <TextBox Text="{Binding ReceiptHeader, UpdateSourceTrigger=PropertyChanged}" FontSize="13" Padding="6,4" Margin="0,0,0,8"/>
+
+                    <TextBlock Text="Receipt Footer" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2"/>
+                    <TextBox Text="{Binding ReceiptFooter, UpdateSourceTrigger=PropertyChanged}" FontSize="13" Padding="6,4" Margin="0,0,0,8"/>
+
+                    <TextBlock Text="Auto-lock Timeout (minutes)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2"/>
+                    <TextBox Text="{Binding IdleTimeout, UpdateSourceTrigger=PropertyChanged}" FontSize="13" Padding="6,4" Margin="0,0,0,12"/>
+
+                    <Button Content="Save General Settings" Style="{StaticResource CheckoutButton}"
+                            Command="{Binding SaveGeneralSettingsCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Tax Rates -->
+            <Border Grid.Row="0" Grid.Column="1" Background="White" CornerRadius="6" Padding="16" Margin="0,0,0,8">
+                <StackPanel>
+                    <TextBlock Text="Tax Rates" FontSize="16" FontWeight="Bold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,12"/>
+
+                    <DataGrid ItemsSource="{Binding TaxRates}"
+                              SelectedItem="{Binding SelectedTaxRate}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              IsReadOnly="True"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="#E0E0E0"
+                              BorderThickness="0"
+                              FontSize="12" RowHeight="30"
+                              MaxHeight="200">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="Rate %" Binding="{Binding Rate}" Width="60"/>
+                            <DataGridCheckBoxColumn Header="Incl." Binding="{Binding IsInclusive}" Width="50"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <Grid Margin="0,12,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="50"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBox Grid.Column="0" Text="{Binding TaxRateName}" Padding="4" FontSize="12" Margin="0,0,4,0"
+                                 ToolTip="Name"/>
+                        <TextBox Grid.Column="1" Text="{Binding TaxRateValue}" Padding="4" FontSize="12" Margin="0,0,4,0"
+                                 ToolTip="Rate %"/>
+                        <CheckBox Grid.Column="2" Content="Incl" IsChecked="{Binding TaxRateIsInclusive}"
+                                  VerticalAlignment="Center" FontSize="11"/>
+                    </Grid>
+                    <Grid Margin="0,8,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Button Grid.Column="0" Content="Add" Style="{StaticResource AccentButton}"
+                                Command="{Binding AddTaxRateCommand}" Margin="0,0,4,0"/>
+                        <Button Grid.Column="1" Content="Delete" Style="{StaticResource DangerButton}"
+                                Command="{Binding DeleteTaxRateCommand}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Sync Settings -->
+            <Border Grid.Row="1" Grid.Column="0" Background="White" CornerRadius="6" Padding="16" Margin="0,0,8,8">
+                <StackPanel>
+                    <TextBlock Text="Sync Settings" FontSize="16" FontWeight="Bold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,12"/>
+
+                    <CheckBox Content="Enable Sync" IsChecked="{Binding SyncEnabled}" Margin="0,0,0,8" FontSize="13"/>
+
+                    <TextBlock Text="Server URL" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2"/>
+                    <TextBox Text="{Binding SyncServerUrl, UpdateSourceTrigger=PropertyChanged}" FontSize="13" Padding="6,4" Margin="0,0,0,8"/>
+
+                    <TextBlock Text="Interval (seconds)" FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" Margin="0,0,0,2"/>
+                    <TextBox Text="{Binding SyncInterval, UpdateSourceTrigger=PropertyChanged}" FontSize="13" Padding="6,4" Margin="0,0,0,12"/>
+
+                    <Button Content="Save Sync Settings" Style="{StaticResource CheckoutButton}"
+                            Command="{Binding SaveSyncSettingsCommand}"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Users -->
+            <Border Grid.Row="1" Grid.Column="1" Background="White" CornerRadius="6" Padding="16" Margin="0,0,0,8">
+                <StackPanel>
+                    <TextBlock Text="Users" FontSize="16" FontWeight="Bold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,12"/>
+
+                    <DataGrid ItemsSource="{Binding Users}"
+                              SelectedItem="{Binding SelectedUser}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              IsReadOnly="True"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="#E0E0E0"
+                              BorderThickness="0"
+                              FontSize="12" RowHeight="30"
+                              MaxHeight="250">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Username" Binding="{Binding Username}" Width="*"/>
+                            <DataGridTextColumn Header="Full Name" Binding="{Binding FullName}" Width="*"/>
+                            <DataGridTextColumn Header="Role" Binding="{Binding Role.Name}" Width="80"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Border>
+
+            <!-- Backup -->
+            <Border Grid.Row="2" Grid.Column="0" Background="White" CornerRadius="6" Padding="16" Margin="0,0,8,8">
+                <StackPanel>
+                    <TextBlock Text="Backup / Restore" FontSize="16" FontWeight="Bold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,12"/>
+
+                    <Button Content="Backup Database Now" Style="{StaticResource CheckoutButton}"
+                            Command="{Binding BackupDatabaseCommand}" Margin="0,0,0,8"/>
+
+                    <TextBlock Text="Backups are saved to %LOCALAPPDATA%\RestaurantPOS\backups\"
+                               FontSize="11" Foreground="{StaticResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Printers -->
+            <Border Grid.Row="2" Grid.Column="1" Background="White" CornerRadius="6" Padding="16" Margin="0,0,0,8">
+                <StackPanel>
+                    <TextBlock Text="Printers" FontSize="16" FontWeight="Bold"
+                               Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,12"/>
+
+                    <DataGrid ItemsSource="{Binding Printers}"
+                              AutoGenerateColumns="False"
+                              CanUserAddRows="False"
+                              IsReadOnly="True"
+                              GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="#E0E0E0"
+                              BorderThickness="0"
+                              FontSize="12" RowHeight="30"
+                              MaxHeight="200">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
+                            <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="80"/>
+                            <DataGridTextColumn Header="Conn." Binding="{Binding ConnectionType}" Width="70"/>
+                            <DataGridTextColumn Header="Width" Binding="{Binding PaperWidth}" Width="50"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <TextBlock Text="Configure printers via the printer management tool"
+                               FontSize="11" Foreground="{StaticResource TextSecondaryBrush}"
+                               Margin="0,8,0,0" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,240 @@
+<Window x:Class="RestaurantPOS.WPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:vm="clr-namespace:RestaurantPOS.WPF.ViewModels"
+        xmlns:views="clr-namespace:RestaurantPOS.WPF.Views"
+        xmlns:conv="clr-namespace:RestaurantPOS.WPF.Converters"
+        mc:Ignorable="d"
+        Title="KFC Restaurant POS"
+        WindowState="Maximized"
+        WindowStyle="SingleBorderWindow"
+        ResizeMode="CanResize"
+        Background="{StaticResource PrimaryBgBrush}"
+        FontFamily="{StaticResource AppFont}">
+
+    <Window.Resources>
+        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
+        <DataTemplate DataType="{x:Type vm:LoginViewModel}">
+            <views:LoginView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:MainPOSViewModel}">
+            <views:MainPOSView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:KitchenDisplayViewModel}">
+            <views:KitchenDisplayView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:OrderHistoryViewModel}">
+            <views:OrderHistoryView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:MenuManagementViewModel}">
+            <views:MenuManagementView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ReportsViewModel}">
+            <views:ReportsView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:SettingsViewModel}">
+            <views:SettingsView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ExpenseManagementViewModel}">
+            <views:ExpenseManagementView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:StockManagementViewModel}">
+            <views:StockManagementView/>
+        </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:ShiftManagementViewModel}">
+            <views:ShiftManagementView/>
+        </DataTemplate>
+    </Window.Resources>
+
+    <Window.InputBindings>
+        <KeyBinding Key="F12" Command="{Binding LockCommand}"/>
+    </Window.InputBindings>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <!-- Toolbar -->
+            <RowDefinition Height="Auto"/>
+            <!-- Content -->
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- ═══ TOOLBAR (Icon + Label buttons) ═══ -->
+        <Border Grid.Row="0" Background="#F5F5F5" BorderBrush="#E0E0E0" BorderThickness="0,0,0,1"
+                Padding="4,2"
+                Visibility="{Binding IsLoggedIn, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left: Nav buttons with icons + labels -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <!-- Sale Invoice / POS -->
+                    <Button Style="{StaticResource ToolbarButton}"
+                            Command="{Binding NavigateToPosCommand}" ToolTip="POS Home">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE7C3;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#333"/>
+                            <TextBlock Text="Sale Invoice" FontSize="9" HorizontalAlignment="Center"
+                                       Foreground="#555" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
+                    <!-- Menu Settings (merged: Products, Deals, Tables, Suppliers) -->
+                    <Button Style="{StaticResource ToolbarButton}"
+                            Command="{Binding NavigateToMenuCommand}" ToolTip="Menu Settings">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE8BA;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#333"/>
+                            <TextBlock Text="Menu Settings" FontSize="9" HorizontalAlignment="Center"
+                                       Foreground="#555" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
+                    <!-- Expense (Suppliers + Expenses) -->
+                    <Button Style="{StaticResource ToolbarButton}"
+                            Command="{Binding NavigateToExpensesCommand}" ToolTip="Expenses">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE719;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#333"/>
+                            <TextBlock Text="Expense" FontSize="9" HorizontalAlignment="Center"
+                                       Foreground="#555" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
+                    <!-- Stock Management -->
+                    <Button Style="{StaticResource ToolbarButton}"
+                            Command="{Binding NavigateToStockCommand}" ToolTip="Stock Management">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE82D;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#333"/>
+                            <TextBlock Text="Stock" FontSize="9" HorizontalAlignment="Center"
+                                       Foreground="#555" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
+                    <!-- Reports -->
+                    <Button Style="{StaticResource ToolbarButton}"
+                            Command="{Binding NavigateToReportsCommand}" ToolTip="Reports">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE9F9;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#333"/>
+                            <TextBlock Text="Reports" FontSize="9" HorizontalAlignment="Center"
+                                       Foreground="#555" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
+                    <!-- Customers -->
+                    <Button Style="{StaticResource ToolbarButton}" ToolTip="Customers">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#333"/>
+                            <TextBlock Text="Customers" FontSize="9" HorizontalAlignment="Center"
+                                       Foreground="#555" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
+                    <!-- Returns -->
+                    <Button Style="{StaticResource ToolbarButton}"
+                            Command="{Binding NavigateToOrdersCommand}" ToolTip="Returns">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE7A7;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#333"/>
+                            <TextBlock Text="Returns" FontSize="9" HorizontalAlignment="Center"
+                                       Foreground="#555" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
+                    <!-- Employees -->
+                    <Button Style="{StaticResource ToolbarButton}" ToolTip="Employees">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#333"/>
+                            <TextBlock Text="Employees" FontSize="9" HorizontalAlignment="Center"
+                                       Foreground="#555" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
+                    <!-- Shift -->
+                    <Button Style="{StaticResource ToolbarButton}"
+                            Command="{Binding NavigateToShiftCommand}" ToolTip="Shift Management">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#333"/>
+                            <TextBlock Text="Shift" FontSize="9" HorizontalAlignment="Center"
+                                       Foreground="#555" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
+                    <!-- Settings -->
+                    <Button Style="{StaticResource ToolbarButton}"
+                            Command="{Binding NavigateToSettingsCommand}" ToolTip="Settings">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#333"/>
+                            <TextBlock Text="Settings" FontSize="9" HorizontalAlignment="Center"
+                                       Foreground="#555" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+
+                <!-- Right: Shift indicator, User, Lock -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,8,0">
+                    <!-- Shift Status Pill -->
+                    <Border CornerRadius="10" Padding="8,3" VerticalAlignment="Center" Margin="0,0,12,0"
+                            Cursor="Hand" MouseLeftButtonUp="ShiftPill_Click">
+                        <Border.Style>
+                            <Style TargetType="Border">
+                                <Setter Property="Background" Value="#FEF3C7"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding IsShiftActive}" Value="True">
+                                        <Setter Property="Background" Value="#D1FAE5"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Border.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="7" Height="7" VerticalAlignment="Center" Margin="0,0,6,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="#D97706"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsShiftActive}" Value="True">
+                                                <Setter Property="Fill" Value="#059669"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                            <TextBlock Text="{Binding ShiftIndicatorText}" FontSize="10" FontWeight="SemiBold"
+                                       VerticalAlignment="Center">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="#92400E"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsShiftActive}" Value="True">
+                                                <Setter Property="Foreground" Value="#065F46"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                        </StackPanel>
+                    </Border>
+                    <TextBlock Text="{Binding CurrentUser}" FontSize="11" FontWeight="SemiBold"
+                               Foreground="#333" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <Button Content="&#xE72E;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                            Foreground="White" Background="{StaticResource DangerBrush}"
+                            BorderThickness="0" Width="32" Height="32" Cursor="Hand"
+                            Command="{Binding LockCommand}" ToolTip="Lock (F12)">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border Background="{TemplateBinding Background}" CornerRadius="4">
+                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══ CONTENT AREA ═══ -->
+        <ContentControl Grid.Row="1" Content="{Binding CurrentView}"/>
+    </Grid>
+</Window>

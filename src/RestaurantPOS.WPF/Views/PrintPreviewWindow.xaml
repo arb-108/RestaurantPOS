@@ -1,0 +1,181 @@
+<Window x:Class="RestaurantPOS.WPF.Views.PrintPreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Bill Print Preview"
+        Height="700" Width="520"
+        WindowStartupLocation="CenterScreen"
+        Background="#E8E8E8"
+        ResizeMode="CanResize"
+        FontFamily="Segoe UI">
+
+    <Window.Resources>
+        <DropShadowEffect x:Key="ReceiptShadow" BlurRadius="12" ShadowDepth="3"
+                          Color="#999" Opacity="0.5"/>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="90"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- ═══════════════════════════════════ -->
+        <!-- LEFT: Scrollable Receipt Pages      -->
+        <!-- ═══════════════════════════════════ -->
+        <Border Grid.Column="0" Background="#D0D0D0" Margin="8">
+            <ScrollViewer x:Name="PreviewScroller"
+                          HorizontalScrollBarVisibility="Auto"
+                          VerticalScrollBarVisibility="Auto"
+                          HorizontalAlignment="Center"
+                          ScrollChanged="PreviewScroller_ScrollChanged">
+
+                <StackPanel x:Name="PagesContainer" HorizontalAlignment="Center">
+                    <StackPanel.LayoutTransform>
+                        <ScaleTransform x:Name="ZoomTransform" ScaleX="1.0" ScaleY="1.0"/>
+                    </StackPanel.LayoutTransform>
+
+                    <!-- PAGE 1: Customer Bill (always present) -->
+                    <Border Background="White"
+                            Margin="20,20,20,10" Padding="0"
+                            Effect="{StaticResource ReceiptShadow}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Top">
+                        <StackPanel x:Name="ReceiptPanel" Width="302" Margin="12,16">
+                            <!-- Customer bill content generated in code-behind -->
+                        </StackPanel>
+                    </Border>
+
+                    <!-- PAGE 2: Kitchen Slip (only visible in combined mode) -->
+                    <Border x:Name="KitchenPageBorder"
+                            Background="White"
+                            Margin="20,10,20,20" Padding="0"
+                            Effect="{StaticResource ReceiptShadow}"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Top"
+                            Visibility="Collapsed">
+                        <StackPanel x:Name="KitchenPanel" Width="302" Margin="12,16">
+                            <!-- Kitchen slip content generated in code-behind -->
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <!-- ═══════════════════════════════════ -->
+        <!-- RIGHT: Zoom & Action Toolbar        -->
+        <!-- ═══════════════════════════════════ -->
+        <Border Grid.Column="1" Background="#F5F5F5" Padding="6,10">
+            <StackPanel>
+                <!-- Zoom buttons -->
+                <TextBlock Text="Zoom" FontSize="10" FontWeight="SemiBold"
+                           Foreground="#666" HorizontalAlignment="Center" Margin="0,0,0,6"/>
+
+                <RadioButton x:Name="Zoom50" Content="50 %"
+                             GroupName="Zoom" FontSize="11" Margin="4,2"
+                             Click="Zoom_Click" Tag="0.5"/>
+                <RadioButton x:Name="Zoom75" Content="75 %"
+                             GroupName="Zoom" FontSize="11" Margin="4,2"
+                             Click="Zoom_Click" Tag="0.75"/>
+                <RadioButton x:Name="Zoom100" Content="100 %"
+                             GroupName="Zoom" FontSize="11" Margin="4,2"
+                             IsChecked="True"
+                             Click="Zoom_Click" Tag="1.0"/>
+                <RadioButton x:Name="Zoom150" Content="150 %"
+                             GroupName="Zoom" FontSize="11" Margin="4,2"
+                             Click="Zoom_Click" Tag="1.5"/>
+
+                <Separator Margin="0,10"/>
+
+                <!-- Page info + navigation -->
+                <TextBlock x:Name="PageInfo" Text="Page 1 of 1"
+                           FontSize="10" Foreground="#666" FontWeight="SemiBold"
+                           HorizontalAlignment="Center" Margin="0,6"/>
+
+                <!-- Page navigation arrows (only visible when 2 pages) -->
+                <StackPanel x:Name="PageNavPanel" Orientation="Horizontal"
+                            HorizontalAlignment="Center" Margin="0,4,0,0"
+                            Visibility="Collapsed">
+                    <Button Content="▲" Click="PrevPage_Click"
+                            Width="30" Height="22" FontSize="10"
+                            Margin="2,0" Cursor="Hand" BorderThickness="1"
+                            BorderBrush="#CCC" Background="#FFF"/>
+                    <Button Content="▼" Click="NextPage_Click"
+                            Width="30" Height="22" FontSize="10"
+                            Margin="2,0" Cursor="Hand" BorderThickness="1"
+                            BorderBrush="#CCC" Background="#FFF"/>
+                </StackPanel>
+
+                <Separator Margin="0,10"/>
+
+                <!-- Print button -->
+                <Button x:Name="BtnPrint" Click="Print_Click"
+                        Margin="4,4" Height="60" Cursor="Hand"
+                        Background="Transparent" BorderThickness="0">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="4"
+                                    BorderBrush="#CCC" BorderThickness="1">
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xE749;" FontFamily="Segoe MDL2 Assets"
+                                               FontSize="28" Foreground="#1565C0" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Print" FontSize="10" Foreground="#333"
+                                               HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#E3F2FD"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <!-- PDF button -->
+                <Button x:Name="BtnPdf" Click="Pdf_Click"
+                        Margin="4,4" Height="60" Cursor="Hand"
+                        Background="Transparent" BorderThickness="0">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="4"
+                                    BorderBrush="#CCC" BorderThickness="1">
+                                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <TextBlock Text="&#xEA90;" FontFamily="Segoe MDL2 Assets"
+                                               FontSize="28" Foreground="#D32F2F" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="PDF" FontSize="10" Foreground="#333"
+                                               HorizontalAlignment="Center" Margin="0,2,0,0"/>
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#FFEBEE"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+
+                <Separator Margin="0,10"/>
+
+                <!-- Exit button -->
+                <Button Content="Exit" Click="Exit_Click"
+                        Margin="4,4" Height="34" Cursor="Hand"
+                        FontSize="12" FontWeight="SemiBold">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="#EF5350" CornerRadius="4" Padding="8,4">
+                                <TextBlock Text="Exit" Foreground="White" FontSize="12" FontWeight="SemiBold"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Opacity" Value="0.85"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

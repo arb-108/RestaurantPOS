@@ -1,0 +1,146 @@
+<UserControl x:Class="RestaurantPOS.WPF.Views.OrderHistoryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:conv="clr-namespace:RestaurantPOS.WPF.Converters"
+             Background="{StaticResource PrimaryBgBrush}"
+             FontFamily="{StaticResource AppFont}"
+             Loaded="OnLoaded">
+
+    <UserControl.Resources>
+        <conv:PaisaToCurrencyConverter x:Key="PaisaToCurrency"/>
+    </UserControl.Resources>
+
+    <Grid Margin="8">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Search / Filter Bar -->
+        <Border Grid.Row="0" Background="White" CornerRadius="6" Padding="12,8" Margin="0,0,0,8">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="From:" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <DatePicker Grid.Column="1" SelectedDate="{Binding FromDate}" Width="130" Margin="0,0,16,0"/>
+
+                <TextBlock Grid.Column="2" Text="Search:" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                <TextBox Grid.Column="3" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=300}"
+                         FontSize="12" Padding="6,4" Margin="0,0,16,0"/>
+
+                <Button Grid.Column="4" Content="Search" Style="{StaticResource AccentButton}"
+                        Command="{Binding SearchOrdersCommand}" Width="80" Margin="0,0,8,0"/>
+                <Button Grid.Column="5" Content="Void Selected" Style="{StaticResource DangerButton}"
+                        Command="{Binding VoidOrderCommand}" Width="110"/>
+            </Grid>
+        </Border>
+
+        <!-- Orders Grid + Detail -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="350"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Orders DataGrid -->
+            <Border Grid.Column="0" Background="White" CornerRadius="6" Padding="4" Margin="0,0,8,0">
+                <DataGrid ItemsSource="{Binding Orders}"
+                          SelectedItem="{Binding SelectedOrder}"
+                          AutoGenerateColumns="False"
+                          CanUserAddRows="False"
+                          IsReadOnly="True"
+                          GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="#E0E0E0"
+                          BorderThickness="0"
+                          FontSize="12"
+                          RowHeight="32"
+                          VirtualizingPanel.IsVirtualizing="True">
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Order #" Binding="{Binding OrderNumber}" Width="140"/>
+                        <DataGridTextColumn Header="Type" Binding="{Binding OrderType}" Width="80"/>
+                        <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="80"/>
+                        <DataGridTextColumn Header="Items" Binding="{Binding OrderItems.Count}" Width="50"/>
+                        <DataGridTextColumn Header="Total" Binding="{Binding GrandTotal, Converter={StaticResource PaisaToCurrency}}" Width="100"/>
+                        <DataGridTextColumn Header="Date" Binding="{Binding CreatedAt, StringFormat='{}{0:dd/MM HH:mm}'}" Width="110"/>
+                    </DataGrid.Columns>
+                    <DataGrid.RowStyle>
+                        <Style TargetType="DataGridRow">
+                            <Style.Triggers>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter Property="Background" Value="#E3F2FD"/>
+                                </Trigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.RowStyle>
+                </DataGrid>
+            </Border>
+
+            <!-- Order Detail Panel -->
+            <Border Grid.Column="1" Background="White" CornerRadius="6" Padding="12">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel DataContext="{Binding SelectedOrder}">
+                        <TextBlock Text="Order Details" FontSize="16" FontWeight="Bold"
+                                   Foreground="{StaticResource TextPrimaryBrush}" Margin="0,0,0,12"/>
+
+                        <TextBlock FontSize="13" Margin="0,0,0,4">
+                            <Run Text="Order: " FontWeight="SemiBold"/>
+                            <Run Text="{Binding OrderNumber, Mode=OneWay}"/>
+                        </TextBlock>
+                        <TextBlock FontSize="13" Margin="0,0,0,4">
+                            <Run Text="Type: " FontWeight="SemiBold"/>
+                            <Run Text="{Binding OrderType, Mode=OneWay}"/>
+                        </TextBlock>
+                        <TextBlock FontSize="13" Margin="0,0,0,4">
+                            <Run Text="Status: " FontWeight="SemiBold"/>
+                            <Run Text="{Binding Status, Mode=OneWay}"/>
+                        </TextBlock>
+                        <TextBlock FontSize="13" Margin="0,0,0,4">
+                            <Run Text="Date: " FontWeight="SemiBold"/>
+                            <Run Text="{Binding CreatedAt, Mode=OneWay, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}"/>
+                        </TextBlock>
+
+                        <TextBlock Text="Items" FontSize="14" FontWeight="SemiBold"
+                                   Margin="0,12,0,6" Foreground="{StaticResource AccentBrush}"/>
+
+                        <ItemsControl ItemsSource="{Binding OrderItems}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid Margin="0,2">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="80"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="{Binding MenuItem.Name}" FontSize="12"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Quantity, StringFormat='x{0}'}" FontSize="12" Margin="8,0"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding LineTotal, Converter={StaticResource PaisaToCurrency}}"
+                                                   FontSize="12" HorizontalAlignment="Right"/>
+                                    </Grid>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+
+                        <Border Height="1" Background="#E0E0E0" Margin="0,8"/>
+
+                        <Grid Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Grand Total:" FontSize="14" FontWeight="Bold"/>
+                            <TextBlock Grid.Column="1" Text="{Binding GrandTotal, Converter={StaticResource PaisaToCurrency}}"
+                                       FontSize="14" FontWeight="Bold" Foreground="{StaticResource AccentBrush}"/>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>
