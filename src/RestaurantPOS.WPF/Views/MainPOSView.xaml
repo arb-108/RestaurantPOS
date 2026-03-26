@@ -167,7 +167,7 @@
                                                         </TextBlock>
                                                     </Border>
 
-                                                    <!-- Icon: Cart for regular items only -->
+                                                    <!-- Icon Cart for regular items only -->
                                                     <TextBlock x:Name="RegIcon" Grid.Column="0" Grid.Row="0" Grid.RowSpan="4"
                                                                FontFamily="Segoe MDL2 Assets" FontSize="18"
                                                                Text="&#xE7BF;" Foreground="#1565C0"
