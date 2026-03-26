@@ -52,7 +52,8 @@
       "Bash(rm -f \"$LOCALAPPDATA/RestaurantPOS/posdata.db\")",
       "Read(//d/Software/KFC/$LOCALAPPDATA/**)",
       "Bash(find D:/Software/KFC -path */Converters* -name *.cs)",
-      "Bash(grep -rn \"KotData\\\\|PrintKotAsync\" \"D:\\\\Software\\\\KFC\\\\src\\\\RestaurantPOS.WPF\"\" --include=\"*.cs \")"
+      "Bash(grep -rn \"KotData\\\\|PrintKotAsync\" \"D:\\\\Software\\\\KFC\\\\src\\\\RestaurantPOS.WPF\"\" --include=\"*.cs \")",
+      "Bash(tasklist)"
     ]
   }
 }

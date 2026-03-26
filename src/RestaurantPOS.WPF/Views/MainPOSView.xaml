@@ -7,7 +7,8 @@
              mc:Ignorable="d"
              Background="{StaticResource PrimaryBgBrush}"
              FontFamily="{StaticResource AppFont}"
-             Loaded="OnLoaded">
+             Loaded="OnLoaded"
+             Focusable="True">
 
     <UserControl.Resources>
         <conv:PaisaToCurrencyConverter x:Key="PaisaToCurrency"/>
@@ -20,6 +21,69 @@
         <conv:MenuCardBgConverter x:Key="MenuCardBg"/>
         <conv:IsDealToVisibilityConverter x:Key="IsDealToVis"/>
         <conv:DealComponentsConverter x:Key="DealComponents"/>
+
+        <!-- ── Focus styles for billing TextBoxes ── -->
+        <Style x:Key="BillingTextBoxFocus" TargetType="TextBox">
+            <Setter Property="BorderBrush" Value="#999"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding" Value="3,3"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Style.Triggers>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="Black"/>
+                    <Setter Property="BorderThickness" Value="3"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                    <Setter Property="Background" Value="#FFF8E1"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ── Focus style for PAY TextBox (larger) ── -->
+        <Style x:Key="PayTextBoxFocus" TargetType="TextBox">
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Foreground" Value="#333"/>
+            <Setter Property="Padding" Value="6,3"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+            <Style.Triggers>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="Black"/>
+                    <Setter Property="BorderThickness" Value="3"/>
+                    <Setter Property="Background" Value="#FFF8E1"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- ── Focus style for Mobile TextBox ── -->
+        <Style x:Key="MobileTextBoxFocus" TargetType="TextBox" BasedOn="{StaticResource BillingTextBoxFocus}">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="4,3"/>
+            <Setter Property="Foreground" Value="#333"/>
+            <Style.Triggers>
+                <!-- Keep existing phone match color triggers -->
+                <DataTrigger Binding="{Binding IsPhoneMatched}" Value="True">
+                    <Setter Property="Foreground" Value="#2E7D32"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsPhoneSearchActive}" Value="True">
+                    <Setter Property="Foreground" Value="#2E7D32"/>
+                    <Setter Property="FontWeight" Value="SemiBold"/>
+                </DataTrigger>
+                <DataTrigger Binding="{Binding IsPhoneNoResults}" Value="True">
+                    <Setter Property="Foreground" Value="#D32F2F"/>
+                    <Setter Property="FontWeight" Value="Normal"/>
+                </DataTrigger>
+                <Trigger Property="IsFocused" Value="True">
+                    <Setter Property="BorderBrush" Value="Black"/>
+                    <Setter Property="BorderThickness" Value="3"/>
+                    <Setter Property="FontWeight" Value="Bold"/>
+                    <Setter Property="Background" Value="#FFF8E1"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
     </UserControl.Resources>
 
     <UserControl.InputBindings>
@@ -28,6 +92,27 @@
     </UserControl.InputBindings>
 
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- ── Keyboard Navigation Hint Bar ── -->
+        <Border Grid.Row="1" Background="#283593" Padding="6,3">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                <TextBlock x:Name="ZoneIndicator" Text="[Categories]" FontSize="11" FontWeight="Bold"
+                           Foreground="#FFD54F" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                <TextBlock Text="↑↓ Navigate" FontSize="10" Foreground="#B0BEC5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <TextBlock Text="←→ Switch Zone" FontSize="10" Foreground="#B0BEC5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Tab Next Zone" FontSize="10" Foreground="#B0BEC5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Enter Select/Add" FontSize="10" Foreground="#B0BEC5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Esc Back" FontSize="10" Foreground="#B0BEC5" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <TextBlock Text="F1 New Order" FontSize="10" Foreground="#90CAF9" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <TextBlock Text="F5 Checkout" FontSize="10" Foreground="#90CAF9" VerticalAlignment="Center"/>
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="0">
         <Grid.ColumnDefinitions>
             <!-- Left: Category Sidebar -->
             <ColumnDefinition Width="120"/>
@@ -48,18 +133,49 @@
         <!-- LEFT COLUMN — Category Sidebar (Blue buttons, bigger)  -->
         <!-- ═══════════════════════════════════════════════════════ -->
         <Border Grid.Column="0" Background="Transparent" Margin="2,2,2,2">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                <ItemsControl ItemsSource="{Binding Categories}">
-                    <ItemsControl.ItemTemplate>
-                        <DataTemplate>
-                            <Button Style="{StaticResource CategoryButton}"
-                                    Content="{Binding Name}"
-                                    Command="{Binding DataContext.SelectCategoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                    CommandParameter="{Binding}"/>
-                        </DataTemplate>
-                    </ItemsControl.ItemTemplate>
-                </ItemsControl>
-            </ScrollViewer>
+            <ListBox x:Name="CategoryList"
+                     ItemsSource="{Binding Categories}"
+                     SelectedItem="{Binding SelectedCategory}"
+                     Background="Transparent" BorderThickness="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     ScrollViewer.VerticalScrollBarVisibility="Auto"
+                     SelectionChanged="CategoryList_SelectionChanged"
+                     KeyboardNavigation.TabNavigation="None"
+                     Focusable="True">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        <Setter Property="Padding" Value="0"/>
+                        <Setter Property="Margin" Value="0"/>
+                        <Setter Property="Focusable" Value="False"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="Bd" BorderThickness="3" BorderBrush="Transparent"
+                                            CornerRadius="5" Margin="1" Background="Transparent">
+                                        <ContentPresenter/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="Bd" Property="BorderBrush" Value="Black"/>
+                                            <Setter TargetName="Bd" Property="Background" Value="#30000000"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Button Style="{StaticResource CategoryButton}"
+                                Content="{Binding Name}"
+                                Command="{Binding DataContext.SelectCategoryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                CommandParameter="{Binding}"
+                                Focusable="False"/>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
         </Border>
 
         <!-- ═══════════════════════════════════════════════════════ -->
@@ -109,140 +225,169 @@
             <!-- ── Product Cards Grid (Golden/Yellow cards) ── -->
             <Border Grid.Row="1" Background="#EEF2F6" BorderBrush="#BDBDBD" BorderThickness="1"
                     CornerRadius="2" Padding="4">
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                    <ItemsControl ItemsSource="{Binding MenuItems}">
-                        <ItemsControl.ItemsPanel>
-                            <ItemsPanelTemplate>
-                                <WrapPanel/>
-                            </ItemsPanelTemplate>
-                        </ItemsControl.ItemsPanel>
-                        <ItemsControl.ItemTemplate>
-                            <DataTemplate>
-                                <Button Margin="4" Cursor="Hand"
-                                        Command="{Binding DataContext.AddMenuItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                        CommandParameter="{Binding}"
-                                        ToolTip="{Binding Description}">
-                                    <!-- Size: regular 145x70, deals 190xAuto -->
-                                    <Button.Style>
-                                        <Style TargetType="Button">
-                                            <Setter Property="Width" Value="145"/>
-                                            <Setter Property="Height" Value="70"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
-                                                    <Setter Property="Width" Value="190"/>
-                                                    <Setter Property="Height" Value="Auto"/>
-                                                    <Setter Property="MinHeight" Value="90"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </Button.Style>
-                                    <Button.Template>
-                                        <ControlTemplate TargetType="Button">
-                                            <Border x:Name="Bd" CornerRadius="4" Padding="8,6" BorderThickness="1"
-                                                    BorderBrush="{StaticResource MenuCardBorderBrush}"
-                                                    Background="{Binding Category, Converter={StaticResource MenuCardBg}}">
-                                                <Grid>
-                                                    <Grid.ColumnDefinitions>
-                                                        <ColumnDefinition Width="Auto"/>
-                                                        <ColumnDefinition Width="*"/>
-                                                    </Grid.ColumnDefinitions>
-                                                    <Grid.RowDefinitions>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                        <RowDefinition Height="*"/>
-                                                        <RowDefinition Height="Auto"/>
-                                                    </Grid.RowDefinitions>
+                <ListBox x:Name="MenuItemList"
+                         ItemsSource="{Binding MenuItems}"
+                         SelectedItem="{Binding SelectedMenuItem}"
+                         Background="Transparent" BorderThickness="0"
+                         ScrollViewer.VerticalScrollBarVisibility="Auto"
+                         ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                         KeyboardNavigation.TabNavigation="None"
+                         Focusable="True">
+                    <ListBox.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel/>
+                        </ItemsPanelTemplate>
+                    </ListBox.ItemsPanel>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="Padding" Value="0"/>
+                            <Setter Property="Margin" Value="0"/>
+                            <Setter Property="Focusable" Value="False"/>
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="ListBoxItem">
+                                        <Border x:Name="Bd" BorderThickness="3" BorderBrush="Transparent"
+                                                CornerRadius="6" Margin="1" Background="Transparent">
+                                            <ContentPresenter/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsSelected" Value="True">
+                                                <Setter TargetName="Bd" Property="BorderBrush" Value="Black"/>
+                                                <Setter TargetName="Bd" Property="Background" Value="#20000000"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Button Margin="4" Cursor="Hand"
+                                    Command="{Binding DataContext.AddMenuItemCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                    CommandParameter="{Binding}"
+                                    ToolTip="{Binding Description}"
+                                    Focusable="False">
+                                <!-- Size: regular 145x70, deals 190xAuto -->
+                                <Button.Style>
+                                    <Style TargetType="Button">
+                                        <Setter Property="Width" Value="145"/>
+                                        <Setter Property="Height" Value="70"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
+                                                <Setter Property="Width" Value="190"/>
+                                                <Setter Property="Height" Value="Auto"/>
+                                                <Setter Property="MinHeight" Value="90"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Button.Style>
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="Bd" CornerRadius="4" Padding="8,6" BorderThickness="1"
+                                                BorderBrush="{StaticResource MenuCardBorderBrush}"
+                                                Background="{Binding Category, Converter={StaticResource MenuCardBg}}">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <Grid.RowDefinitions>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                    <RowDefinition Height="*"/>
+                                                    <RowDefinition Height="Auto"/>
+                                                </Grid.RowDefinitions>
 
-                                                    <!-- Left label: "Deal" rotated vertically (deals only) -->
-                                                    <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="4"
-                                                            Visibility="{Binding Category, Converter={StaticResource IsDealToVis}}"
-                                                            Background="#D9D9D9" CornerRadius="3" Width="22"
-                                                            Margin="0,0,8,0" VerticalAlignment="Stretch">
-                                                        <TextBlock Text="Deal" FontSize="11" FontWeight="Bold" Foreground="#333"
-                                                                   RenderTransformOrigin="0.5,0.5"
-                                                                   HorizontalAlignment="Center" VerticalAlignment="Center">
-                                                            <TextBlock.LayoutTransform>
-                                                                <RotateTransform Angle="-90"/>
-                                                            </TextBlock.LayoutTransform>
-                                                        </TextBlock>
-                                                    </Border>
-
-                                                    <!-- Icon Cart for regular items only -->
-                                                    <TextBlock x:Name="RegIcon" Grid.Column="0" Grid.Row="0" Grid.RowSpan="4"
-                                                               FontFamily="Segoe MDL2 Assets" FontSize="18"
-                                                               Text="&#xE7BF;" Foreground="#1565C0"
-                                                               VerticalAlignment="Center" Margin="0,0,6,0"/>
-
-                                                    <!-- Item name -->
-                                                    <TextBlock Grid.Column="1" Grid.Row="0"
-                                                               Text="{Binding Name}"
-                                                               FontWeight="Bold"
-                                                               TextWrapping="Wrap" TextTrimming="CharacterEllipsis">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="Foreground" Value="#333333"/>
-                                                                <Setter Property="FontSize" Value="11"/>
-                                                                <Setter Property="MaxHeight" Value="28"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
-                                                                        <Setter Property="Foreground" Value="Black"/>
-                                                                        <Setter Property="FontSize" Value="14"/>
-                                                                        <Setter Property="MaxHeight" Value="40"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
+                                                <!-- Left label: "Deal" rotated vertically (deals only) -->
+                                                <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="4"
+                                                        Visibility="{Binding Category, Converter={StaticResource IsDealToVis}}"
+                                                        Background="#D9D9D9" CornerRadius="3" Width="22"
+                                                        Margin="0,0,8,0" VerticalAlignment="Stretch">
+                                                    <TextBlock Text="Deal" FontSize="11" FontWeight="Bold" Foreground="#333"
+                                                               RenderTransformOrigin="0.5,0.5"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center">
+                                                        <TextBlock.LayoutTransform>
+                                                            <RotateTransform Angle="-90"/>
+                                                        </TextBlock.LayoutTransform>
                                                     </TextBlock>
+                                                </Border>
 
-                                                    <!-- Deal components (deals only) -->
-                                                    <TextBlock Grid.Column="1" Grid.Row="1"
-                                                               Text="{Binding Description, Converter={StaticResource DealComponents}}"
-                                                               Visibility="{Binding Category, Converter={StaticResource IsDealToVis}}"
-                                                               FontSize="12" Foreground="#333" Margin="8,3,0,2"
-                                                               TextWrapping="Wrap" LineHeight="18"/>
+                                                <!-- Icon Cart for regular items only -->
+                                                <TextBlock x:Name="RegIcon" Grid.Column="0" Grid.Row="0" Grid.RowSpan="4"
+                                                           FontFamily="Segoe MDL2 Assets" FontSize="18"
+                                                           Text="&#xE7BF;" Foreground="#1565C0"
+                                                           VerticalAlignment="Center" Margin="0,0,6,0"/>
 
-                                                    <!-- Spacer -->
-                                                    <Border Grid.Column="1" Grid.Row="2"/>
+                                                <!-- Item name -->
+                                                <TextBlock Grid.Column="1" Grid.Row="0"
+                                                           Text="{Binding Name}"
+                                                           FontWeight="Bold"
+                                                           TextWrapping="Wrap" TextTrimming="CharacterEllipsis">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#333333"/>
+                                                            <Setter Property="FontSize" Value="11"/>
+                                                            <Setter Property="MaxHeight" Value="28"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
+                                                                    <Setter Property="Foreground" Value="Black"/>
+                                                                    <Setter Property="FontSize" Value="14"/>
+                                                                    <Setter Property="MaxHeight" Value="40"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
 
-                                                    <!-- Price -->
-                                                    <TextBlock Grid.Column="1" Grid.Row="3"
-                                                               Text="{Binding BasePrice, Converter={StaticResource PaisaToCurrency}}"
-                                                               FontWeight="Bold" HorizontalAlignment="Right">
-                                                        <TextBlock.Style>
-                                                            <Style TargetType="TextBlock">
-                                                                <Setter Property="Foreground" Value="#D32F2F"/>
-                                                                <Setter Property="FontSize" Value="11"/>
-                                                                <Style.Triggers>
-                                                                    <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
-                                                                        <Setter Property="Foreground" Value="#D32F2F"/>
-                                                                        <Setter Property="FontSize" Value="14"/>
-                                                                    </DataTrigger>
-                                                                </Style.Triggers>
-                                                            </Style>
-                                                        </TextBlock.Style>
-                                                    </TextBlock>
-                                                </Grid>
-                                            </Border>
-                                            <ControlTemplate.Triggers>
-                                                <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter TargetName="Bd" Property="BorderBrush" Value="#E65100"/>
-                                                    <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
-                                                </Trigger>
-                                                <Trigger Property="IsPressed" Value="True">
-                                                    <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
-                                                </Trigger>
-                                                <!-- Hide cart icon for deals -->
-                                                <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
-                                                    <Setter TargetName="RegIcon" Property="Visibility" Value="Collapsed"/>
-                                                </DataTrigger>
-                                            </ControlTemplate.Triggers>
-                                        </ControlTemplate>
-                                    </Button.Template>
-                                </Button>
-                            </DataTemplate>
-                        </ItemsControl.ItemTemplate>
-                    </ItemsControl>
-                </ScrollViewer>
+                                                <!-- Deal components (deals only) -->
+                                                <TextBlock Grid.Column="1" Grid.Row="1"
+                                                           Text="{Binding Description, Converter={StaticResource DealComponents}}"
+                                                           Visibility="{Binding Category, Converter={StaticResource IsDealToVis}}"
+                                                           FontSize="12" Foreground="#333" Margin="8,3,0,2"
+                                                           TextWrapping="Wrap" LineHeight="18"/>
+
+                                                <!-- Spacer -->
+                                                <Border Grid.Column="1" Grid.Row="2"/>
+
+                                                <!-- Price -->
+                                                <TextBlock Grid.Column="1" Grid.Row="3"
+                                                           Text="{Binding BasePrice, Converter={StaticResource PaisaToCurrency}}"
+                                                           FontWeight="Bold" HorizontalAlignment="Right">
+                                                    <TextBlock.Style>
+                                                        <Style TargetType="TextBlock">
+                                                            <Setter Property="Foreground" Value="#D32F2F"/>
+                                                            <Setter Property="FontSize" Value="11"/>
+                                                            <Style.Triggers>
+                                                                <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
+                                                                    <Setter Property="Foreground" Value="#D32F2F"/>
+                                                                    <Setter Property="FontSize" Value="14"/>
+                                                                </DataTrigger>
+                                                            </Style.Triggers>
+                                                        </Style>
+                                                    </TextBlock.Style>
+                                                </TextBlock>
+                                            </Grid>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bd" Property="BorderBrush" Value="#E65100"/>
+                                                <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
+                                            </Trigger>
+                                            <Trigger Property="IsPressed" Value="True">
+                                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                                            </Trigger>
+                                            <!-- Hide cart icon for deals -->
+                                            <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
+                                                <Setter TargetName="RegIcon" Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
             </Border>
 
             <!-- ── Horizontal GridSplitter (drag up/down to resize) ── -->
@@ -1519,7 +1664,8 @@
             <!-- ── Order Items DataGrid ── -->
             <Border Grid.Row="1" Background="White" BorderBrush="#90CAF9" BorderThickness="1"
                     Padding="0" Margin="0,0,0,2">
-                <DataGrid ItemsSource="{Binding OrderItems}"
+                <DataGrid x:Name="OrderGrid"
+                          ItemsSource="{Binding OrderItems}"
                           SelectedItem="{Binding SelectedOrderItem}"
                           AutoGenerateColumns="False"
                           CanUserAddRows="False"
@@ -1533,7 +1679,8 @@
                           FontSize="12"
                           IsReadOnly="False"
                           VirtualizingPanel.IsVirtualizing="True"
-                          Background="White">
+                          Background="White"
+                          KeyboardNavigation.TabNavigation="None">
                     <DataGrid.ColumnHeaderStyle>
                         <Style TargetType="DataGridColumnHeader">
                             <Setter Property="Background" Value="{StaticResource GridHeaderBrush}"/>
@@ -1550,7 +1697,10 @@
                             <Setter Property="Height" Value="Auto"/>
                             <Style.Triggers>
                                 <Trigger Property="IsSelected" Value="True">
-                                    <Setter Property="Background" Value="#E3F2FD"/>
+                                    <Setter Property="Background" Value="#FFF8E1"/>
+                                    <Setter Property="FontWeight" Value="Bold"/>
+                                    <Setter Property="BorderBrush" Value="Black"/>
+                                    <Setter Property="BorderThickness" Value="3"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -1606,32 +1756,10 @@
 
                     <!-- Mobile field with auto-search popup -->
                     <Grid Grid.Row="0" Grid.Column="1">
-                        <TextBox x:Name="MobileTextBox" FontSize="12" Padding="4,3"
+                        <TextBox x:Name="MobileTextBox"
+                                 Style="{StaticResource MobileTextBoxFocus}"
                                  Text="{Binding CustomerPhone, UpdateSourceTrigger=PropertyChanged}"
-                                 BorderBrush="#999" VerticalAlignment="Center"
-                                 PreviewKeyDown="MobileTextBox_PreviewKeyDown">
-                            <TextBox.Style>
-                                <Style TargetType="TextBox">
-                                    <Setter Property="Foreground" Value="#333"/>
-                                    <Style.Triggers>
-                                        <!-- Green: dropdown has results OR exact match -->
-                                        <DataTrigger Binding="{Binding IsPhoneMatched}" Value="True">
-                                            <Setter Property="Foreground" Value="#2E7D32"/>
-                                            <Setter Property="FontWeight" Value="SemiBold"/>
-                                        </DataTrigger>
-                                        <DataTrigger Binding="{Binding IsPhoneSearchActive}" Value="True">
-                                            <Setter Property="Foreground" Value="#2E7D32"/>
-                                            <Setter Property="FontWeight" Value="SemiBold"/>
-                                        </DataTrigger>
-                                        <!-- Red: typing but no results at all -->
-                                        <DataTrigger Binding="{Binding IsPhoneNoResults}" Value="True">
-                                            <Setter Property="Foreground" Value="#D32F2F"/>
-                                            <Setter Property="FontWeight" Value="Normal"/>
-                                        </DataTrigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </TextBox.Style>
-                        </TextBox>
+                                 PreviewKeyDown="MobileTextBox_PreviewKeyDown"/>
 
                         <!-- Dropdown popup for matching customers -->
                         <Popup PlacementTarget="{Binding ElementName=MobileTextBox}"
@@ -1675,16 +1803,16 @@
                     <TextBlock Grid.Row="0" Grid.Column="2" Text="Disc(%):"
                                FontSize="11" Foreground="#333" VerticalAlignment="Center"
                                Margin="10,0,4,0"/>
-                    <TextBox Grid.Row="0" Grid.Column="3" FontSize="11" Padding="3,3"
-                             Text="{Binding DiscountPercent, UpdateSourceTrigger=PropertyChanged}"
-                             BorderBrush="#999" VerticalAlignment="Center"/>
+                    <TextBox x:Name="DiscPercentBox" Grid.Row="0" Grid.Column="3"
+                             Style="{StaticResource BillingTextBoxFocus}"
+                             Text="{Binding DiscountPercent, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <TextBlock Grid.Row="0" Grid.Column="4" Text="Disc(Rs):"
                                FontSize="11" Foreground="#333" VerticalAlignment="Center"
                                Margin="10,0,4,0"/>
-                    <TextBox Grid.Row="0" Grid.Column="5" FontSize="11" Padding="3,3"
-                             Text="{Binding DiscountRs, UpdateSourceTrigger=PropertyChanged}"
-                             BorderBrush="#999" VerticalAlignment="Center"/>
+                    <TextBox x:Name="DiscRsBox" Grid.Row="0" Grid.Column="5"
+                             Style="{StaticResource BillingTextBoxFocus}"
+                             Text="{Binding DiscountRs, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <TextBlock Grid.Row="0" Grid.Column="6" Text="After Disc:"
                                FontSize="11" Foreground="#333" VerticalAlignment="Center"
@@ -1698,24 +1826,41 @@
                     <TextBlock Grid.Row="2" Grid.Column="0" Text="Comment:"
                                FontSize="12" Foreground="#333" VerticalAlignment="Top"
                                Margin="0,4,6,0"/>
-                    <TextBox Grid.Row="2" Grid.Column="1" Height="42" FontSize="11" Padding="4,3"
+                    <TextBox x:Name="CommentBox" Grid.Row="2" Grid.Column="1" Height="42"
                              Text="{Binding CommentText, UpdateSourceTrigger=PropertyChanged}"
-                             TextWrapping="Wrap" AcceptsReturn="True" BorderBrush="#999"
-                             VerticalScrollBarVisibility="Auto" VerticalAlignment="Top"/>
+                             TextWrapping="Wrap" AcceptsReturn="True"
+                             VerticalScrollBarVisibility="Auto" VerticalAlignment="Top">
+                        <TextBox.Style>
+                            <Style TargetType="TextBox">
+                                <Setter Property="FontSize" Value="11"/>
+                                <Setter Property="Padding" Value="4,3"/>
+                                <Setter Property="BorderBrush" Value="#999"/>
+                                <Setter Property="BorderThickness" Value="1"/>
+                                <Style.Triggers>
+                                    <Trigger Property="IsFocused" Value="True">
+                                        <Setter Property="BorderBrush" Value="Black"/>
+                                        <Setter Property="BorderThickness" Value="3"/>
+                                        <Setter Property="FontWeight" Value="Bold"/>
+                                        <Setter Property="Background" Value="#FFF8E1"/>
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </TextBox.Style>
+                    </TextBox>
 
                     <TextBlock Grid.Row="2" Grid.Column="2" Text="GST(%):"
                                FontSize="11" Foreground="#333" VerticalAlignment="Center"
                                Margin="10,0,4,0"/>
-                    <TextBox Grid.Row="2" Grid.Column="3" FontSize="11" Padding="3,3"
-                             Text="{Binding TaxPercent, UpdateSourceTrigger=PropertyChanged}"
-                             BorderBrush="#999" VerticalAlignment="Center"/>
+                    <TextBox x:Name="TaxPercentBox" Grid.Row="2" Grid.Column="3"
+                             Style="{StaticResource BillingTextBoxFocus}"
+                             Text="{Binding TaxPercent, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <TextBlock Grid.Row="2" Grid.Column="4" Text="GST(Rs):"
                                FontSize="11" Foreground="#333" VerticalAlignment="Center"
                                Margin="10,0,4,0"/>
-                    <TextBox Grid.Row="2" Grid.Column="5" FontSize="11" Padding="3,3"
-                             Text="{Binding GstRs, UpdateSourceTrigger=PropertyChanged}"
-                             BorderBrush="#999" VerticalAlignment="Center"/>
+                    <TextBox x:Name="GstRsBox" Grid.Row="2" Grid.Column="5"
+                             Style="{StaticResource BillingTextBoxFocus}"
+                             Text="{Binding GstRs, UpdateSourceTrigger=PropertyChanged}"/>
 
                     <TextBlock Grid.Row="2" Grid.Column="6" Text="After GST:"
                                FontSize="11" Foreground="#333" VerticalAlignment="Center"
@@ -1813,10 +1958,9 @@
                                    Foreground="#333" VerticalAlignment="Center" Margin="0,0,8,0"/>
                         <Border BorderBrush="#90CAF9" BorderThickness="2" CornerRadius="2"
                                 Background="White" MinWidth="120">
-                            <TextBox FontSize="16" FontWeight="Bold" BorderThickness="0"
-                                     Foreground="#333" Padding="6,3"
-                                     Text="{Binding CashTendered, Converter={StaticResource PaisaToDecimal}, ConverterParameter=BlankIfZero, UpdateSourceTrigger=PropertyChanged}"
-                                     VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+                            <TextBox x:Name="PayBox"
+                                     Style="{StaticResource PayTextBoxFocus}"
+                                     Text="{Binding CashTendered, Converter={StaticResource PaisaToDecimal}, ConverterParameter=BlankIfZero, UpdateSourceTrigger=PropertyChanged}"/>
                         </Border>
                     </StackPanel>
 
@@ -1843,12 +1987,13 @@
                             Height="38" FontSize="12" Margin="0,0,0,0"
                             Command="{Binding UnPaidBillCommand}"/>
 
-                    <Button Grid.Row="4" Grid.Column="2"
+                    <Button x:Name="CheckoutBtn" Grid.Row="4" Grid.Column="2"
                             Content="Checkout" Style="{StaticResource CheckoutButton}"
                             Height="38" FontSize="16"
                             Command="{Binding CheckoutCommand}"/>
                 </Grid>
             </Border>
+        </Grid>
         </Grid>
     </Grid>
 </UserControl>

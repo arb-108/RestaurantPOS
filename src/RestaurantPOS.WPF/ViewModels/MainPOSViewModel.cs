@@ -161,6 +161,9 @@ public partial class MainPOSViewModel : BaseViewModel
     public ObservableCollection<MenuItem> MenuItems { get; } = [];
 
     [ObservableProperty]
+    private MenuItem? _selectedMenuItem;
+
+    [ObservableProperty]
     private string _searchText = string.Empty;
 
     // Order Items (current active order)
