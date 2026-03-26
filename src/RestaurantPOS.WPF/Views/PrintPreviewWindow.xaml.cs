@@ -53,6 +53,7 @@ public partial class PrintPreviewWindow : Window
         }
 
         PageInfo.Text = "Page 1 of 1";
+        SetupKeyboardNavigation();
     }
 
     /// <summary>
@@ -83,6 +84,39 @@ public partial class PrintPreviewWindow : Window
         // Show page nav arrows
         PageNavPanel.Visibility = Visibility.Visible;
         PageInfo.Text = $"Page 1 of {_totalPages}";
+        SetupKeyboardNavigation();
+    }
+
+    // ══════════════════════════════════════════════
+    //  KEYBOARD NAVIGATION
+    // ══════════════════════════════════════════════
+
+    private void SetupKeyboardNavigation()
+    {
+        // Auto-focus Print button when window loads
+        Loaded += (_, _) =>
+        {
+            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, () =>
+            {
+                BtnPrint.Focus();
+            });
+        };
+
+        // Enter = print + close, Escape = close
+        PreviewKeyDown += (_, e) =>
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                Print_Click(this, new RoutedEventArgs());
+                Close();
+                e.Handled = true;
+            }
+            else if (e.Key == System.Windows.Input.Key.Escape)
+            {
+                Close();
+                e.Handled = true;
+            }
+        };
     }
 
     // ══════════════════════════════════════════════

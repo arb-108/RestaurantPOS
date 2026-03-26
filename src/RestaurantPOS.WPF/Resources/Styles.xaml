@@ -261,7 +261,7 @@
                         </Trigger>
                         <Trigger Property="IsFocused" Value="True">
                             <Setter TargetName="Bd" Property="BorderBrush" Value="Black"/>
-                            <Setter TargetName="Bd" Property="BorderThickness" Value="3"/>
+                            <Setter TargetName="Bd" Property="BorderThickness" Value="1"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

@@ -12,7 +12,7 @@ namespace RestaurantPOS.WPF.Views;
 public partial class MainPOSView : UserControl
 {
     // ── Navigation zones for keyboard-driven POS workflow ──
-    private enum PosZone { Categories, MenuItems, OrderGrid, BillingFields }
+    private enum PosZone { Categories, MenuItems, Tables, OrderGrid, BillingFields }
 
     private PosZone _currentZone = PosZone.Categories;
 
@@ -30,10 +30,13 @@ public partial class MainPOSView : UserControl
         MenuItemList.PreviewMouseLeftButtonDown += (_, _) => SetZone(PosZone.MenuItems);
         OrderGrid.PreviewMouseLeftButtonDown += (_, _) => SetZone(PosZone.OrderGrid);
 
-        // Detect when billing fields get focus (mouse click or tab)
+        // Detect when zones get focus (mouse click or tab)
         CategoryList.GotFocus += (_, _) => { _currentZone = PosZone.Categories; UpdateZoneIndicator(); };
         MenuItemList.GotFocus += (_, _) => { _currentZone = PosZone.MenuItems; UpdateZoneIndicator(); };
         OrderGrid.GotFocus += (_, _) => { _currentZone = PosZone.OrderGrid; UpdateZoneIndicator(); };
+        KBillBtn.GotFocus += (_, _) => { _currentZone = PosZone.BillingFields; UpdateZoneIndicator(); };
+        BillPrintBtn.GotFocus += (_, _) => { _currentZone = PosZone.BillingFields; UpdateZoneIndicator(); };
+        CheckoutBtn.GotFocus += (_, _) => { _currentZone = PosZone.BillingFields; UpdateZoneIndicator(); };
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -66,8 +69,8 @@ public partial class MainPOSView : UserControl
         if (e.Key >= Key.F1 && e.Key <= Key.F12)
             return;
 
-        // If a TextBox in the billing section has focus, handle Enter/Tab/Escape specially
-        if (IsBillingFieldFocused())
+        // If a TextBox or Button in the billing section has focus, handle Enter/Tab/Escape specially
+        if (IsBillingFieldFocused() || IsBillingButtonFocused())
         {
             HandleBillingKeys(e);
             return;
@@ -118,6 +121,9 @@ public partial class MainPOSView : UserControl
                 break;
             case PosZone.MenuItems:
                 HandleMenuItemKeys(e);
+                break;
+            case PosZone.Tables:
+                HandleTableKeys(e);
                 break;
             case PosZone.OrderGrid:
                 HandleOrderGridKeys(e);
@@ -194,8 +200,15 @@ public partial class MainPOSView : UserControl
                 break;
 
             case Key.Down:
-                idx = idx + cols < count ? idx + cols : idx;
-                SelectMenuItem(idx);
+                if (idx + cols < count)
+                {
+                    SelectMenuItem(idx + cols);
+                }
+                else
+                {
+                    // At bottom row, go to Tables zone
+                    SetZone(PosZone.Tables);
+                }
                 e.Handled = true;
                 break;
 
@@ -331,27 +344,72 @@ public partial class MainPOSView : UserControl
             if (focused != null)
             {
                 int idx = Array.IndexOf(_billingFields, focused);
-                if (idx >= 0 && idx < _billingFields.Length - 1)
+                if (idx >= 0)
                 {
-                    var next = _billingFields[idx + 1];
-                    if (next == CommentBox)
-                        next = _billingFields[idx + 2];
-                    next.Focus();
-                    next.SelectAll();
-                    e.Handled = true;
-                }
-                else if (idx == _billingFields.Length - 1)
-                {
-                    CheckoutBtn.Focus();
-                    e.Handled = true;
+                    // GstRsBox is last billing field before buttons
+                    if (focused == GstRsBox)
+                    {
+                        // GstRs → K-Bill button
+                        KBillBtn.Focus();
+                        e.Handled = true;
+                    }
+                    else if (focused == PayBox)
+                    {
+                        // Pay → Checkout
+                        CheckoutBtn.Focus();
+                        e.Handled = true;
+                    }
+                    else if (idx < _billingFields.Length - 1)
+                    {
+                        var next = _billingFields[idx + 1];
+                        if (next == CommentBox)
+                            next = _billingFields[idx + 2];
+                        next.Focus();
+                        next.SelectAll();
+                        e.Handled = true;
+                    }
                 }
             }
-            else if (Keyboard.FocusedElement is Button btn && btn == CheckoutBtn)
+            else if (Keyboard.FocusedElement is Button btn)
             {
-                if (DataContext is MainPOSViewModel vm && vm.CheckoutCommand.CanExecute(null))
-                    _ = vm.CheckoutCommand.ExecuteAsync(null);
-                e.Handled = true;
+                if (btn == KBillBtn)
+                {
+                    // K-Bill → execute command (opens print preview), then focus BillPrintBtn
+                    if (DataContext is MainPOSViewModel vm && vm.KBillCommand.CanExecute(null))
+                        _ = vm.KBillCommand.ExecuteAsync(null);
+                    // After preview closes, focus BillPrintBtn
+                    Dispatcher.BeginInvoke(DispatcherPriority.Input, () => BillPrintBtn.Focus());
+                    e.Handled = true;
+                }
+                else if (btn == BillPrintBtn)
+                {
+                    // BillPrint → execute command (opens print preview), then focus PayBox
+                    if (DataContext is MainPOSViewModel vm && vm.BillPrintCommand.CanExecute(null))
+                        _ = vm.BillPrintCommand.ExecuteAsync(null);
+                    // After preview closes, focus PayBox
+                    Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+                    {
+                        PayBox.Focus();
+                        PayBox.SelectAll();
+                    });
+                    e.Handled = true;
+                }
+                else if (btn == CheckoutBtn)
+                {
+                    if (DataContext is MainPOSViewModel vm && vm.CheckoutCommand.CanExecute(null))
+                        _ = vm.CheckoutCommand.ExecuteAsync(null);
+                    e.Handled = true;
+                }
             }
+            return;
+        }
+
+        // Down from BillPrintBtn → PayBox
+        if (e.Key == Key.Down && Keyboard.FocusedElement is Button downBtn && downBtn == BillPrintBtn)
+        {
+            PayBox.Focus();
+            PayBox.SelectAll();
+            e.Handled = true;
             return;
         }
 
@@ -367,6 +425,112 @@ public partial class MainPOSView : UserControl
             SetZone(PosZone.OrderGrid);
             e.Handled = true;
         }
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    //  ZONE: Tables (Up/Enter→MenuItems)
+    // ═══════════════════════════════════════════════════════════
+    private void HandleTableKeys(KeyEventArgs e)
+    {
+        switch (e.Key)
+        {
+            case Key.Up:
+                SetZone(PosZone.MenuItems);
+                e.Handled = true;
+                break;
+
+            case Key.Enter:
+                // Let the focused table button execute its command, then go to MenuItems
+                if (Keyboard.FocusedElement is Button btn)
+                {
+                    // The button's Command will fire via normal WPF routing
+                    // After that, jump back to MenuItems
+                    Dispatcher.BeginInvoke(DispatcherPriority.Input, () => SetZone(PosZone.MenuItems));
+                }
+                else
+                {
+                    SetZone(PosZone.MenuItems);
+                }
+                e.Handled = true;
+                break;
+
+            case Key.Left:
+                // Navigate between table buttons
+                FocusPreviousTableButton();
+                e.Handled = true;
+                break;
+
+            case Key.Right:
+                FocusNextTableButton();
+                e.Handled = true;
+                break;
+
+            case Key.Down:
+                SetZone(PosZone.OrderGrid);
+                e.Handled = true;
+                break;
+        }
+    }
+
+    private void FocusNextTableButton()
+    {
+        var buttons = GetTableButtons();
+        int idx = GetFocusedTableButtonIndex(buttons);
+        if (idx < buttons.Count - 1)
+            buttons[idx + 1].Focus();
+        else if (buttons.Count > 0)
+            buttons[0].Focus();
+    }
+
+    private void FocusPreviousTableButton()
+    {
+        var buttons = GetTableButtons();
+        int idx = GetFocusedTableButtonIndex(buttons);
+        if (idx > 0)
+            buttons[idx - 1].Focus();
+        else if (buttons.Count > 0)
+            buttons[buttons.Count - 1].Focus();
+    }
+
+    private List<Button> GetTableButtons()
+    {
+        var buttons = new List<Button>();
+        foreach (var child in TableWrapPanel.Children)
+        {
+            if (child is Button btn)
+                buttons.Add(btn);
+            else if (child is System.Windows.Controls.ItemsControl ic)
+            {
+                for (int i = 0; i < ic.Items.Count; i++)
+                {
+                    if (ic.ItemContainerGenerator.ContainerFromIndex(i) is ContentPresenter cp)
+                    {
+                        var btn2 = FindVisualChild<Button>(cp);
+                        if (btn2 != null) buttons.Add(btn2);
+                    }
+                }
+            }
+        }
+        return buttons;
+    }
+
+    private int GetFocusedTableButtonIndex(List<Button> buttons)
+    {
+        var focused = Keyboard.FocusedElement as Button;
+        if (focused == null) return -1;
+        return buttons.IndexOf(focused);
+    }
+
+    private static T? FindVisualChild<T>(DependencyObject parent) where T : DependencyObject
+    {
+        for (int i = 0; i < VisualTreeHelper.GetChildrenCount(parent); i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is T t) return t;
+            var result = FindVisualChild<T>(child);
+            if (result != null) return result;
+        }
+        return null;
     }
 
     // ═══════════════════════════════════════════════════════════
@@ -393,6 +557,14 @@ public partial class MainPOSView : UserControl
                         SelectMenuItem(0);
                     MenuItemList.Focus();
                     ScrollMenuItemIntoView();
+                    break;
+
+                case PosZone.Tables:
+                    // Switch to Order On tab (index 0) and focus first table button
+                    OrderTabControl.SelectedIndex = 0;
+                    var tableButtons = GetTableButtons();
+                    if (tableButtons.Count > 0)
+                        tableButtons[0].Focus();
                     break;
 
                 case PosZone.OrderGrid:
@@ -427,7 +599,8 @@ public partial class MainPOSView : UserControl
         var next = _currentZone switch
         {
             PosZone.Categories => PosZone.MenuItems,
-            PosZone.MenuItems => PosZone.OrderGrid,
+            PosZone.MenuItems => PosZone.Tables,
+            PosZone.Tables => PosZone.OrderGrid,
             PosZone.OrderGrid => PosZone.BillingFields,
             PosZone.BillingFields => PosZone.Categories,
             _ => PosZone.Categories
@@ -441,7 +614,8 @@ public partial class MainPOSView : UserControl
         {
             PosZone.Categories => PosZone.BillingFields,
             PosZone.MenuItems => PosZone.Categories,
-            PosZone.OrderGrid => PosZone.MenuItems,
+            PosZone.Tables => PosZone.MenuItems,
+            PosZone.OrderGrid => PosZone.Tables,
             PosZone.BillingFields => PosZone.OrderGrid,
             _ => PosZone.Categories
         };
@@ -454,6 +628,7 @@ public partial class MainPOSView : UserControl
         {
             PosZone.Categories => "[Categories]",
             PosZone.MenuItems => "[Menu Items]",
+            PosZone.Tables => "[Tables]",
             PosZone.OrderGrid => "[Order Items]",
             PosZone.BillingFields => "[Billing]",
             _ => ""
@@ -493,6 +668,12 @@ public partial class MainPOSView : UserControl
     {
         if (Keyboard.FocusedElement is not TextBox focused) return false;
         return Array.IndexOf(_billingFields, focused) >= 0;
+    }
+
+    private bool IsBillingButtonFocused()
+    {
+        if (Keyboard.FocusedElement is not Button btn) return false;
+        return btn == KBillBtn || btn == BillPrintBtn || btn == CheckoutBtn;
     }
 
     private bool IsOrderGridEditing()

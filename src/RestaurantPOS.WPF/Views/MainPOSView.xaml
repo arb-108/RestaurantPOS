@@ -32,7 +32,7 @@
             <Style.Triggers>
                 <Trigger Property="IsFocused" Value="True">
                     <Setter Property="BorderBrush" Value="Black"/>
-                    <Setter Property="BorderThickness" Value="3"/>
+                    <Setter Property="BorderThickness" Value="1"/>
                     <Setter Property="FontWeight" Value="Bold"/>
                     <Setter Property="Background" Value="#FFF8E1"/>
                 </Trigger>
@@ -51,7 +51,7 @@
             <Style.Triggers>
                 <Trigger Property="IsFocused" Value="True">
                     <Setter Property="BorderBrush" Value="Black"/>
-                    <Setter Property="BorderThickness" Value="3"/>
+                    <Setter Property="BorderThickness" Value="1"/>
                     <Setter Property="Background" Value="#FFF8E1"/>
                 </Trigger>
             </Style.Triggers>
@@ -78,7 +78,7 @@
                 </DataTrigger>
                 <Trigger Property="IsFocused" Value="True">
                     <Setter Property="BorderBrush" Value="Black"/>
-                    <Setter Property="BorderThickness" Value="3"/>
+                    <Setter Property="BorderThickness" Value="1"/>
                     <Setter Property="FontWeight" Value="Bold"/>
                     <Setter Property="Background" Value="#FFF8E1"/>
                 </Trigger>
@@ -151,7 +151,7 @@
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="ListBoxItem">
-                                    <Border x:Name="Bd" BorderThickness="3" BorderBrush="Transparent"
+                                    <Border x:Name="Bd" BorderThickness="1" BorderBrush="Transparent"
                                             CornerRadius="5" Margin="1" Background="Transparent">
                                         <ContentPresenter/>
                                     </Border>
@@ -246,7 +246,7 @@
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="ListBoxItem">
-                                        <Border x:Name="Bd" BorderThickness="3" BorderBrush="Transparent"
+                                        <Border x:Name="Bd" BorderThickness="1" BorderBrush="Transparent"
                                                 CornerRadius="6" Margin="1" Background="Transparent">
                                             <ContentPresenter/>
                                         </Border>
@@ -399,7 +399,7 @@
             <!-- ══════════════════════════════════════════════════════════ -->
             <!-- TabControl: Order On / Hold / Billing (Exact Image Match) -->
             <!-- ══════════════════════════════════════════════════════════ -->
-            <TabControl Grid.Row="3" Margin="0,4,0,2" Background="Transparent"
+            <TabControl x:Name="OrderTabControl" Grid.Row="3" Margin="0,4,0,2" Background="Transparent"
                         BorderBrush="#B0B8BF" BorderThickness="0,1,0,1"
                         Padding="0">
                 <TabControl.Resources>
@@ -458,7 +458,7 @@
                 <TabItem Header="Order On">
                     <Border Background="#D5D9DD" Padding="4">
                         <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-                            <WrapPanel>
+                            <WrapPanel x:Name="TableWrapPanel">
                                 <!-- Delivery Button -->
                                 <Button Style="{StaticResource DeliveryButton}" Width="155" Margin="3"
                                         Command="{Binding SetOrderTypeCommand}" CommandParameter="Delivery">
@@ -1700,7 +1700,7 @@
                                     <Setter Property="Background" Value="#FFF8E1"/>
                                     <Setter Property="FontWeight" Value="Bold"/>
                                     <Setter Property="BorderBrush" Value="Black"/>
-                                    <Setter Property="BorderThickness" Value="3"/>
+                                    <Setter Property="BorderThickness" Value="1"/>
                                 </Trigger>
                             </Style.Triggers>
                         </Style>
@@ -1839,7 +1839,7 @@
                                 <Style.Triggers>
                                     <Trigger Property="IsFocused" Value="True">
                                         <Setter Property="BorderBrush" Value="Black"/>
-                                        <Setter Property="BorderThickness" Value="3"/>
+                                        <Setter Property="BorderThickness" Value="1"/>
                                         <Setter Property="FontWeight" Value="Bold"/>
                                         <Setter Property="Background" Value="#FFF8E1"/>
                                     </Trigger>
@@ -1917,14 +1917,14 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Content="K-Bill" Style="{StaticResource KBillButton}"
+                        <Button x:Name="KBillBtn" Grid.Column="0" Content="K-Bill" Style="{StaticResource KBillButton}"
                                 Height="36" Margin="0,0,4,0"
                                 Command="{Binding KBillCommand}"/>
                         <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="0,0,4,0">
                             <CheckBox Content="K-Full" FontSize="10" IsChecked="{Binding IsKFull}" Margin="0,0,0,1"/>
                             <CheckBox Content="K-Bill" FontSize="10" IsChecked="{Binding IsKBill}"/>
                         </StackPanel>
-                        <Button Grid.Column="2" Content="Bill Print"
+                        <Button x:Name="BillPrintBtn" Grid.Column="2" Content="Bill Print"
                                 Style="{StaticResource BillPrintButton}" Height="36"
                                 Command="{Binding BillPrintCommand}"/>
                     </Grid>
