@@ -102,6 +102,9 @@ public class SavedOrderState
     // ── K-Slip tracking ──
     public bool KSlipPrinted { get; set; }
 
+    // ── Matched customer reference (for restoring _matchedCustomer) ──
+    public Customer? MatchedCustomer { get; set; }
+
     /// <summary>Unique key for this order in the state dictionary.</summary>
     public string Key => OrderType == OrderType.DineIn
         ? $"table-{TableId}"
@@ -568,7 +571,8 @@ public partial class MainPOSViewModel : BaseViewModel
             IsSettled = prev?.IsSettled ?? false,
             DispatchedAt = prev?.DispatchedAt,
             CompletedAt = prev?.CompletedAt,
-            KSlipPrinted = prev?.KSlipPrinted ?? false
+            KSlipPrinted = prev?.KSlipPrinted ?? false,
+            MatchedCustomer = _matchedCustomer
         };
 
         // Deep copy order items
@@ -608,8 +612,12 @@ public partial class MainPOSViewModel : BaseViewModel
         TaxPercent = state.TaxPercent;
         GstRs = state.GstRs;
         CashTendered = state.CashTendered;
+        _matchedCustomer = state.MatchedCustomer;
         CustomerPhone = state.CustomerPhone;
         CustomerName = state.CustomerName;
+        IsPhoneMatched = _matchedCustomer != null;
+        IsPhoneSearchActive = false;
+        IsPhoneNoResults = false;
         CommentText = state.CommentText;
         IsCash = state.IsCash;
         IsCardCredit = state.IsCardCredit;
@@ -1408,6 +1416,16 @@ public partial class MainPOSViewModel : BaseViewModel
     private async Task IncrementQuantityAsync()
     {
         if (SelectedOrderItem == null) return;
+
+        // Block quantity change on kitchen-printed items
+        if (SelectedOrderItem.KitchenPrinted)
+        {
+            System.Windows.MessageBox.Show(
+                "Cannot change quantity after Kitchen Slip has been printed.\nAdd a new item instead, or use 'K-Bill' to send additions.",
+                "Locked", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
         SelectedOrderItem.Quantity++;
         await _orderService.UpdateItemQuantityAsync(SelectedOrderItem.OrderItemId, SelectedOrderItem.Quantity);
         RecalculateTotals();
@@ -1418,6 +1436,16 @@ public partial class MainPOSViewModel : BaseViewModel
     private async Task DecrementQuantityAsync()
     {
         if (SelectedOrderItem == null) return;
+
+        // Block quantity change / removal on kitchen-printed items
+        if (SelectedOrderItem.KitchenPrinted)
+        {
+            System.Windows.MessageBox.Show(
+                "Cannot modify items after Kitchen Slip has been printed.\nUse 'Un-Paid Bill' to void the order.",
+                "Locked", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
         if (SelectedOrderItem.Quantity <= 1)
         {
             await _orderService.RemoveItemFromOrderAsync(SelectedOrderItem.OrderItemId, null);
@@ -1430,18 +1458,40 @@ public partial class MainPOSViewModel : BaseViewModel
             await _orderService.UpdateItemQuantityAsync(SelectedOrderItem.OrderItemId, SelectedOrderItem.Quantity);
         }
         RecalculateTotals();
-        SaveCurrentOrderState();
+
+        if (OrderItems.Count == 0)
+            CleanupEmptyOrder();
+        else
+            SaveCurrentOrderState();
+
+        RefreshHoldOrders();
     }
 
     [RelayCommand]
     private async Task RemoveItemAsync()
     {
         if (SelectedOrderItem == null) return;
+
+        // Block removal of kitchen-printed items
+        if (SelectedOrderItem.KitchenPrinted)
+        {
+            System.Windows.MessageBox.Show(
+                "Cannot delete items after Kitchen Slip has been printed.\nUse 'Un-Paid Bill' to void the order.",
+                "Locked", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
         await _orderService.RemoveItemFromOrderAsync(SelectedOrderItem.OrderItemId, "Removed by user");
         OrderItems.Remove(SelectedOrderItem);
         RenumberItems();
         RecalculateTotals();
-        SaveCurrentOrderState();
+
+        if (OrderItems.Count == 0)
+            CleanupEmptyOrder();
+        else
+            SaveCurrentOrderState();
+
+        RefreshHoldOrders();
     }
 
     [RelayCommand]
@@ -1451,6 +1501,32 @@ public partial class MainPOSViewModel : BaseViewModel
         {
             await RemoveItemAsync();
         }
+    }
+
+    /// <summary>
+    /// Remove order from state store and reset table when cart becomes empty.
+    /// </summary>
+    private void CleanupEmptyOrder()
+    {
+        if (SelectedTable != null)
+        {
+            var key = $"table-{SelectedTable.Id}";
+            _orderStates.Remove(key);
+            SelectedTable.Status = TableStatus.Available;
+            var tbl = SelectedTable;
+            SelectedTable = null;
+            RefreshTableInList(tbl);
+        }
+        else if (!string.IsNullOrEmpty(OrderNumber))
+        {
+            var key = $"{SelectedOrderType}-{OrderNumber}";
+            _orderStates.Remove(key);
+        }
+
+        ClearBillingSection();
+        SelectedOrderType = OrderType.DineIn;
+        OnPropertyChanged(nameof(OrderTypeDisplay));
+        OnPropertyChanged(nameof(TableDisplay));
     }
 
     private void RenumberItems()
@@ -1587,6 +1663,12 @@ public partial class MainPOSViewModel : BaseViewModel
         IsBusy = true;
         try
         {
+            // Link customer to order for ALL order types (so it shows in Customer Management)
+            if (_matchedCustomer != null)
+            {
+                await _orderService.UpdateOrderNotesAsync(_currentOrder.Id, null, _matchedCustomer.Id);
+            }
+
             // For delivery orders, save delivery info to Order.Notes before checkout
             if (SelectedOrderType == OrderType.Delivery)
             {
@@ -1822,11 +1904,15 @@ public partial class MainPOSViewModel : BaseViewModel
     /// </summary>
     partial void OnCustomerNameChanged(string value)
     {
-        // When customer name changes (e.g. from phone lookup), refresh delivery cards
-        if (SelectedOrderType == OrderType.Delivery && _currentOrder != null)
+        // When customer name changes (e.g. from phone lookup), save state and refresh
+        if (_currentOrder != null)
         {
             SaveCurrentOrderState();
-            RefreshDeliveryOrders();
+            RefreshHoldOrders();
+            if (SelectedOrderType == OrderType.Delivery)
+                RefreshDeliveryOrders();
+            else if (SelectedOrderType == OrderType.TakeAway)
+                RefreshTakeawayOrders();
         }
     }
 

@@ -755,7 +755,17 @@ public partial class MainPOSView : UserControl
     {
         if (e.Key == Key.Enter && DataContext is MainPOSViewModel vm)
         {
-            if (vm.IsPhoneMatched)
+            // DineIn: Enter always goes directly to Disc (phone is optional)
+            if (vm.SelectedOrderType == Domain.Enums.OrderType.DineIn)
+            {
+                // If phone is entered and matched, close dropdown first
+                if (vm.IsPhoneMatched)
+                    await vm.PhoneEnterPressedCommand.ExecuteAsync(null);
+
+                DiscPercentBox.Focus();
+                DiscPercentBox.SelectAll();
+            }
+            else if (vm.IsPhoneMatched)
             {
                 // Green = matched → close dropdown and advance to Disc field
                 await vm.PhoneEnterPressedCommand.ExecuteAsync(null);
