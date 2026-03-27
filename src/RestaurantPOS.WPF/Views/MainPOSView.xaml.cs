@@ -69,6 +69,24 @@ public partial class MainPOSView : UserControl
         if (e.Key >= Key.F1 && e.Key <= Key.F12)
             return;
 
+        // Ctrl+Tab → jump to first category
+        if (e.Key == Key.Tab && (Keyboard.Modifiers & ModifierKeys.Control) != 0)
+        {
+            SelectCategory(0);
+            SetZone(PosZone.Categories);
+            e.Handled = true;
+            return;
+        }
+
+        // F key → focus search product field (only when not typing in a TextBox)
+        if (e.Key == Key.F && Keyboard.FocusedElement is not TextBox)
+        {
+            SearchProductBox.Focus();
+            SearchProductBox.SelectAll();
+            e.Handled = true;
+            return;
+        }
+
         // If a TextBox or Button in the billing section has focus, handle Enter/Tab/Escape specially
         if (IsBillingFieldFocused() || IsBillingButtonFocused())
         {
@@ -440,17 +458,12 @@ public partial class MainPOSView : UserControl
                 break;
 
             case Key.Enter:
-                // Let the focused table button execute its command, then go to MenuItems
-                if (Keyboard.FocusedElement is Button btn)
+                // Execute the table button's command, then go to MenuItems
+                if (Keyboard.FocusedElement is Button btn && btn.Command != null && btn.Command.CanExecute(btn.CommandParameter))
                 {
-                    // The button's Command will fire via normal WPF routing
-                    // After that, jump back to MenuItems
-                    Dispatcher.BeginInvoke(DispatcherPriority.Input, () => SetZone(PosZone.MenuItems));
+                    btn.Command.Execute(btn.CommandParameter);
                 }
-                else
-                {
-                    SetZone(PosZone.MenuItems);
-                }
+                Dispatcher.BeginInvoke(DispatcherPriority.Input, () => SetZone(PosZone.MenuItems));
                 e.Handled = true;
                 break;
 
@@ -706,17 +719,39 @@ public partial class MainPOSView : UserControl
     {
         if (e.Key == Key.Enter && DataContext is MainPOSViewModel vm)
         {
-            int idx = Array.IndexOf(_billingFields, MobileTextBox);
-            if (idx >= 0 && idx < _billingFields.Length - 1)
+            if (vm.IsPhoneMatched)
             {
+                // Green = matched → close dropdown and advance to Disc field
                 await vm.PhoneEnterPressedCommand.ExecuteAsync(null);
-                var next = _billingFields[idx + 1];
-                next.Focus();
-                next.SelectAll();
+                DiscPercentBox.Focus();
+                DiscPercentBox.SelectAll();
             }
             else
             {
+                // Not matched → opens AddCustomer form (handled by command)
                 await vm.PhoneEnterPressedCommand.ExecuteAsync(null);
+                // After add customer dialog closes, if now matched, advance to Disc
+                if (vm.IsPhoneMatched)
+                {
+                    DiscPercentBox.Focus();
+                    DiscPercentBox.SelectAll();
+                }
+            }
+            e.Handled = true;
+        }
+        else if (e.Key == Key.Up)
+        {
+            // Up from Mobile → last row of DataGrid
+            var vmUp = DataContext as MainPOSViewModel;
+            if (vmUp != null && vmUp.OrderItems.Count > 0)
+            {
+                OrderGrid.SelectedIndex = vmUp.OrderItems.Count - 1;
+                OrderGrid.ScrollIntoView(OrderGrid.SelectedItem);
+                SetZone(PosZone.OrderGrid);
+            }
+            else
+            {
+                SetZone(PosZone.MenuItems);
             }
             e.Handled = true;
         }

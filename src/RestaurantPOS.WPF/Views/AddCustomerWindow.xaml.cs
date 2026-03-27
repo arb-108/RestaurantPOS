@@ -1,4 +1,6 @@
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Input;
 
 namespace RestaurantPOS.WPF.Views;
 
@@ -9,13 +11,54 @@ public partial class AddCustomerWindow : Window
     public string CustomerEmail => TxtEmail.Text.Trim();
     public string CustomerAddress => TxtAddress.Text.Trim();
 
+    private TextBox[] _fields = [];
+
     public AddCustomerWindow(string prefillPhone = "")
     {
         InitializeComponent();
         TxtMobile.Text = prefillPhone;
 
+        _fields = [TxtName, TxtMobile, TxtEmail, TxtAddress];
+
         // Focus name field on load
         Loaded += (_, _) => TxtName.Focus();
+
+        // Enter advances between fields, last field → Save button
+        PreviewKeyDown += OnFormKeyDown;
+    }
+
+    private void OnFormKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.Enter)
+        {
+            if (Keyboard.FocusedElement is TextBox focused)
+            {
+                int idx = System.Array.IndexOf(_fields, focused);
+                if (idx >= 0 && idx < _fields.Length - 1)
+                {
+                    // Advance to next field
+                    _fields[idx + 1].Focus();
+                    _fields[idx + 1].SelectAll();
+                    e.Handled = true;
+                }
+                else if (idx == _fields.Length - 1)
+                {
+                    // Last field (Address) → focus Save button
+                    BtnSave.Focus();
+                    e.Handled = true;
+                }
+            }
+            else if (Keyboard.FocusedElement is Button btn && btn == BtnSave)
+            {
+                Save_Click(this, new RoutedEventArgs());
+                e.Handled = true;
+            }
+        }
+        else if (e.Key == Key.Escape)
+        {
+            Cancel_Click(this, new RoutedEventArgs());
+            e.Handled = true;
+        }
     }
 
     private void Save_Click(object sender, RoutedEventArgs e)

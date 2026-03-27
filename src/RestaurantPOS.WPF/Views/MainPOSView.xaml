@@ -108,7 +108,9 @@
                 <TextBlock Text="Enter Select/Add" FontSize="10" Foreground="#B0BEC5" Margin="0,0,10,0" VerticalAlignment="Center"/>
                 <TextBlock Text="Esc Back" FontSize="10" Foreground="#B0BEC5" Margin="0,0,10,0" VerticalAlignment="Center"/>
                 <TextBlock Text="F1 New Order" FontSize="10" Foreground="#90CAF9" Margin="0,0,10,0" VerticalAlignment="Center"/>
-                <TextBlock Text="F5 Checkout" FontSize="10" Foreground="#90CAF9" VerticalAlignment="Center"/>
+                <TextBlock Text="F5 Checkout" FontSize="10" Foreground="#90CAF9" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <TextBlock Text="Ctrl+Tab Categories" FontSize="10" Foreground="#90CAF9" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                <TextBlock Text="F Search" FontSize="10" Foreground="#90CAF9" VerticalAlignment="Center"/>
             </StackPanel>
         </Border>
 
@@ -156,10 +158,14 @@
                                         <ContentPresenter/>
                                     </Border>
                                     <ControlTemplate.Triggers>
-                                        <Trigger Property="IsSelected" Value="True">
+                                        <MultiTrigger>
+                                            <MultiTrigger.Conditions>
+                                                <Condition Property="IsSelected" Value="True"/>
+                                                <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                            </MultiTrigger.Conditions>
                                             <Setter TargetName="Bd" Property="BorderBrush" Value="Black"/>
                                             <Setter TargetName="Bd" Property="Background" Value="#30000000"/>
-                                        </Trigger>
+                                        </MultiTrigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
                             </Setter.Value>
@@ -206,7 +212,8 @@
                            FontSize="12" Foreground="#333" VerticalAlignment="Center" Margin="4,0,6,0"/>
                 <Border Grid.Column="1" BorderBrush="#999" BorderThickness="1" Background="White"
                         CornerRadius="2" Padding="4,3">
-                    <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=200}"
+                    <TextBox x:Name="SearchProductBox"
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=200}"
                              BorderThickness="0" Background="Transparent"
                              FontSize="13" VerticalAlignment="Center"/>
                 </Border>
@@ -251,10 +258,14 @@
                                             <ContentPresenter/>
                                         </Border>
                                         <ControlTemplate.Triggers>
-                                            <Trigger Property="IsSelected" Value="True">
+                                            <MultiTrigger>
+                                                <MultiTrigger.Conditions>
+                                                    <Condition Property="IsSelected" Value="True"/>
+                                                    <Condition Property="Selector.IsSelectionActive" Value="True"/>
+                                                </MultiTrigger.Conditions>
                                                 <Setter TargetName="Bd" Property="BorderBrush" Value="Black"/>
                                                 <Setter TargetName="Bd" Property="Background" Value="#20000000"/>
-                                            </Trigger>
+                                            </MultiTrigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
                                 </Setter.Value>
@@ -1696,12 +1707,16 @@
                         <Style TargetType="DataGridRow">
                             <Setter Property="Height" Value="Auto"/>
                             <Style.Triggers>
-                                <Trigger Property="IsSelected" Value="True">
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="True"/>
+                                        <Condition Binding="{Binding IsKeyboardFocusWithin, RelativeSource={RelativeSource AncestorType=DataGrid}}" Value="True"/>
+                                    </MultiDataTrigger.Conditions>
                                     <Setter Property="Background" Value="#FFF8E1"/>
                                     <Setter Property="FontWeight" Value="Bold"/>
                                     <Setter Property="BorderBrush" Value="Black"/>
                                     <Setter Property="BorderThickness" Value="1"/>
-                                </Trigger>
+                                </MultiDataTrigger>
                             </Style.Triggers>
                         </Style>
                     </DataGrid.RowStyle>
