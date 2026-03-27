@@ -46,6 +46,9 @@
         <DataTemplate DataType="{x:Type vm:ShiftManagementViewModel}">
             <views:ShiftManagementView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:CustomerManagementViewModel}">
+            <views:CustomerManagementView/>
+        </DataTemplate>
     </Window.Resources>
 
     <Window.InputBindings>
@@ -124,7 +127,8 @@
                         </StackPanel>
                     </Button>
                     <!-- Customers -->
-                    <Button Style="{StaticResource ToolbarButton}" ToolTip="Customers">
+                    <Button Style="{StaticResource ToolbarButton}" ToolTip="Customers"
+                            Command="{Binding NavigateToCustomersCommand}">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#333"/>

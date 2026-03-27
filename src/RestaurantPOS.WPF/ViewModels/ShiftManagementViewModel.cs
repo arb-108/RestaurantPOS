@@ -260,16 +260,29 @@ public partial class ShiftManagementViewModel : BaseViewModel
         }
 
         // Check for open orders
-        var openOrders = await _db.Orders
+        var openOrdersList = await _db.Orders
             .Where(o => o.ShiftId == ActiveShift.Id &&
                 (o.Status == OrderStatus.Open || o.Status == OrderStatus.Preparing))
-            .CountAsync();
+            .ToListAsync();
 
-        if (openOrders > 0)
+        if (openOrdersList.Count > 0)
         {
-            MessageBox.Show($"There are {openOrders} open order(s) in this shift.\nPlease close or void all orders before closing the shift.",
-                "Open Orders", MessageBoxButton.OK, MessageBoxImage.Warning);
-            return;
+            var result = MessageBox.Show(
+                $"There are {openOrdersList.Count} open order(s) in this shift.\n\n" +
+                "Click YES to void all open orders and close shift.\n" +
+                "Click NO to go back and handle them manually.",
+                "Open Orders", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                foreach (var order in openOrdersList)
+                    order.Status = OrderStatus.Void;
+                await _db.SaveChangesAsync();
+            }
+            else
+            {
+                return;
+            }
         }
 
         // Reload drawer logs to be safe

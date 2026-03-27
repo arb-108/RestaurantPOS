@@ -124,6 +124,12 @@ public partial class MainWindowViewModel : BaseViewModel
     }
 
     [RelayCommand]
+    private void NavigateToCustomers()
+    {
+        NavigateTo<CustomerManagementViewModel>();
+    }
+
+    [RelayCommand]
     private void NavigateToSettings()
     {
         NavigateTo<SettingsViewModel>();

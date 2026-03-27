@@ -51,4 +51,36 @@ public class CustomerService : ICustomerService
             .Take(10)
             .ToListAsync();
     }
+
+    public async Task<IEnumerable<Customer>> GetAllCustomersAsync()
+    {
+        return await _db.Customers
+            .Include(c => c.Addresses)
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync();
+    }
+
+    public async Task<Customer?> GetByIdWithOrdersAsync(int id)
+    {
+        return await _db.Customers
+            .Include(c => c.Addresses)
+            .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt).Take(50))
+            .FirstOrDefaultAsync(c => c.Id == id);
+    }
+
+    public async Task UpdateCustomerAsync(Customer customer)
+    {
+        _db.Customers.Update(customer);
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task DeleteCustomerAsync(int id)
+    {
+        var customer = await _db.Customers.FindAsync(id);
+        if (customer != null)
+        {
+            _db.Customers.Remove(customer);
+            await _db.SaveChangesAsync();
+        }
+    }
 }

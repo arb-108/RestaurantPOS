@@ -18,6 +18,7 @@ public partial class MainPOSView : UserControl
 
     // Ordered billing field list for Enter-to-advance
     private TextBox[] _billingFields = [];
+    private bool _isSearchBoxActive;
 
     public MainPOSView()
     {
@@ -37,6 +38,9 @@ public partial class MainPOSView : UserControl
         KBillBtn.GotFocus += (_, _) => { _currentZone = PosZone.BillingFields; UpdateZoneIndicator(); };
         BillPrintBtn.GotFocus += (_, _) => { _currentZone = PosZone.BillingFields; UpdateZoneIndicator(); };
         CheckoutBtn.GotFocus += (_, _) => { _currentZone = PosZone.BillingFields; UpdateZoneIndicator(); };
+
+        // Reset search mode when search box loses focus
+        SearchProductBox.LostFocus += (_, _) => _isSearchBoxActive = false;
     }
 
     private async void OnLoaded(object sender, RoutedEventArgs e)
@@ -81,11 +85,43 @@ public partial class MainPOSView : UserControl
         // F key → focus search product field (only when not typing in a TextBox)
         if (e.Key == Key.F && Keyboard.FocusedElement is not TextBox)
         {
+            _isSearchBoxActive = true;
             SearchProductBox.Focus();
             SearchProductBox.SelectAll();
             e.Handled = true;
             return;
         }
+
+        // While search box is active, keep focus there and handle Escape/Enter
+        if (_isSearchBoxActive && Keyboard.FocusedElement == SearchProductBox)
+        {
+            if (e.Key == Key.Escape)
+            {
+                _isSearchBoxActive = false;
+                SearchProductBox.Text = "";
+                SetZone(PosZone.MenuItems);
+                e.Handled = true;
+                return;
+            }
+            if (e.Key == Key.Enter)
+            {
+                // Select first menu item if available
+                _isSearchBoxActive = false;
+                if (MenuItemList.Items.Count > 0)
+                {
+                    SelectMenuItem(0);
+                    SetZone(PosZone.MenuItems);
+                }
+                e.Handled = true;
+                return;
+            }
+            // Let all other keys pass through to the search box (typing)
+            return;
+        }
+
+        // MobileTextBox has its own PreviewKeyDown handler — let Enter/Up pass through to it
+        if (Keyboard.FocusedElement == MobileTextBox && (e.Key == Key.Enter || e.Key == Key.Up))
+            return;
 
         // If a TextBox or Button in the billing section has focus, handle Enter/Tab/Escape specially
         if (IsBillingFieldFocused() || IsBillingButtonFocused())

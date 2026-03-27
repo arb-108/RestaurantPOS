@@ -72,6 +72,7 @@ public partial class App : System.Windows.Application
                 services.AddTransient<ExpenseManagementViewModel>();
                 services.AddTransient<StockManagementViewModel>();
                 services.AddTransient<ShiftManagementViewModel>();
+                services.AddTransient<CustomerManagementViewModel>();
 
                 // Main Window
                 services.AddSingleton<MainWindow>();
@@ -151,6 +152,7 @@ public partial class App : System.Windows.Application
                         services.AddTransient<ExpenseManagementViewModel>();
                         services.AddTransient<StockManagementViewModel>();
                         services.AddTransient<ShiftManagementViewModel>();
+                        services.AddTransient<CustomerManagementViewModel>();
                         services.AddSingleton<MainWindow>();
                     })
                     .Build();
