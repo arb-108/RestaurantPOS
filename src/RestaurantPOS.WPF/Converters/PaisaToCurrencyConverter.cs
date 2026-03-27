@@ -143,7 +143,7 @@ public class TableStatusToBrushConverter : IValueConverter
 public class TableBgMultiConverter : IMultiValueConverter
 {
     private static readonly SolidColorBrush YellowBrush = new(Color.FromRgb(0xE0, 0xAE, 0x26));
-    private static readonly SolidColorBrush BlueBrush = new(Color.FromRgb(0x90, 0xCA, 0xF9));
+    private static readonly SolidColorBrush BlueBrush = new(Color.FromRgb(0xFF, 0xF8, 0xE1));
     private static readonly SolidColorBrush GreenBrush = new(Color.FromRgb(0x4C, 0xAF, 0x50));
     private static readonly SolidColorBrush GrayBrush = new(Color.FromRgb(0x9E, 0x9E, 0x9E));
     private static readonly SolidColorBrush PurpleBrush = new(Color.FromRgb(0x9C, 0x27, 0xB0));

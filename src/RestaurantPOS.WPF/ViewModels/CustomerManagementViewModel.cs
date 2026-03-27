@@ -17,6 +17,7 @@ public partial class CustomerManagementViewModel : BaseViewModel
 
     // ── All customers loaded from DB ──
     private List<Customer> _allCustomers = [];
+    private Dictionary<int, int> _customerOrderCounts = new();
 
     // ── Displayed (filtered) customers ──
     public ObservableCollection<CustomerRowViewModel> Customers { get; } = [];
@@ -60,6 +61,14 @@ public partial class CustomerManagementViewModel : BaseViewModel
     private async Task LoadDataAsync()
     {
         _allCustomers = (await _customerService.GetAllCustomersAsync()).ToList();
+
+        // Load order counts for all customers in one query
+        var customerIds = _allCustomers.Select(c => c.Id).ToList();
+        _customerOrderCounts = await _db.Orders
+            .Where(o => o.CustomerId != null && customerIds.Contains(o.CustomerId!.Value) && o.Status == OrderStatus.Closed)
+            .GroupBy(o => o.CustomerId!.Value)
+            .ToDictionaryAsync(g => g.Key, g => g.Count());
+
         ApplyFilter();
         UpdateStats();
     }
@@ -102,7 +111,7 @@ public partial class CustomerManagementViewModel : BaseViewModel
                 Tier = c.Tier.ToString(),
                 TotalSpent = $"Rs. {c.TotalSpent / 100m:N0}",
                 LoyaltyPoints = c.LoyaltyPoints,
-                OrderCount = 0, // Will be loaded on detail
+                OrderCount = _customerOrderCounts.GetValueOrDefault(c.Id, 0),
                 Notes = c.Notes ?? "",
                 CreatedAt = c.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy")
             });

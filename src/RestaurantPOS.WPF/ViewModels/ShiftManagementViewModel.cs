@@ -265,6 +265,22 @@ public partial class ShiftManagementViewModel : BaseViewModel
                 (o.Status == OrderStatus.Open || o.Status == OrderStatus.Preparing))
             .ToListAsync();
 
+        // Auto-void ghost orders (created but no items were added)
+        var ghostOrders = new List<Order>();
+        foreach (var order in openOrdersList.ToList())
+        {
+            var itemCount = await _db.OrderItems.CountAsync(oi => oi.OrderId == order.Id && oi.Status != OrderStatus.Void);
+            if (itemCount == 0)
+            {
+                order.Status = OrderStatus.Void;
+                order.VoidReason = "Auto-voided: empty order on shift close";
+                ghostOrders.Add(order);
+                openOrdersList.Remove(order);
+            }
+        }
+        if (ghostOrders.Count > 0)
+            await _db.SaveChangesAsync();
+
         if (openOrdersList.Count > 0)
         {
             var result = MessageBox.Show(

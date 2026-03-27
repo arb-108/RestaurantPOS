@@ -329,102 +329,92 @@
         <!-- ROW 5: CONTENT PANELS -->
         <Grid Grid.Row="5">
 
-            <!-- TAB: Current Shift Overview -->
             <Border x:Name="PanelCurrent" Background="White" CornerRadius="0,0,12,12"
-                    BorderBrush="#E5E7EB" BorderThickness="1" Visibility="Collapsed">
-                <Border.Effect>
-                    <DropShadowEffect BlurRadius="6" ShadowDepth="1" Opacity="0.04" Color="#000"/>
-                </Border.Effect>
-                <Grid Margin="24,20">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
+        BorderBrush="#E5E7EB" BorderThickness="1" Visibility="Collapsed">
+                <StackPanel Margin="24,20">
 
-                    <TextBlock Text="Shift Overview" FontSize="16" FontWeight="SemiBold" Foreground="#111827" Margin="0,0,0,20"/>
+                    <TextBlock Text="Shift overview" FontSize="14" FontWeight="SemiBold"
+                   Foreground="#111827" Margin="0,0,0,16"/>
 
-                    <Grid Grid.Row="1" MaxWidth="500" HorizontalAlignment="Left">
+                    <Grid MaxWidth="480" HorizontalAlignment="Left">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="180"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="36"/>
-                            <RowDefinition Height="36"/>
-                            <RowDefinition Height="36"/>
-                            <RowDefinition Height="36"/>
-                            <RowDefinition Height="36"/>
-                            <RowDefinition Height="36"/>
-                            <RowDefinition Height="36"/>
-                            <RowDefinition Height="Auto"/>  <!-- separator -->
+                            <RowDefinition Height="34"/>
+                            <RowDefinition Height="34"/>
+                            <RowDefinition Height="34"/>
+                            <RowDefinition Height="34"/>
+                            <RowDefinition Height="34"/>
+                            <RowDefinition Height="34"/>
+                            <RowDefinition Height="34"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="40"/>
                         </Grid.RowDefinitions>
 
-                        <!-- Opening Balance -->
-                        <TextBlock Grid.Row="0" Text="Opening Balance" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="0" Text="Opening balance" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
                         <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding OpeningBalanceText}" FontSize="13" FontWeight="SemiBold" Foreground="#111827" VerticalAlignment="Center"/>
 
-                        <!-- Orders Completed -->
-                        <TextBlock Grid.Row="1" Text="Orders Completed" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="1" Text="Orders completed" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ShiftOrderCount}" FontSize="13" FontWeight="SemiBold" Foreground="#111827" VerticalAlignment="Center"/>
 
-                        <!-- Total Revenue -->
-                        <TextBlock Grid.Row="2" Text="Total Revenue" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ShiftSalesText}" FontSize="13" FontWeight="Bold" Foreground="#059669" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="2" Text="Total revenue" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ShiftSalesText}" FontSize="13" FontWeight="SemiBold" Foreground="#059669" VerticalAlignment="Center"/>
 
-                        <!-- Cash Received -->
-                        <TextBlock Grid.Row="3" Text="Cash Received" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="3" Text="Cash received" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
                         <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ShiftCashText}" FontSize="13" FontWeight="SemiBold" Foreground="#111827" VerticalAlignment="Center"/>
 
-                        <!-- Card / Digital -->
-                        <TextBlock Grid.Row="4" Text="Card / Digital" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="4" Text="Card / digital" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
                         <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding ShiftCardText}" FontSize="13" FontWeight="SemiBold" Foreground="#6366F1" VerticalAlignment="Center"/>
 
-                        <!-- Pay-Ins -->
-                        <TextBlock Grid.Row="5" Text="Pay-Ins (manual)" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="5" Text="Pay-ins" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
                         <TextBlock Grid.Row="5" Grid.Column="1" FontSize="13" FontWeight="SemiBold" Foreground="#059669" VerticalAlignment="Center">
-                            <Run Text="{Binding ShiftPayInText, Mode=OneWay}"/>
-                            <Run Text="  (" Foreground="#9CA3AF"/><Run Text="{Binding ShiftPayInCount, Mode=OneWay}" Foreground="#9CA3AF"/><Run Text=")" Foreground="#9CA3AF"/>
+                <Run Text="{Binding ShiftPayInText, Mode=OneWay}"/>
+                <Run Text="  (" Foreground="#9CA3AF"/>
+                <Run Text="{Binding ShiftPayInCount, Mode=OneWay}" Foreground="#9CA3AF"/>
+                <Run Text=")" Foreground="#9CA3AF"/>
                         </TextBlock>
 
-                        <!-- Pay-Outs -->
-                        <TextBlock Grid.Row="6" Text="Pay-Outs" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="6" Text="Pay-outs" FontSize="13" Foreground="#6B7280" VerticalAlignment="Center"/>
                         <TextBlock Grid.Row="6" Grid.Column="1" FontSize="13" FontWeight="SemiBold" Foreground="#DC2626" VerticalAlignment="Center">
-                            <Run Text="{Binding ShiftPayOutText, Mode=OneWay}"/>
-                            <Run Text="  (" Foreground="#9CA3AF"/><Run Text="{Binding ShiftPayOutCount, Mode=OneWay}" Foreground="#9CA3AF"/><Run Text=")" Foreground="#9CA3AF"/>
+                <Run Text="{Binding ShiftPayOutText, Mode=OneWay}"/>
+                <Run Text="  (" Foreground="#9CA3AF"/>
+                <Run Text="{Binding ShiftPayOutCount, Mode=OneWay}" Foreground="#9CA3AF"/>
+                <Run Text=")" Foreground="#9CA3AF"/>
                         </TextBlock>
 
-                        <!-- Separator -->
-                        <Border Grid.Row="7" Grid.ColumnSpan="2" Height="1" Background="#E5E7EB" Margin="0,6"/>
+                        <Border Grid.Row="7" Grid.ColumnSpan="2" Height="1" Background="#E5E7EB" Margin="0,4"/>
 
-                        <!-- Expected in Drawer -->
-                        <TextBlock Grid.Row="8" Text="Expected in Drawer" FontSize="14" FontWeight="Bold" Foreground="#111827" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding ExpectedDrawerText}" FontSize="16" FontWeight="Bold" Foreground="#1D4ED8" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="8" Text="Expected in drawer" FontSize="13" FontWeight="SemiBold" Foreground="#111827" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Row="8" Grid.Column="1" Text="{Binding ExpectedDrawerText}" FontSize="15" FontWeight="SemiBold" Foreground="#1D4ED8" VerticalAlignment="Center"/>
+
                     </Grid>
-                </Grid>
-            </Border>
-
-            <!-- No-Shift Placeholder -->
-            <Border x:Name="PanelNoShift" Background="White" CornerRadius="0,0,12,12"
-                    BorderBrush="#E5E7EB" BorderThickness="1" Visibility="Collapsed">
-                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,40">
-                    <Border Width="80" Height="80" CornerRadius="40" Background="#F3F4F6"
-                            HorizontalAlignment="Center" Margin="0,0,0,20">
-                        <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="36"
-                                   Foreground="#9CA3AF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <TextBlock Text="No Active Shift" FontSize="20" FontWeight="SemiBold" Foreground="#374151"
-                               HorizontalAlignment="Center" Margin="0,0,0,6"/>
-                    <TextBlock Text="Open a shift to start tracking orders and cash drawer activity"
-                               FontSize="13" Foreground="#9CA3AF" HorizontalAlignment="Center" Margin="0,0,0,20"/>
-                    <Button Style="{StaticResource ShiftActionBtn}" Background="#059669" Foreground="White"
-                            Content="Open Shift" Height="40" Padding="28,0" FontSize="14"
-                            Command="{Binding OpenShiftCommand}"
-                            IsEnabled="{Binding HasActiveShift, Converter={StaticResource BoolInvert}}"
-                            HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>
 
+            <!--No shift -->
+            <Border x:Name="PanelNoShift" Background="White" CornerRadius="0,0,12,12"
+        BorderBrush="#E5E7EB" BorderThickness="1" Visibility="Collapsed">
+                <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Margin="0,0,0,40">
+                    <Border Width="56" Height="56" CornerRadius="28" Background="#F3F4F6"
+                HorizontalAlignment="Center" Margin="0,0,0,16">
+                        <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="24"
+                       Foreground="#9CA3AF" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+                    <TextBlock Text="No active shift" FontSize="17" FontWeight="SemiBold" Foreground="#374151"
+                   HorizontalAlignment="Center" Margin="0,0,0,6"/>
+                    <TextBlock Text="Open a shift to start tracking orders and cash drawer activity"
+                   FontSize="13" Foreground="#9CA3AF" HorizontalAlignment="Center"
+                   TextWrapping="Wrap" MaxWidth="280" TextAlignment="Center" Margin="0,0,0,20"/>
+                    <Button Style="{StaticResource ShiftActionBtn}" Background="#059669" Foreground="White"
+                Content="Open shift" Height="38" Padding="24,0" FontSize="13"
+                Command="{Binding OpenShiftCommand}"
+                IsEnabled="{Binding HasActiveShift, Converter={StaticResource BoolInvert}}"
+                HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+            
             <!-- TAB: Shift Orders -->
             <Border x:Name="PanelOrders" Background="White" CornerRadius="0,0,12,12"
                     BorderBrush="#E5E7EB" BorderThickness="1" Visibility="Collapsed">
@@ -482,41 +472,66 @@
 
             <!-- TAB: Drawer Log -->
             <Border x:Name="PanelDrawer" Background="White" CornerRadius="0,0,12,12"
-                    BorderBrush="#E5E7EB" BorderThickness="1" Visibility="Collapsed">
+        BorderBrush="#E5E7EB" BorderThickness="1" Visibility="Collapsed">
                 <DataGrid ItemsSource="{Binding DrawerLogs}"
-                              AutoGenerateColumns="False" IsReadOnly="True"
-                              HeadersVisibility="Column" GridLinesVisibility="None"
-                              BorderThickness="0" Background="White"
-                              RowHeight="40" ColumnHeaderHeight="38"
-                              CanUserAddRows="False" CanUserDeleteRows="False"
-                              AlternationCount="2"
-                              ColumnHeaderStyle="{StaticResource ShiftDGHeader}"
-                              CellStyle="{StaticResource ShiftDGCell}"
-                              RowStyle="{StaticResource ShiftDGRow}"
-                              SelectionMode="Single"
-                              VerticalScrollBarVisibility="Auto">
-                        <DataGrid.Columns>
-                            <DataGridTextColumn Header="TIME" Width="130"
-                                                Binding="{Binding CreatedAt, Converter={StaticResource UtcToLocal}, StringFormat='hh:mm tt'}"/>
-                            <DataGridTextColumn Header="TYPE" Width="120" Binding="{Binding Type}">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                    </Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
-                            <DataGridTextColumn Header="AMOUNT" Width="140"
-                                                Binding="{Binding Amount, Converter={StaticResource PaisaToCurrency}}">
-                                <DataGridTextColumn.ElementStyle>
-                                    <Style TargetType="TextBlock">
-                                        <Setter Property="FontWeight" Value="SemiBold"/>
-                                        <Setter Property="Foreground" Value="#059669"/>
-                                    </Style>
-                                </DataGridTextColumn.ElementStyle>
-                            </DataGridTextColumn>
-                            <DataGridTextColumn Header="DESCRIPTION" Width="*" Binding="{Binding Description}"/>
-                        </DataGrid.Columns>
-                    </DataGrid>
+              AutoGenerateColumns="False" IsReadOnly="True"
+              HeadersVisibility="Column" GridLinesVisibility="None"
+              BorderThickness="0" Background="White"
+              RowHeight="40" ColumnHeaderHeight="38"
+              CanUserAddRows="False" CanUserDeleteRows="False"
+              AlternationCount="2"
+              ColumnHeaderStyle="{StaticResource ShiftDGHeader}"
+              CellStyle="{StaticResource ShiftDGCell}"
+              RowStyle="{StaticResource ShiftDGRow}"
+              SelectionMode="Single"
+              VerticalScrollBarVisibility="Auto">
+                    <DataGrid.Columns>
+
+                        <DataGridTextColumn Header="TIME" Width="130"
+                                Binding="{Binding CreatedAt, Converter={StaticResource UtcToLocal}, StringFormat='hh:mm tt'}"/>
+
+                        <DataGridTextColumn Header="TYPE" Width="120" Binding="{Binding Type}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="Foreground" Value="#6B7280"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Type}" Value="PayIn">
+                                            <Setter Property="Foreground" Value="#059669"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Type}" Value="PayOut">
+                                            <Setter Property="Foreground" Value="#DC2626"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="AMOUNT" Width="140"
+                                Binding="{Binding Amount, Converter={StaticResource PaisaToCurrency}}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                    <Setter Property="Foreground" Value="#6B7280"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Type}" Value="PayIn">
+                                            <Setter Property="Foreground" Value="#059669"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Type}" Value="Sale">
+                                            <Setter Property="Foreground" Value="#059669"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Type}" Value="PayOut">
+                                            <Setter Property="Foreground" Value="#DC2626"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+
+                        <DataGridTextColumn Header="DESCRIPTION" Width="*" Binding="{Binding Description}"/>
+
+                    </DataGrid.Columns>
+                </DataGrid>
             </Border>
 
             <!-- TAB: History -->

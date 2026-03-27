@@ -157,6 +157,17 @@ public class OrderService : IOrderService
         // ── Deduct stock based on recipes ──
         await DeductStockForOrderAsync(order);
 
+        // Update customer total spent
+        if (order.CustomerId.HasValue)
+        {
+            var customer = await _db.Customers.FindAsync(order.CustomerId.Value);
+            if (customer != null)
+            {
+                customer.TotalSpent += order.GrandTotal;
+                customer.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
         // Close table session if dine-in
         if (order.TableSession != null)
         {

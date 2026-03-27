@@ -14,14 +14,22 @@ public class ReportService : IReportService
 
     public async Task<DailySummary> GetDailySummaryAsync(DateTime date)
     {
+        // Always regenerate for today (data changes throughout the day)
+        if (date.Date == DateTime.Today)
+        {
+            await GenerateDailySummaryAsync(date);
+            var todaySummary = await _db.DailySummaries.FirstOrDefaultAsync(ds => ds.Date == date.Date.ToUniversalTime());
+            return todaySummary ?? new DailySummary { Date = date.Date };
+        }
+
         var existing = await _db.DailySummaries
-            .FirstOrDefaultAsync(ds => ds.Date == date.Date);
+            .FirstOrDefaultAsync(ds => ds.Date == date.Date.ToUniversalTime());
 
         if (existing != null) return existing;
 
         // Generate on the fly
         await GenerateDailySummaryAsync(date);
-        return await _db.DailySummaries.FirstAsync(ds => ds.Date == date.Date);
+        return await _db.DailySummaries.FirstAsync(ds => ds.Date == date.Date.ToUniversalTime());
     }
 
     public async Task<IEnumerable<(string Category, long Total)>> GetSalesByCategoryAsync(DateTime from, DateTime to)
@@ -30,8 +38,8 @@ public class ReportService : IReportService
             .Include(oi => oi.MenuItem).ThenInclude(mi => mi.Category)
             .Include(oi => oi.Order)
             .Where(oi => oi.Order.Status == OrderStatus.Closed
-                && oi.Order.CreatedAt >= from.Date
-                && oi.Order.CreatedAt < to.Date.AddDays(1)
+                && oi.Order.CreatedAt >= from.Date.ToUniversalTime()
+                && oi.Order.CreatedAt < to.Date.AddDays(1).ToUniversalTime()
                 && oi.Status != OrderStatus.Void)
             .GroupBy(oi => oi.MenuItem.Category.Name)
             .Select(g => new { Category = g.Key, Total = g.Sum(oi => oi.LineTotal) })
@@ -42,7 +50,7 @@ public class ReportService : IReportService
 
     public async Task<IEnumerable<(int Hour, long Total)>> GetSalesByHourAsync(DateTime date)
     {
-        var start = date.Date;
+        var start = date.Date.ToUniversalTime();
         var end = start.AddDays(1);
 
         var orders = await _db.Orders
@@ -63,8 +71,8 @@ public class ReportService : IReportService
             .Include(p => p.PaymentMethod)
             .Include(p => p.Order)
             .Where(p => p.Order.Status == OrderStatus.Closed
-                && p.Order.CreatedAt >= from.Date
-                && p.Order.CreatedAt < to.Date.AddDays(1))
+                && p.Order.CreatedAt >= from.Date.ToUniversalTime()
+                && p.Order.CreatedAt < to.Date.AddDays(1).ToUniversalTime())
             .GroupBy(p => p.PaymentMethod.Name)
             .Select(g => new { Method = g.Key, Total = g.Sum(p => p.Amount) })
             .ToListAsync();
@@ -74,7 +82,7 @@ public class ReportService : IReportService
 
     public async Task GenerateDailySummaryAsync(DateTime date)
     {
-        var start = date.Date;
+        var start = date.Date.ToUniversalTime();
         var end = start.AddDays(1);
 
         var orders = await _db.Orders
