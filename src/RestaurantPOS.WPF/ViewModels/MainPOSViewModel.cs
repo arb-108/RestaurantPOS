@@ -128,6 +128,7 @@ public partial class MainPOSViewModel : BaseViewModel
 
     // ── Multi-order state store ──
     private readonly Dictionary<string, SavedOrderState> _orderStates = new();
+    private bool _isRestoringState;
 
     // ══════════════════════════════════════════════════════════
     //  BILLING HISTORY
@@ -603,34 +604,42 @@ public partial class MainPOSViewModel : BaseViewModel
     /// </summary>
     private void RestoreOrderState(SavedOrderState state)
     {
-        _currentOrder = state.Order;
-        OrderNumber = state.OrderNumber;
-        SelectedOrderType = state.OrderType;
-        SelectedTable = state.Table;
-        DiscountPercent = state.DiscountPercent;
-        DiscountRs = state.DiscountRs;
-        TaxPercent = state.TaxPercent;
-        GstRs = state.GstRs;
-        CashTendered = state.CashTendered;
-        _matchedCustomer = state.MatchedCustomer;
-        CustomerPhone = state.CustomerPhone;
-        CustomerName = state.CustomerName;
-        IsPhoneMatched = _matchedCustomer != null;
-        IsPhoneSearchActive = false;
-        IsPhoneNoResults = false;
-        CommentText = state.CommentText;
-        IsCash = state.IsCash;
-        IsCardCredit = state.IsCardCredit;
-        IsOnlinePayment = state.IsOnlinePayment;
-        IsCOD = state.IsCOD;
+        _isRestoringState = true;
+        try
+        {
+            _currentOrder = state.Order;
+            OrderNumber = state.OrderNumber;
+            SelectedOrderType = state.OrderType;
+            SelectedTable = state.Table;
+            DiscountPercent = state.DiscountPercent;
+            DiscountRs = state.DiscountRs;
+            TaxPercent = state.TaxPercent;
+            GstRs = state.GstRs;
+            CashTendered = state.CashTendered;
+            _matchedCustomer = state.MatchedCustomer;
+            CustomerPhone = state.CustomerPhone;
+            CustomerName = state.CustomerName;
+            IsPhoneMatched = _matchedCustomer != null;
+            IsPhoneSearchActive = false;
+            IsPhoneNoResults = false;
+            CommentText = state.CommentText;
+            IsCash = state.IsCash;
+            IsCardCredit = state.IsCardCredit;
+            IsOnlinePayment = state.IsOnlinePayment;
+            IsCOD = state.IsCOD;
 
-        OrderItems.Clear();
-        foreach (var oi in state.Items)
-            OrderItems.Add(oi);
+            OrderItems.Clear();
+            foreach (var oi in state.Items)
+                OrderItems.Add(oi);
 
-        RecalculateTotals();
-        OnPropertyChanged(nameof(OrderTypeDisplay));
-        OnPropertyChanged(nameof(TableDisplay));
+            RecalculateTotals();
+            OnPropertyChanged(nameof(OrderTypeDisplay));
+            OnPropertyChanged(nameof(TableDisplay));
+        }
+        finally
+        {
+            _isRestoringState = false;
+        }
     }
 
     /// <summary>
@@ -638,7 +647,11 @@ public partial class MainPOSViewModel : BaseViewModel
     /// </summary>
     private void ClearBillingSection()
     {
+        _isRestoringState = true;
+        try
+        {
         _currentOrder = null;
+        _matchedCustomer = null;
         OrderItems.Clear();
         OrderNumber = string.Empty;
         SubTotal = 0;
@@ -655,6 +668,9 @@ public partial class MainPOSViewModel : BaseViewModel
         GstRs = 0;
         CustomerPhone = string.Empty;
         CustomerName = string.Empty;
+        IsPhoneMatched = false;
+        IsPhoneSearchActive = false;
+        IsPhoneNoResults = false;
         CommentText = string.Empty;
         IsCash = true;
         IsCardCredit = false;
@@ -665,6 +681,11 @@ public partial class MainPOSViewModel : BaseViewModel
         OnPropertyChanged(nameof(ChangeDisplay));
         OnPropertyChanged(nameof(OrderTypeDisplay));
         OnPropertyChanged(nameof(TableDisplay));
+        }
+        finally
+        {
+            _isRestoringState = false;
+        }
     }
 
     // ══════════════════════════════════════════════════════════
@@ -1904,6 +1925,8 @@ public partial class MainPOSViewModel : BaseViewModel
     /// </summary>
     partial void OnCustomerNameChanged(string value)
     {
+        if (_isRestoringState) return;
+
         // When customer name changes (e.g. from phone lookup), save state and refresh
         if (_currentOrder != null)
         {
@@ -1918,6 +1941,7 @@ public partial class MainPOSViewModel : BaseViewModel
 
     partial void OnCustomerPhoneChanged(string value)
     {
+        if (_isRestoringState) return;
         _ = SearchCustomerByPhoneAsync(value);
     }
 
