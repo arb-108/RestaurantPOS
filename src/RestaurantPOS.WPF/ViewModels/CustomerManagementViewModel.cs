@@ -157,15 +157,26 @@ public partial class CustomerManagementViewModel : BaseViewModel
         DetailLoyaltyPoints = $"{customer.LoyaltyPoints}";
         DetailNotes = customer.Notes ?? "";
 
-        // Load orders with items
+        // Load orders with items — match by CustomerId OR by phone in notes (for older orders)
         CustomerOrders.Clear();
+        var phoneSearch = $"Mobile: {customer.Phone}";
         var orders = await _db.Orders
             .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.MenuItem)
-            .Where(o => o.CustomerId == customer.Id)
+            .Where(o => o.CustomerId == customer.Id
+                     || (o.Notes != null && o.Notes.Contains(phoneSearch)))
             .OrderByDescending(o => o.CreatedAt)
             .Take(50)
             .ToListAsync();
+
+        // Retroactively link unlinked orders to this customer
+        var unlinked = orders.Where(o => o.CustomerId == null).ToList();
+        if (unlinked.Count > 0)
+        {
+            foreach (var o in unlinked)
+                o.CustomerId = customer.Id;
+            await _db.SaveChangesAsync();
+        }
 
         DetailOrderCount = orders.Count;
         foreach (var o in orders)
