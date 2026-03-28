@@ -789,7 +789,7 @@ public partial class MainPOSViewModel : BaseViewModel
         {
             var cashierId = _loggedInUser?.Id ?? 1;
             _currentOrder = await _orderService.CreateOrderAsync(
-                SelectedOrderType, SelectedTable?.Id, null, cashierId, activeShiftId);
+                SelectedOrderType, SelectedTable?.Id, _matchedCustomer?.Id, cashierId, activeShiftId);
             OrderNumber = _currentOrder.OrderNumber;
 
             // For Din-in: open table session (blue highlight handled by MultiBinding converter)
@@ -1167,13 +1167,21 @@ public partial class MainPOSViewModel : BaseViewModel
 
                 if (state.Order != null)
                 {
+                    // Link customer to order (so it shows in Customer Management)
+                    int? custId = state.MatchedCustomer?.Id;
+
                     // Save notes if any
+                    var noteInfo = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(state.OrderNote))
-                    {
-                        var noteInfo = $"Note: {state.OrderNote}";
-                        int? custId = state.Order.CustomerId;
-                        await _orderService.UpdateOrderNotesAsync(state.Order.Id, noteInfo, custId);
-                    }
+                        noteInfo.AppendLine($"Note: {state.OrderNote}");
+                    if (!string.IsNullOrEmpty(state.CustomerName))
+                        noteInfo.AppendLine($"Customer: {state.CustomerName}");
+                    if (!string.IsNullOrEmpty(state.CustomerPhone))
+                        noteInfo.AppendLine($"Mobile: {state.CustomerPhone}");
+
+                    var notes = noteInfo.ToString().TrimEnd();
+                    if (!string.IsNullOrEmpty(notes) || custId.HasValue)
+                        await _orderService.UpdateOrderNotesAsync(state.Order.Id, string.IsNullOrEmpty(notes) ? null : notes, custId);
 
                     await _orderService.CalculateTotalsAsync(state.Order.Id, state.DiscountPercent, state.TaxPercent);
                     await _orderService.CheckoutAsync(state.Order.Id, settleWindow.SelectedPaymentMethodId, takeaway.TotalAmount);
@@ -1361,8 +1369,8 @@ public partial class MainPOSViewModel : BaseViewModel
                     if (!string.IsNullOrEmpty(state.CustomerAddress))
                         deliveryInfo.AppendLine($"Address: {state.CustomerAddress}");
 
-                    // Use the order's own CustomerId (not the current billing panel's customer)
-                    int? custId = state.Order.CustomerId;
+                    // Link customer to order (so it shows in Customer Management)
+                    int? custId = state.MatchedCustomer?.Id;
                     await _orderService.UpdateOrderNotesAsync(state.Order.Id, deliveryInfo.ToString().TrimEnd(), custId);
 
                     await _orderService.CalculateTotalsAsync(state.Order.Id, state.DiscountPercent, state.TaxPercent);
@@ -2004,6 +2012,13 @@ public partial class MainPOSViewModel : BaseViewModel
             IsPhoneSearchActive = false;
             IsPhoneNoResults = false;
             CustomerName = exact.Name;
+
+            // Immediately link customer to current order in DB
+            if (_currentOrder != null && _currentOrder.CustomerId != exact.Id)
+            {
+                _currentOrder.CustomerId = exact.Id;
+                _ = _orderService.UpdateOrderNotesAsync(_currentOrder.Id, _currentOrder.Notes, exact.Id);
+            }
         }
         else if (list.Count > 0)
         {
@@ -2038,6 +2053,13 @@ public partial class MainPOSViewModel : BaseViewModel
         IsPhoneSearchActive = false;
         IsPhoneNoResults = false;
         PhoneSearchResults.Clear();
+
+        // Immediately link customer to current order in DB
+        if (_currentOrder != null && _currentOrder.CustomerId != customer.Id)
+        {
+            _currentOrder.CustomerId = customer.Id;
+            _ = _orderService.UpdateOrderNotesAsync(_currentOrder.Id, _currentOrder.Notes, customer.Id);
+        }
     }
 
     /// <summary>
@@ -2078,6 +2100,13 @@ public partial class MainPOSViewModel : BaseViewModel
                     await _customerService.UpdateCustomerAsync(_matchedCustomer);
                     CustomerName = _matchedCustomer.Name;
                     CustomerPhone = _matchedCustomer.Phone;
+
+                    // Link customer to current order
+                    if (_currentOrder != null)
+                    {
+                        _currentOrder.CustomerId = _matchedCustomer.Id;
+                        await _orderService.UpdateOrderNotesAsync(_currentOrder.Id, _currentOrder.Notes, _matchedCustomer.Id);
+                    }
                 }
             }
 
@@ -2106,6 +2135,13 @@ public partial class MainPOSViewModel : BaseViewModel
             IsPhoneMatched = true;
             IsPhoneSearchActive = false;
             PhoneSearchResults.Clear();
+
+            // Immediately link to current order
+            if (_currentOrder != null && newCustomer != null)
+            {
+                _currentOrder.CustomerId = newCustomer.Id;
+                await _orderService.UpdateOrderNotesAsync(_currentOrder.Id, _currentOrder.Notes, newCustomer.Id);
+            }
         }
     }
 
@@ -2472,6 +2508,31 @@ public partial class MainPOSViewModel : BaseViewModel
                     (o.Customer?.Phone?.Contains(search, StringComparison.OrdinalIgnoreCase) == true) ||
                     (o.Cashier?.FullName?.Contains(search, StringComparison.OrdinalIgnoreCase) == true)
                 ).ToList();
+            }
+
+            // Retroactively link orders that have customer phone in notes but no CustomerId
+            var unlinked = list.Where(o => o.CustomerId == null && !string.IsNullOrEmpty(o.Notes) && o.Notes.Contains("Mobile:")).ToList();
+            if (unlinked.Count > 0)
+            {
+                foreach (var order in unlinked)
+                {
+                    // Extract phone from "Mobile: xxx" line in notes
+                    var mobileLine = order.Notes!.Split('\n').FirstOrDefault(l => l.TrimStart().StartsWith("Mobile:"));
+                    if (mobileLine != null)
+                    {
+                        var phone = mobileLine.Substring(mobileLine.IndexOf(':') + 1).Trim();
+                        if (!string.IsNullOrEmpty(phone))
+                        {
+                            var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Phone == phone);
+                            if (customer != null)
+                            {
+                                order.CustomerId = customer.Id;
+                                order.Customer = customer;
+                            }
+                        }
+                    }
+                }
+                await _db.SaveChangesAsync();
             }
 
             BillingHistory.Clear();

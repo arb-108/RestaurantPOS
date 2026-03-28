@@ -1804,6 +1804,7 @@
                     </Grid.ColumnDefinitions>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="6"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="8"/>
@@ -1883,11 +1884,18 @@
                                FontSize="12" FontWeight="SemiBold" Foreground="#333"
                                VerticalAlignment="Center" MinWidth="55"/>
 
-                    <!-- ── Row 2: Comment | GST(%) | GST(Rs) | After GST ── -->
-                    <TextBlock Grid.Row="2" Grid.Column="0" Text="Comment:"
+                    <!-- ── Row 1: Customer Name (shown when phone matched) ── -->
+                    <TextBlock Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                               Text="{Binding CustomerName}"
+                               FontSize="11" FontWeight="SemiBold" Foreground="#2E7D32"
+                               Visibility="{Binding IsPhoneMatched, Converter={StaticResource BoolToVis}}"
+                               Margin="0,2,0,0"/>
+
+                    <!-- ── Row 3: Comment | GST(%) | GST(Rs) | After GST ── -->
+                    <TextBlock Grid.Row="3" Grid.Column="0" Text="Comment:"
                                FontSize="12" Foreground="#333" VerticalAlignment="Top"
                                Margin="0,4,6,0"/>
-                    <TextBox x:Name="CommentBox" Grid.Row="2" Grid.Column="1" Height="42"
+                    <TextBox x:Name="CommentBox" Grid.Row="3" Grid.Column="1" Height="42"
                              Text="{Binding CommentText, UpdateSourceTrigger=PropertyChanged}"
                              TextWrapping="Wrap" AcceptsReturn="True"
                              VerticalScrollBarVisibility="Auto" VerticalAlignment="Top">
@@ -1909,30 +1917,30 @@
                         </TextBox.Style>
                     </TextBox>
 
-                    <TextBlock Grid.Row="2" Grid.Column="2" Text="GST(%):"
+                    <TextBlock Grid.Row="3" Grid.Column="2" Text="GST(%):"
                                FontSize="11" Foreground="#333" VerticalAlignment="Center"
                                Margin="10,0,4,0"/>
-                    <TextBox x:Name="TaxPercentBox" Grid.Row="2" Grid.Column="3"
+                    <TextBox x:Name="TaxPercentBox" Grid.Row="3" Grid.Column="3"
                              Style="{StaticResource BillingTextBoxFocus}"
                              Text="{Binding TaxPercent, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <TextBlock Grid.Row="2" Grid.Column="4" Text="GST(Rs):"
+                    <TextBlock Grid.Row="3" Grid.Column="4" Text="GST(Rs):"
                                FontSize="11" Foreground="#333" VerticalAlignment="Center"
                                Margin="10,0,4,0"/>
-                    <TextBox x:Name="GstRsBox" Grid.Row="2" Grid.Column="5"
+                    <TextBox x:Name="GstRsBox" Grid.Row="3" Grid.Column="5"
                              Style="{StaticResource BillingTextBoxFocus}"
                              Text="{Binding GstRs, UpdateSourceTrigger=PropertyChanged}"/>
 
-                    <TextBlock Grid.Row="2" Grid.Column="6" Text="After GST:"
+                    <TextBlock Grid.Row="3" Grid.Column="6" Text="After GST:"
                                FontSize="11" Foreground="#333" VerticalAlignment="Center"
                                Margin="10,0,4,0"/>
-                    <TextBlock Grid.Row="2" Grid.Column="7"
+                    <TextBlock Grid.Row="3" Grid.Column="7"
                                Text="{Binding AfterGSTDisplay}"
                                FontSize="12" FontWeight="SemiBold" Foreground="#333"
                                VerticalAlignment="Center" MinWidth="55"/>
 
-                    <!-- ── Row 4: NET TOTAL (right-aligned, big red) ── -->
-                    <StackPanel Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="8"
+                    <!-- ── Row 5: NET TOTAL (right-aligned, big red) ── -->
+                    <StackPanel Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="8"
                                 Orientation="Horizontal" HorizontalAlignment="Right">
                         <TextBlock Text="NET TOTAL :" FontSize="20" FontWeight="Bold"
                                    Foreground="{StaticResource NetTotalRedBrush}"
