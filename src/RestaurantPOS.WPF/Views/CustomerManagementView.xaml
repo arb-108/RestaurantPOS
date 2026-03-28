@@ -271,7 +271,7 @@
             </Border>
 
             <!-- ── RIGHT: Detail Panel (visible when customer selected) ── -->
-            <Border Grid.Column="1" Width="340" Background="White" CornerRadius="6" Padding="20,16"
+            <Border Grid.Column="1" Width="480" Background="White" CornerRadius="6" Padding="20,16"
                     Visibility="{Binding IsDetailVisible, Converter={StaticResource BoolToVis}}">
                 <Border.Effect><DropShadowEffect BlurRadius="4" ShadowDepth="1" Opacity="0.06"/></Border.Effect>
                 <Grid>
@@ -367,10 +367,10 @@
                                   ScrollViewer.VerticalScrollBarVisibility="Auto"
                                   FontSize="11">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Order #" Binding="{Binding OrderNumber}" Width="70"/>
-                                <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="85"/>
-                                <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="55"/>
-                                <DataGridTemplateColumn Header="Items" Width="42">
+                                <DataGridTextColumn Header="Order #" Binding="{Binding OrderNumber}" Width="Auto"/>
+                                <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="Auto"/>
+                                <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="Auto"/>
+                                <DataGridTemplateColumn Header="Items" Width="Auto">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <TextBlock Text="{Binding Items}" FontSize="10"
@@ -379,7 +379,7 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Header="Status" Width="55">
+                                <DataGridTemplateColumn Header="Status" Width="Auto">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Border CornerRadius="3" Padding="4,1" HorizontalAlignment="Left">
@@ -401,7 +401,7 @@
                                         </DataTemplate>
                                     </DataGridTemplateColumn.CellTemplate>
                                 </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="Total" Binding="{Binding Total}" Width="*"/>
+                                <DataGridTextColumn Header="Total" Binding="{Binding Total}" Width="Auto"/>
                             </DataGrid.Columns>
                         </DataGrid>
                     </Grid>
