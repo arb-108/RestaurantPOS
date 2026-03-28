@@ -144,6 +144,43 @@ public partial class App : System.Windows.Application
                 await db.Database.ExecuteSqlRawAsync(@"
                     CREATE UNIQUE INDEX IF NOT EXISTS IX_Payrolls_Employee_Year_Month
                     ON Payrolls (EmployeeId, Year, Month)");
+
+                // Make SupplierExpense.SupplierId nullable (for salary expenses without supplier)
+                // SQLite can't ALTER COLUMN, so recreate if the column is still NOT NULL
+                try
+                {
+                    await db.Database.ExecuteSqlRawAsync(
+                        "INSERT INTO SupplierExpenses (SupplierId, Description, Amount) VALUES (NULL, '__test__', 0)");
+                    await db.Database.ExecuteSqlRawAsync(
+                        "DELETE FROM SupplierExpenses WHERE Description = '__test__'");
+                }
+                catch
+                {
+                    // SupplierId is NOT NULL — recreate table
+                    await db.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys=OFF");
+                    await db.Database.ExecuteSqlRawAsync(@"
+                        CREATE TABLE SupplierExpenses_new (
+                            Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                            SupplierId INTEGER,
+                            Description TEXT NOT NULL,
+                            Amount INTEGER NOT NULL DEFAULT 0,
+                            ExpenseDate TEXT NOT NULL DEFAULT (datetime('now')),
+                            InvoiceNumber TEXT,
+                            Category TEXT,
+                            IsPaid INTEGER NOT NULL DEFAULT 0,
+                            Notes TEXT,
+                            CreatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+                            UpdatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+                            IsActive INTEGER NOT NULL DEFAULT 1,
+                            FOREIGN KEY (SupplierId) REFERENCES Suppliers(Id)
+                        )");
+                    await db.Database.ExecuteSqlRawAsync(
+                        "INSERT INTO SupplierExpenses_new SELECT * FROM SupplierExpenses");
+                    await db.Database.ExecuteSqlRawAsync("DROP TABLE SupplierExpenses");
+                    await db.Database.ExecuteSqlRawAsync(
+                        "ALTER TABLE SupplierExpenses_new RENAME TO SupplierExpenses");
+                    await db.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys=ON");
+                }
             }
             catch (Exception ex)
             {

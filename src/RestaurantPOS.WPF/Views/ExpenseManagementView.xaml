@@ -210,15 +210,15 @@
                               ColumnHeaderStyle="{StaticResource DgHeader}" RowStyle="{StaticResource DgRow}" CellStyle="{StaticResource DgCell}"
                               VerticalScrollBarVisibility="Auto">
                         <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="" Width="auto">
+                        <!--<DataGridTemplateColumn Header="" Width="auto">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Button Background="#DC2626" Style="{StaticResource RowBtn}" Content="&#xE74D;"
                 Command="{Binding DataContext.DeleteExpenseCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
-                        </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="SUPPLIER" Binding="{Binding Supplier.Name}" Width="auto">
+                            </DataGridTemplateColumn>-->
+                            <DataGridTextColumn Header="SUPPLIER" Binding="{Binding Supplier.Name}" Width="auto">
                                 <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="FontWeight" Value="SemiBold"/><Setter Property="Foreground" Value="#111827"/></Style></DataGridTextColumn.ElementStyle>
                             </DataGridTextColumn>
                             <DataGridTextColumn Header="DESCRIPTION" Binding="{Binding Description}" Width="auto"/>

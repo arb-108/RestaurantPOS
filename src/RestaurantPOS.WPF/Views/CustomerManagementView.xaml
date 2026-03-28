@@ -94,8 +94,19 @@
                     <TextBlock Text="View, add, edit customers and their order history" FontSize="12" Foreground="#666" Margin="0,2,0,0"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                    <Button Style="{StaticResource Btn}" Content="&#xE72C;  Refresh" Background="#2196F3"
-                            Command="{Binding RefreshCommand}" Margin="0,0,8,0" FontFamily="Segoe MDL2 Assets, Segoe UI"/>
+                    <Button Style="{StaticResource Btn}" 
+        Background="#2196F3" 
+        Command="{Binding RefreshCommand}" 
+        Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE72C;" 
+                   FontFamily="Segoe MDL2 Assets" 
+                   Margin="0,0,8,0" 
+                   VerticalAlignment="Center"/>
+                            <TextBlock Text="Refresh" 
+                   VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
                     <Button Style="{StaticResource Btn}" Content="+ Add Customer" Background="#4CAF50"
                             Command="{Binding AddCustomerCommand}"/>
                 </StackPanel>
@@ -215,13 +226,13 @@
                         </DataGrid.InputBindings>
 
                         <DataGrid.Columns>
-                            <DataGridTextColumn Header="#" Binding="{Binding Serial}" Width="40"/>
-                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
-                            <DataGridTextColumn Header="Phone" Binding="{Binding Phone}" Width="120"/>
-                            <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="160"/>
-                            <DataGridTextColumn Header="Address" Binding="{Binding Address}" Width="180"/>
-                            <DataGridTextColumn Header="Orders" Binding="{Binding OrderCount}" Width="60"/>
-                            <DataGridTemplateColumn Header="Tier" Width="80">
+                            <DataGridTextColumn Header="#" Binding="{Binding Serial}" Width="auto"/>
+                            <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="auto"/>
+                            <DataGridTextColumn Header="Phone" Binding="{Binding Phone}" Width="auto"/>
+                            <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="auto"/>
+                            <DataGridTextColumn Header="Address" Binding="{Binding Address}" Width="auto"/>
+                            <DataGridTextColumn Header="Orders" Binding="{Binding OrderCount}" Width="auto"/>
+                            <DataGridTemplateColumn Header="Tier" Width="auto">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
                                         <Border CornerRadius="3" Padding="6,2" HorizontalAlignment="Left">

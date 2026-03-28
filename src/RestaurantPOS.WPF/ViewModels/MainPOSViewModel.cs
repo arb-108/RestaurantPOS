@@ -1294,7 +1294,8 @@ public partial class MainPOSViewModel : BaseViewModel
 
         var driverWindow = new Views.DriverAssignWindow(
             delivery.DriverName, delivery.DriverPhone,
-            IsAdmin || _loggedInUser?.Role?.Name?.Equals("Manager", StringComparison.OrdinalIgnoreCase) == true);
+            IsAdmin || _loggedInUser?.Role?.Name?.Equals("Manager", StringComparison.OrdinalIgnoreCase) == true,
+            _db);
         driverWindow.Owner = System.Windows.Application.Current.MainWindow;
 
         if (driverWindow.ShowDialog() == true)

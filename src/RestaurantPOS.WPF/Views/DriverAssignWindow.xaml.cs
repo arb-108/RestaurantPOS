@@ -1,6 +1,10 @@
 using System.Collections.ObjectModel;
 using System.Windows;
 using System.Windows.Controls;
+using Microsoft.EntityFrameworkCore;
+using RestaurantPOS.Domain.Entities;
+using RestaurantPOS.Domain.Enums;
+using RestaurantPOS.Infrastructure.Data;
 
 namespace RestaurantPOS.WPF.Views;
 
@@ -11,62 +15,79 @@ public partial class DriverAssignWindow : Window
 
     public ObservableCollection<DriverInfo> Drivers { get; } = [];
 
-    // Static list persists across window instances during app session
-    private static readonly List<DriverInfo> _savedDrivers =
-    [
-        new() { Name = "Ali Raza", Phone = "0301-1234567" },
-        new() { Name = "Fahad Khan", Phone = "0312-9876543" },
-        new() { Name = "Imran Ahmed", Phone = "0333-4567890" },
-        new() { Name = "Usman Tariq", Phone = "0345-5678901" },
-        new() { Name = "Bilal Shah", Phone = "0300-2345678" }
-    ];
-
+    private readonly PosDbContext? _db;
+    private List<DriverInfo> _allDrivers = [];
     private readonly bool _canAddDriver;
-    private List<DriverInfo> _filteredDrivers = [];
 
-    public DriverAssignWindow(string currentDriver, string currentPhone, bool canAddDriver)
+    public DriverAssignWindow(string currentDriver, string currentPhone, bool canAddDriver, PosDbContext? db = null)
     {
         InitializeComponent();
         _canAddDriver = canAddDriver;
+        _db = db;
 
         if (canAddDriver)
             AddDriverPanel.Visibility = Visibility.Visible;
 
-        // Load drivers
-        RefreshDriverList(string.Empty);
-
-        // Pre-select current driver if assigned
-        if (!string.IsNullOrEmpty(currentDriver))
+        // Load drivers from DB
+        Loaded += async (_, _) =>
         {
-            var match = _filteredDrivers.FirstOrDefault(d => d.Name == currentDriver);
-            if (match != null)
-                LstDrivers.SelectedItem = match;
+            await LoadDriversAsync();
+
+            // Pre-select current driver
+            if (!string.IsNullOrEmpty(currentDriver))
+            {
+                var match = Drivers.FirstOrDefault(d => d.Name == currentDriver);
+                if (match != null)
+                    LstDrivers.SelectedItem = match;
+            }
+        };
+    }
+
+    private async Task LoadDriversAsync()
+    {
+        _allDrivers.Clear();
+
+        if (_db != null)
+        {
+            var employees = await _db.Employees
+                .Where(e => e.IsActive && e.Category == EmployeeCategory.Delivery && !e.LeavingDate.HasValue)
+                .OrderBy(e => e.Name)
+                .ToListAsync();
+
+            foreach (var emp in employees)
+            {
+                _allDrivers.Add(new DriverInfo
+                {
+                    EmployeeId = emp.Id,
+                    Name = emp.Name,
+                    Phone = emp.Phone ?? ""
+                });
+            }
         }
+
+        RefreshDriverList(string.Empty);
     }
 
     private void RefreshDriverList(string search)
     {
-        _filteredDrivers = string.IsNullOrWhiteSpace(search)
-            ? _savedDrivers.ToList()
-            : _savedDrivers.Where(d =>
+        var filtered = string.IsNullOrWhiteSpace(search)
+            ? _allDrivers
+            : _allDrivers.Where(d =>
                 d.Name.Contains(search, StringComparison.OrdinalIgnoreCase) ||
                 d.Phone.Contains(search, StringComparison.OrdinalIgnoreCase))
               .ToList();
 
         Drivers.Clear();
-        foreach (var d in _filteredDrivers)
+        foreach (var d in filtered)
             Drivers.Add(d);
 
         LstDrivers.ItemsSource = Drivers;
-
-        // Update driver count label
-        TxtDriverCount.Text = $"{_savedDrivers.Count} drivers available";
+        TxtDriverCount.Text = $"{_allDrivers.Count} driver{(_allDrivers.Count != 1 ? "s" : "")} available";
     }
 
     private void Search_TextChanged(object sender, TextChangedEventArgs e)
     {
         RefreshDriverList(TxtSearch.Text);
-        // Show/hide placeholder
         TxtSearchHint.Visibility = string.IsNullOrEmpty(TxtSearch.Text)
             ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -80,7 +101,7 @@ public partial class DriverAssignWindow : Window
         }
     }
 
-    private void AddDriver_Click(object sender, RoutedEventArgs e)
+    private async void AddDriver_Click(object sender, RoutedEventArgs e)
     {
         var name = TxtNewName.Text.Trim();
         var phone = TxtNewPhone.Text.Trim();
@@ -101,14 +122,26 @@ public partial class DriverAssignWindow : Window
             return;
         }
 
-        var newDriver = new DriverInfo { Name = name, Phone = phone };
-        _savedDrivers.Add(newDriver);
+        // Save to Employee DB as Delivery category
+        if (_db != null)
+        {
+            var emp = new Employee
+            {
+                Name = name,
+                Phone = phone,
+                Category = EmployeeCategory.Delivery,
+                EmploymentType = EmploymentType.FullTime,
+                Designation = "Driver",
+                JoiningDate = DateTime.UtcNow,
+                BasicSalary = 0
+            };
+            _db.Employees.Add(emp);
+            await _db.SaveChangesAsync();
+        }
 
-        // Clear search so newly added driver is visible in the unfiltered list
-        TxtSearch.Clear();
-        RefreshDriverList(string.Empty);
+        await LoadDriversAsync();
 
-        // Auto-select the newly added driver and set output properties
+        // Auto-select the newly added driver
         var match = Drivers.FirstOrDefault(d => d.Name == name && d.Phone == phone);
         if (match != null)
         {
@@ -143,6 +176,7 @@ public partial class DriverAssignWindow : Window
 
 public class DriverInfo
 {
+    public int EmployeeId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Phone { get; set; } = string.Empty;
 }
