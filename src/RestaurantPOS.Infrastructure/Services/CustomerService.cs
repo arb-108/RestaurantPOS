@@ -15,7 +15,7 @@ public class CustomerService : ICustomerService
     {
         return await _db.Customers
             .Include(c => c.Addresses)
-            .FirstOrDefaultAsync(c => c.Phone == phone);
+            .FirstOrDefaultAsync(c => c.Phone == phone && c.IsActive);
     }
 
     public async Task<Customer> CreateCustomerAsync(string name, string phone, string? email = null, string? address = null)
@@ -47,7 +47,7 @@ public class CustomerService : ICustomerService
         var lower = query.ToLowerInvariant();
         return await _db.Customers
             .Include(c => c.Addresses)
-            .Where(c => c.Phone.Contains(lower) || c.Name.ToLower().Contains(lower))
+            .Where(c => c.IsActive && (c.Phone.Contains(lower) || c.Name.ToLower().Contains(lower)))
             .Take(10)
             .ToListAsync();
     }
@@ -56,6 +56,7 @@ public class CustomerService : ICustomerService
     {
         return await _db.Customers
             .Include(c => c.Addresses)
+            .Where(c => c.IsActive)
             .OrderByDescending(c => c.CreatedAt)
             .ToListAsync();
     }
@@ -93,7 +94,8 @@ public class CustomerService : ICustomerService
         var customer = await _db.Customers.FindAsync(id);
         if (customer != null)
         {
-            _db.Customers.Remove(customer);
+            customer.IsActive = false;
+            customer.UpdatedAt = DateTime.UtcNow;
             await _db.SaveChangesAsync();
         }
     }
