@@ -789,7 +789,7 @@ public partial class MainPOSViewModel : BaseViewModel
         {
             var cashierId = _loggedInUser?.Id ?? 1;
             _currentOrder = await _orderService.CreateOrderAsync(
-                SelectedOrderType, SelectedTable?.Id, null, cashierId, activeShiftId);
+                SelectedOrderType, SelectedTable?.Id, _matchedCustomer?.Id, cashierId, activeShiftId);
             OrderNumber = _currentOrder.OrderNumber;
 
             // For Din-in: open table session (blue highlight handled by MultiBinding converter)
@@ -2012,6 +2012,13 @@ public partial class MainPOSViewModel : BaseViewModel
             IsPhoneSearchActive = false;
             IsPhoneNoResults = false;
             CustomerName = exact.Name;
+
+            // Immediately link customer to current order in DB
+            if (_currentOrder != null && _currentOrder.CustomerId != exact.Id)
+            {
+                _currentOrder.CustomerId = exact.Id;
+                _ = _orderService.UpdateOrderNotesAsync(_currentOrder.Id, _currentOrder.Notes, exact.Id);
+            }
         }
         else if (list.Count > 0)
         {
@@ -2046,6 +2053,13 @@ public partial class MainPOSViewModel : BaseViewModel
         IsPhoneSearchActive = false;
         IsPhoneNoResults = false;
         PhoneSearchResults.Clear();
+
+        // Immediately link customer to current order in DB
+        if (_currentOrder != null && _currentOrder.CustomerId != customer.Id)
+        {
+            _currentOrder.CustomerId = customer.Id;
+            _ = _orderService.UpdateOrderNotesAsync(_currentOrder.Id, _currentOrder.Notes, customer.Id);
+        }
     }
 
     /// <summary>
@@ -2086,6 +2100,13 @@ public partial class MainPOSViewModel : BaseViewModel
                     await _customerService.UpdateCustomerAsync(_matchedCustomer);
                     CustomerName = _matchedCustomer.Name;
                     CustomerPhone = _matchedCustomer.Phone;
+
+                    // Link customer to current order
+                    if (_currentOrder != null)
+                    {
+                        _currentOrder.CustomerId = _matchedCustomer.Id;
+                        await _orderService.UpdateOrderNotesAsync(_currentOrder.Id, _currentOrder.Notes, _matchedCustomer.Id);
+                    }
                 }
             }
 
@@ -2114,6 +2135,13 @@ public partial class MainPOSViewModel : BaseViewModel
             IsPhoneMatched = true;
             IsPhoneSearchActive = false;
             PhoneSearchResults.Clear();
+
+            // Immediately link to current order
+            if (_currentOrder != null && newCustomer != null)
+            {
+                _currentOrder.CustomerId = newCustomer.Id;
+                await _orderService.UpdateOrderNotesAsync(_currentOrder.Id, _currentOrder.Notes, newCustomer.Id);
+            }
         }
     }
 
