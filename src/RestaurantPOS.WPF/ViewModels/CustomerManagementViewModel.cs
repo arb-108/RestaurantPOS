@@ -5,6 +5,8 @@ using RestaurantPOS.Domain.Entities;
 using RestaurantPOS.Domain.Enums;
 using RestaurantPOS.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using RestaurantPOS.Printing;
+using RestaurantPOS.Printing.Receipt;
 using System.Collections.ObjectModel;
 using System.Windows;
 
@@ -14,6 +16,7 @@ public partial class CustomerManagementViewModel : BaseViewModel
 {
     private readonly ICustomerService _customerService;
     private readonly PosDbContext _db;
+    private readonly IPrintService _printService;
 
     // ── All customers loaded from DB ──
     private List<Customer> _allCustomers = [];
@@ -50,10 +53,11 @@ public partial class CustomerManagementViewModel : BaseViewModel
     [ObservableProperty] private string _detailNotes = "";
     [ObservableProperty] private int _detailOrderCount;
 
-    public CustomerManagementViewModel(ICustomerService customerService, PosDbContext db)
+    public CustomerManagementViewModel(ICustomerService customerService, PosDbContext db, IPrintService printService)
     {
         _customerService = customerService;
         _db = db;
+        _printService = printService;
         Title = "Customer Management";
     }
 
@@ -171,6 +175,7 @@ public partial class CustomerManagementViewModel : BaseViewModel
 
             CustomerOrders.Add(new CustomerOrderViewModel
             {
+                OrderId = o.Id,
                 OrderNumber = o.OrderNumber,
                 Date = o.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm"),
                 Type = o.OrderType.ToString(),
@@ -267,6 +272,50 @@ public partial class CustomerManagementViewModel : BaseViewModel
     }
 
     [RelayCommand]
+    private async Task PrintOrderReceiptAsync(CustomerOrderViewModel? orderRow)
+    {
+        if (orderRow == null) return;
+
+        var order = await _db.Orders
+            .Include(o => o.OrderItems).ThenInclude(oi => oi.MenuItem)
+            .Include(o => o.Customer).ThenInclude(c => c!.Addresses)
+            .FirstOrDefaultAsync(o => o.Id == orderRow.OrderId);
+        if (order == null) return;
+
+        var receiptData = new ReceiptData
+        {
+            RestaurantName = "KFC Restaurant",
+            OrderNumber = order.OrderNumber,
+            OrderType = order.OrderType.ToString(),
+            CashierName = "Admin",
+            SubTotal = order.SubTotal,
+            TaxAmount = order.TaxAmount,
+            DiscountAmount = order.DiscountAmount,
+            GrandTotal = order.GrandTotal,
+            CustomerName = order.Customer?.Name ?? "",
+            CustomerPhone = order.Customer?.Phone ?? "",
+            CustomerAddress = order.Customer?.Addresses?.FirstOrDefault(a => a.IsDefault)?.AddressLine1
+                              ?? order.Customer?.Addresses?.FirstOrDefault()?.AddressLine1 ?? "",
+        };
+
+        foreach (var oi in order.OrderItems)
+        {
+            receiptData.Items.Add(new ReceiptItem
+            {
+                Name = oi.MenuItem?.Name ?? "Item",
+                Quantity = oi.Quantity,
+                UnitPrice = oi.UnitPrice,
+                LineTotal = oi.LineTotal,
+                Notes = oi.Notes ?? ""
+            });
+        }
+
+        var previewWindow = new Views.PrintPreviewWindow(receiptData, _printService);
+        previewWindow.Owner = System.Windows.Application.Current.MainWindow;
+        previewWindow.ShowDialog();
+    }
+
+    [RelayCommand]
     private void CloseDetail()
     {
         IsDetailVisible = false;
@@ -300,6 +349,7 @@ public partial class CustomerRowViewModel : ObservableObject
 // ── Row view model for customer's order history ──
 public partial class CustomerOrderViewModel : ObservableObject
 {
+    public int OrderId { get; set; }
     public string OrderNumber { get; set; } = "";
     public string Date { get; set; } = "";
     public string Type { get; set; } = "";

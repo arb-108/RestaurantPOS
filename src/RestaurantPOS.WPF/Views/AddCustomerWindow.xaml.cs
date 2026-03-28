@@ -11,6 +11,9 @@ public partial class AddCustomerWindow : Window
     public string CustomerEmail => TxtEmail.Text.Trim();
     public string CustomerAddress => TxtAddress.Text.Trim();
 
+    /// <summary>True when opened in edit/view mode for an existing matched customer.</summary>
+    public bool IsEditMode { get; }
+
     private TextBox[] _fields = [];
 
     public AddCustomerWindow(string prefillPhone = "")
@@ -24,6 +27,29 @@ public partial class AddCustomerWindow : Window
         Loaded += (_, _) => TxtName.Focus();
 
         // Enter advances between fields, last field → Save button
+        PreviewKeyDown += OnFormKeyDown;
+    }
+
+    /// <summary>
+    /// Edit mode: pre-fill all fields and focus Save button.
+    /// Used when phone is matched and user presses Enter.
+    /// </summary>
+    public AddCustomerWindow(string name, string phone, string email, string address)
+    {
+        InitializeComponent();
+        IsEditMode = true;
+        Title = "Customer Details";
+
+        TxtName.Text = name;
+        TxtMobile.Text = phone;
+        TxtEmail.Text = email;
+        TxtAddress.Text = address;
+
+        _fields = [TxtName, TxtMobile, TxtEmail, TxtAddress];
+
+        // Focus Save button on load so Enter immediately closes
+        Loaded += (_, _) => BtnSave.Focus();
+
         PreviewKeyDown += OnFormKeyDown;
     }
 

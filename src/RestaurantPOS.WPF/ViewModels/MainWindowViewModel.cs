@@ -130,6 +130,12 @@ public partial class MainWindowViewModel : BaseViewModel
     }
 
     [RelayCommand]
+    private void NavigateToEmployees()
+    {
+        NavigateTo<EmployeeManagementViewModel>();
+    }
+
+    [RelayCommand]
     private void NavigateToSettings()
     {
         NavigateTo<SettingsViewModel>();

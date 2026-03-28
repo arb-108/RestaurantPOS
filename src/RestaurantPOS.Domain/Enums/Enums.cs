@@ -127,3 +127,28 @@ public enum CustomerTier
     Gold,
     Platinum
 }
+
+public enum EmployeeCategory
+{
+    Kitchen,
+    Service,
+    Delivery,
+    Management,
+    Cleaning,
+    Other
+}
+
+public enum EmploymentType
+{
+    FullTime,
+    PartTime,
+    Contract,
+    Daily
+}
+
+public enum PayrollStatus
+{
+    Pending,
+    Paid,
+    Partial
+}

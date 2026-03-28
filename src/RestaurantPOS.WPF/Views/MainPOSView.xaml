@@ -1072,6 +1072,10 @@
                                                                        FontWeight="SemiBold" Foreground="#333"
                                                                        TextTrimming="CharacterEllipsis"/>
                                                             <TextBlock Text="{Binding CustomerPhone}" FontSize="10" Foreground="#888"/>
+                                                            <TextBlock Text="{Binding AddressDisplay}" FontSize="9" Foreground="#666"
+                                                                       TextTrimming="CharacterEllipsis" MaxWidth="140"
+                                                                       Visibility="{Binding HasAddress, Converter={StaticResource BoolToVis}}"
+                                                                       ToolTip="{Binding CustomerAddress}"/>
                                                         </StackPanel>
 
                                                         <StackPanel Grid.Column="1">
@@ -2225,6 +2229,12 @@
                                                            FontWeight="SemiBold" Foreground="#333"
                                                            TextTrimming="CharacterEllipsis"/>
                                                 <TextBlock Text="{Binding CustomerPhone}" FontSize="11" Foreground="#888"/>
+                                                <TextBlock FontSize="10" Foreground="#666" TextTrimming="CharacterEllipsis"
+                                                           ToolTip="{Binding CustomerAddress}"
+                                                           Visibility="{Binding HasAddress, Converter={StaticResource BoolToVis}}">
+                                                    <Run Text="&#xE81D;" FontFamily="Segoe MDL2 Assets" FontSize="9"/>
+                                                    <Run Text="{Binding AddressDisplay, Mode=OneWay}"/>
+                                                </TextBlock>
                                             </StackPanel>
                                             <StackPanel Grid.Column="1">
                                                 <TextBlock FontSize="11" Foreground="#666">

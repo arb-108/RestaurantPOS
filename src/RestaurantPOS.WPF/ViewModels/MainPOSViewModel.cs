@@ -1031,6 +1031,7 @@ public partial class MainPOSViewModel : BaseViewModel
                 TotalAmount = total,
                 CustomerName = state.CustomerName,
                 CustomerPhone = state.CustomerPhone,
+                CustomerAddress = state.CustomerAddress,
                 DeliveryStatus = state.DeliveryStatus,
                 DriverName = state.DriverName,
                 DriverPhone = state.DriverPhone,
@@ -1694,6 +1695,18 @@ public partial class MainPOSViewModel : BaseViewModel
     {
         if (_currentOrder == null || OrderItems.Count == 0) return;
 
+        // Delivery/Takeaway orders must be closed from their own sections
+        if (SelectedOrderType == OrderType.Delivery)
+        {
+            IsDeliveryMaximized = true;
+            return;
+        }
+        if (SelectedOrderType == OrderType.TakeAway)
+        {
+            IsTakeawayMaximized = true;
+            return;
+        }
+
         IsBusy = true;
         try
         {
@@ -2036,7 +2049,38 @@ public partial class MainPOSViewModel : BaseViewModel
     {
         if (IsPhoneMatched && _matchedCustomer != null)
         {
-            // Already matched — just close dropdown
+            // Matched — for delivery/takeaway, show customer details with edit ability
+            if (SelectedOrderType == OrderType.Delivery || SelectedOrderType == OrderType.TakeAway)
+            {
+                var addr = _matchedCustomer.Addresses?.FirstOrDefault(a => a.IsDefault)?.AddressLine1
+                           ?? _matchedCustomer.Addresses?.FirstOrDefault()?.AddressLine1 ?? "";
+                var detailWindow = new Views.AddCustomerWindow(
+                    _matchedCustomer.Name, _matchedCustomer.Phone,
+                    _matchedCustomer.Email ?? "", addr);
+                detailWindow.Owner = System.Windows.Application.Current.MainWindow;
+
+                if (detailWindow.ShowDialog() == true)
+                {
+                    // Update customer in DB if changed
+                    _matchedCustomer.Name = detailWindow.CustomerName;
+                    _matchedCustomer.Phone = detailWindow.CustomerPhone;
+                    _matchedCustomer.Email = string.IsNullOrWhiteSpace(detailWindow.CustomerEmail) ? null : detailWindow.CustomerEmail;
+                    var existingAddr = _matchedCustomer.Addresses?.FirstOrDefault(a => a.IsDefault)
+                                       ?? _matchedCustomer.Addresses?.FirstOrDefault();
+                    if (existingAddr != null)
+                        existingAddr.AddressLine1 = detailWindow.CustomerAddress;
+                    else if (!string.IsNullOrWhiteSpace(detailWindow.CustomerAddress))
+                    {
+                        _matchedCustomer.Addresses ??= [];
+                        _matchedCustomer.Addresses.Add(new CustomerAddress { Label = "Primary", AddressLine1 = detailWindow.CustomerAddress, IsDefault = true });
+                    }
+
+                    await _customerService.UpdateCustomerAsync(_matchedCustomer);
+                    CustomerName = _matchedCustomer.Name;
+                    CustomerPhone = _matchedCustomer.Phone;
+                }
+            }
+
             IsPhoneSearchActive = false;
             PhoneSearchResults.Clear();
             return;
@@ -2551,6 +2595,7 @@ public class DeliveryOrderViewModel
     public long TotalAmount { get; set; }
     public string CustomerName { get; set; } = string.Empty;
     public string CustomerPhone { get; set; } = string.Empty;
+    public string CustomerAddress { get; set; } = string.Empty;
     public string DeliveryStatus { get; set; } = "Preparing";
     public string DriverName { get; set; } = string.Empty;
     public string DriverPhone { get; set; } = string.Empty;
@@ -2586,6 +2631,8 @@ public class DeliveryOrderViewModel
     public string PaymentStatusColor => IsSettled ? "#4CAF50" : "#E53935";
     public bool HasDriver => !string.IsNullOrEmpty(DriverName);
     public bool HasNote => !string.IsNullOrEmpty(OrderNote);
+    public bool HasAddress => !string.IsNullOrEmpty(CustomerAddress);
+    public string AddressDisplay => string.IsNullOrEmpty(CustomerAddress) ? "No address" : CustomerAddress;
 
     // ── Step-wise button visibility per phase ──
     // Preparing: Edit, Note, Assign Driver, Print → enabled. Complete, Pay → disabled.

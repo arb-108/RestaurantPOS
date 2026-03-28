@@ -49,6 +49,9 @@
         <DataTemplate DataType="{x:Type vm:CustomerManagementViewModel}">
             <views:CustomerManagementView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:EmployeeManagementViewModel}">
+            <views:EmployeeManagementView/>
+        </DataTemplate>
     </Window.Resources>
 
     <Window.InputBindings>
@@ -147,7 +150,8 @@
                         </StackPanel>
                     </Button>
                     <!-- Employees -->
-                    <Button Style="{StaticResource ToolbarButton}" ToolTip="Employees">
+                    <Button Style="{StaticResource ToolbarButton}" ToolTip="Employees"
+                            Command="{Binding NavigateToEmployeesCommand}">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#333"/>

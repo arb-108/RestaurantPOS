@@ -1,0 +1,345 @@
+<UserControl x:Class="RestaurantPOS.WPF.Views.EmployeeManagementView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             FontFamily="Segoe UI" Loaded="OnLoaded">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+
+        <Style x:Key="DgHeader" TargetType="DataGridColumnHeader">
+            <Setter Property="Background" Value="#283593"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="BorderBrush" Value="#1A237E"/>
+            <Setter Property="BorderThickness" Value="0,0,1,0"/>
+        </Style>
+        <Style x:Key="DgCell" TargetType="DataGridCell">
+            <Setter Property="Padding" Value="8,4"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="DataGridCell">
+                        <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}">
+                            <ContentPresenter VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#E3F2FD"/>
+                    <Setter Property="Foreground" Value="Black"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style x:Key="DgRow" TargetType="DataGridRow">
+            <Setter Property="FontSize" Value="12"/>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#F5F5F5"/>
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#E3F2FD"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="FilterBtn" TargetType="Button">
+            <Setter Property="Height" Value="32"/>
+            <Setter Property="Padding" Value="14,0"/>
+            <Setter Property="Margin" Value="0,0,6,0"/>
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Background="#F5F5F5">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Main content area -->
+        <Grid Grid.Column="0" Margin="16,12">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <!-- Tab bar + actions -->
+            <Grid Grid.Row="0" Margin="0,0,0,10">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Tabs -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal">
+                    <Button Content="Employees" Background="#283593" Style="{StaticResource FilterBtn}"
+                            Click="TabEmployees_Click"/>
+                    <Button Content="Payroll" Background="#00796B" Style="{StaticResource FilterBtn}"
+                            Click="TabPayroll_Click"/>
+                </StackPanel>
+
+                <!-- Search -->
+                <Border Grid.Column="1" Background="White" CornerRadius="4" BorderBrush="#DDD" BorderThickness="1"
+                        Height="32" Margin="12,0" MaxWidth="300" HorizontalAlignment="Left">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="14"
+                                   Foreground="#999" VerticalAlignment="Center" Margin="8,0,6,0"/>
+                        <TextBox x:Name="SearchBox" Grid.Column="1" FontSize="12" BorderThickness="0" VerticalContentAlignment="Center"
+                                 Text="{Binding EmployeeSearch, UpdateSourceTrigger=PropertyChanged}"/>
+                    </Grid>
+                </Border>
+
+                <!-- Action Buttons -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" x:Name="EmployeeActions">
+                    <ComboBox ItemsSource="{Binding CategoryOptions}" SelectedItem="{Binding EmployeeCategoryFilter}"
+                              Width="110" Height="32" FontSize="12" Margin="0,0,6,0" VerticalContentAlignment="Center"/>
+                    <Button Content="+ Add" Background="#2E7D32" Style="{StaticResource FilterBtn}"
+                            Command="{Binding AddEmployeeCommand}"/>
+                    <Button Content="Edit" Background="#1565C0" Style="{StaticResource FilterBtn}"
+                            Command="{Binding EditEmployeeCommand}"/>
+                    <Button Content="Delete" Background="#C62828" Style="{StaticResource FilterBtn}"
+                            Command="{Binding DeleteEmployeeCommand}"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" x:Name="PayrollActions" Visibility="Collapsed">
+                    <ComboBox ItemsSource="{Binding MonthOptions}" SelectedItem="{Binding PayrollMonthFilter}"
+                              Width="130" Height="32" FontSize="12" Margin="0,0,6,0" VerticalContentAlignment="Center"/>
+                    <Button Content="Generate Payroll" Background="#00796B" Style="{StaticResource FilterBtn}"
+                            Command="{Binding GeneratePayrollCommand}"/>
+                </StackPanel>
+            </Grid>
+
+            <!-- Employees DataGrid -->
+            <DataGrid x:Name="EmployeesGrid" Grid.Row="1"
+                      ItemsSource="{Binding Employees}"
+                      SelectedItem="{Binding SelectedEmployee}"
+                      AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#EEE"
+                      BorderThickness="1" BorderBrush="#E0E0E0" Background="White"
+                      ColumnHeaderStyle="{StaticResource DgHeader}"
+                      CellStyle="{StaticResource DgCell}"
+                      RowStyle="{StaticResource DgRow}"
+                      FontSize="12">
+                <DataGrid.InputBindings>
+                    <MouseBinding Gesture="LeftDoubleClick"
+                                  Command="{Binding SelectEmployeeCommand}"
+                                  CommandParameter="{Binding SelectedItem, RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
+                </DataGrid.InputBindings>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="#" Binding="{Binding Serial}" Width="40"/>
+                    <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="*"/>
+                    <DataGridTextColumn Header="Phone" Binding="{Binding Phone}" Width="110"/>
+                    <DataGridTextColumn Header="CNIC" Binding="{Binding CNIC}" Width="120"/>
+                    <DataGridTextColumn Header="Category" Binding="{Binding Category}" Width="90"/>
+                    <DataGridTextColumn Header="Designation" Binding="{Binding Designation}" Width="100"/>
+                    <DataGridTextColumn Header="Type" Binding="{Binding EmploymentType}" Width="80"/>
+                    <DataGridTextColumn Header="Salary" Binding="{Binding BasicSalary}" Width="90"/>
+                    <DataGridTextColumn Header="Joining" Binding="{Binding JoiningDate}" Width="90"/>
+                    <DataGridTemplateColumn Header="Status" Width="70">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="3" Padding="6,2" HorizontalAlignment="Left">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="#C8E6C9"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Status}" Value="Left">
+                                                    <Setter Property="Background" Value="#FFCDD2"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="SemiBold"/>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Payroll DataGrid -->
+            <DataGrid x:Name="PayrollGrid" Grid.Row="1" Visibility="Collapsed"
+                      ItemsSource="{Binding Payrolls}"
+                      AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                      GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#EEE"
+                      BorderThickness="1" BorderBrush="#E0E0E0" Background="White"
+                      ColumnHeaderStyle="{StaticResource DgHeader}"
+                      CellStyle="{StaticResource DgCell}"
+                      RowStyle="{StaticResource DgRow}"
+                      FontSize="12">
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Employee" Binding="{Binding EmployeeName}" Width="*"/>
+                    <DataGridTextColumn Header="Period" Binding="{Binding Period}" Width="90"/>
+                    <DataGridTextColumn Header="Basic" Binding="{Binding BasicSalary}" Width="80"/>
+                    <DataGridTextColumn Header="Allow." Binding="{Binding Allowances}" Width="70"/>
+                    <DataGridTextColumn Header="Deduct." Binding="{Binding Deductions}" Width="70"/>
+                    <DataGridTextColumn Header="Bonus" Binding="{Binding Bonus}" Width="70"/>
+                    <DataGridTextColumn Header="Advance" Binding="{Binding Advance}" Width="70"/>
+                    <DataGridTextColumn Header="Net Salary" Binding="{Binding NetSalary}" Width="90"/>
+                    <DataGridTemplateColumn Header="Status" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border CornerRadius="3" Padding="6,2" HorizontalAlignment="Left">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="#FFF9C4"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding Status}" Value="Paid">
+                                                    <Setter Property="Background" Value="#C8E6C9"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+                                    <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="SemiBold"/>
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Paid On" Binding="{Binding PaidAt}" Width="80"/>
+                    <DataGridTemplateColumn Header="" Width="Auto">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Content="Pay" Cursor="Hand" Margin="0,0,4,0"
+                                            Command="{Binding DataContext.MarkPayrollPaidCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="Bb" Background="#E8F5E9" CornerRadius="3" Padding="8,3">
+                                                    <TextBlock Text="Pay" FontSize="10" FontWeight="SemiBold" Foreground="#2E7D32"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Bb" Property="Background" Value="#C8E6C9"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                    <Button Content="Del" Cursor="Hand"
+                                            Command="{Binding DataContext.DeletePayrollCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}">
+                                        <Button.Template>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="Bb" Background="#FFEBEE" CornerRadius="3" Padding="8,3">
+                                                    <TextBlock Text="Del" FontSize="10" FontWeight="SemiBold" Foreground="#C62828"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="Bb" Property="Background" Value="#FFCDD2"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Button.Template>
+                                    </Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
+
+            <!-- Status bar -->
+            <Border Grid.Row="2" Background="White" CornerRadius="4" Padding="12,6" Margin="0,8,0,0"
+                    BorderBrush="#E0E0E0" BorderThickness="1">
+                <StackPanel Orientation="Horizontal">
+                    <TextBlock x:Name="StatusCount" Text="{Binding EmployeeCountText}" FontSize="11" Foreground="#666" Margin="0,0,20,0"/>
+                    <TextBlock x:Name="StatusTotal" Text="{Binding TotalPayrollText}" FontSize="11" Foreground="#2E7D32"
+                               FontWeight="SemiBold" Visibility="Collapsed"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <!-- Detail Panel (right side) -->
+        <Border Grid.Column="1" Width="280" Background="White" BorderBrush="#E0E0E0" BorderThickness="1,0,0,0"
+                Padding="16,12"
+                Visibility="{Binding IsDetailVisible, Converter={StaticResource BoolToVis}}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Header -->
+                <Grid Grid.Row="0" Margin="0,0,0,12">
+                    <TextBlock Text="Employee Details" FontSize="16" FontWeight="Bold" Foreground="#283593"/>
+                    <Button HorizontalAlignment="Right" Content="&#xE711;" FontFamily="Segoe MDL2 Assets"
+                            FontSize="14" Cursor="Hand" Command="{Binding CloseDetailCommand}"
+                            Background="Transparent" BorderThickness="0"/>
+                </Grid>
+
+                <!-- Info -->
+                <StackPanel Grid.Row="1">
+                    <TextBlock Text="{Binding DetailName}" FontSize="18" FontWeight="Bold" Foreground="#333" Margin="0,0,0,4"/>
+                    <TextBlock FontSize="12" Foreground="#666" Margin="0,0,0,2">
+                        <Run Text="&#xE717;" FontFamily="Segoe MDL2 Assets" FontSize="11"/>
+                        <Run Text="{Binding DetailPhone}"/>
+                    </TextBlock>
+
+                    <!-- Info cards -->
+                    <UniformGrid Columns="2" Margin="0,12,0,0">
+                        <Border Background="#E3F2FD" CornerRadius="6" Padding="10,8" Margin="0,0,4,4">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="Category" FontSize="9" Foreground="#666" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding DetailCategory}" FontSize="12" FontWeight="Bold"
+                                           Foreground="#1565C0" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#E8F5E9" CornerRadius="6" Padding="10,8" Margin="4,0,0,4">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="Salary" FontSize="9" Foreground="#666" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding DetailSalary}" FontSize="12" FontWeight="Bold"
+                                           Foreground="#2E7D32" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#FFF3E0" CornerRadius="6" Padding="10,8" Margin="0,4,4,0">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="Type" FontSize="9" Foreground="#666" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding DetailEmploymentType}" FontSize="12" FontWeight="Bold"
+                                           Foreground="#E65100" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                        <Border Background="#F3E5F5" CornerRadius="6" Padding="10,8" Margin="4,4,0,0">
+                            <StackPanel HorizontalAlignment="Center">
+                                <TextBlock Text="Joined" FontSize="9" Foreground="#666" HorizontalAlignment="Center"/>
+                                <TextBlock Text="{Binding DetailJoiningDate}" FontSize="10" FontWeight="Bold"
+                                           Foreground="#6A1B9A" HorizontalAlignment="Center"/>
+                            </StackPanel>
+                        </Border>
+                    </UniformGrid>
+
+                    <TextBlock Text="{Binding DetailDesignation}" FontSize="12" Foreground="#888"
+                               Margin="0,12,0,0" FontStyle="Italic"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+    </Grid>
+</UserControl>

@@ -58,6 +58,10 @@ public class PosDbContext : DbContext
     public DbSet<Supplier> Suppliers => Set<Supplier>();
     public DbSet<SupplierExpense> SupplierExpenses => Set<SupplierExpense>();
 
+    // Module J — Employees & Payroll
+    public DbSet<Employee> Employees => Set<Employee>();
+    public DbSet<Payroll> Payrolls => Set<Payroll>();
+
     // Module G — Settings & Sync
     public DbSet<TaxRate> TaxRates => Set<TaxRate>();
     public DbSet<Discount> Discounts => Set<Discount>();
@@ -143,6 +147,10 @@ public class PosDbContext : DbContext
         mb.Entity<Discount>().Property(d => d.Type).HasConversion<string>();
         mb.Entity<SyncQueue>().Property(sq => sq.Status).HasConversion<string>();
         mb.Entity<CashDrawerLog>().Property(c => c.Type).HasConversion<string>();
+        mb.Entity<Employee>().Property(e => e.Category).HasConversion<string>();
+        mb.Entity<Employee>().Property(e => e.EmploymentType).HasConversion<string>();
+        mb.Entity<Payroll>().Property(p => p.Status).HasConversion<string>();
+        mb.Entity<Payroll>().HasIndex(p => new { p.EmployeeId, p.Year, p.Month }).IsUnique();
 
         // ─── Seed Data ───
         SeedData(mb);
