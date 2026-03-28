@@ -94,6 +94,62 @@ public partial class App : System.Windows.Application
                 Log.Information("Database created with EnsureCreated");
             }
 
+            // Ensure new tables exist (EnsureCreated won't add to existing DB)
+            try
+            {
+                await db.Database.ExecuteSqlRawAsync(@"
+                    CREATE TABLE IF NOT EXISTS Employees (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        Name TEXT NOT NULL,
+                        Phone TEXT,
+                        Email TEXT,
+                        CNIC TEXT,
+                        Address TEXT,
+                        EmergencyContact TEXT,
+                        Category TEXT NOT NULL DEFAULT 'Service',
+                        EmploymentType TEXT NOT NULL DEFAULT 'FullTime',
+                        Designation TEXT,
+                        JoiningDate TEXT NOT NULL,
+                        LeavingDate TEXT,
+                        BasicSalary INTEGER NOT NULL DEFAULT 0,
+                        Allowances INTEGER NOT NULL DEFAULT 0,
+                        Deductions INTEGER NOT NULL DEFAULT 0,
+                        UserId INTEGER,
+                        CreatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+                        UpdatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+                        IsActive INTEGER NOT NULL DEFAULT 1,
+                        FOREIGN KEY (UserId) REFERENCES Users(Id)
+                    )");
+                await db.Database.ExecuteSqlRawAsync(@"
+                    CREATE TABLE IF NOT EXISTS Payrolls (
+                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        EmployeeId INTEGER NOT NULL,
+                        Month INTEGER NOT NULL,
+                        Year INTEGER NOT NULL,
+                        BasicSalary INTEGER NOT NULL DEFAULT 0,
+                        Allowances INTEGER NOT NULL DEFAULT 0,
+                        Deductions INTEGER NOT NULL DEFAULT 0,
+                        Bonus INTEGER NOT NULL DEFAULT 0,
+                        Advance INTEGER NOT NULL DEFAULT 0,
+                        NetSalary INTEGER NOT NULL DEFAULT 0,
+                        Status TEXT NOT NULL DEFAULT 'Pending',
+                        PaidAt TEXT,
+                        Notes TEXT,
+                        ExpenseId INTEGER,
+                        CreatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+                        UpdatedAt TEXT NOT NULL DEFAULT (datetime('now')),
+                        IsActive INTEGER NOT NULL DEFAULT 1,
+                        FOREIGN KEY (EmployeeId) REFERENCES Employees(Id)
+                    )");
+                await db.Database.ExecuteSqlRawAsync(@"
+                    CREATE UNIQUE INDEX IF NOT EXISTS IX_Payrolls_Employee_Year_Month
+                    ON Payrolls (EmployeeId, Year, Month)");
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "Failed to create Employee/Payroll tables");
+            }
+
             // Validate schema: check a column from a recent change
             try
             {
