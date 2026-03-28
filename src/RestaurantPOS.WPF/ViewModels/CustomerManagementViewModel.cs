@@ -269,9 +269,12 @@ public partial class CustomerManagementViewModel : BaseViewModel
     {
         if (SelectedCustomer == null) return;
 
-        var result = MessageBox.Show(
-            $"Are you sure you want to delete customer '{SelectedCustomer.Name}'?\nThis cannot be undone.",
-            "Delete Customer", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+        var orderCount = await _db.Orders.CountAsync(o => o.CustomerId == SelectedCustomer.Id);
+        var msg = orderCount > 0
+            ? $"Customer '{SelectedCustomer.Name}' has {orderCount} order(s) linked.\nThe customer will be deactivated but billing history will be preserved."
+            : $"Are you sure you want to delete customer '{SelectedCustomer.Name}'?";
+
+        var result = MessageBox.Show(msg, "Delete Customer", MessageBoxButton.YesNo, MessageBoxImage.Warning);
 
         if (result == MessageBoxResult.Yes)
         {

@@ -11,45 +11,29 @@ public partial class EmployeeManagementView : UserControl
         InitializeComponent();
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
+    private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         if (DataContext is EmployeeManagementViewModel vm)
-            vm.LoadDataCommand.Execute(null);
+            await vm.LoadDataCommand.ExecuteAsync(null);
     }
 
-    private void TabEmployees_Click(object sender, RoutedEventArgs e)
+    private void TabChanged(object sender, SelectionChangedEventArgs e)
     {
-        EmployeesGrid.Visibility = Visibility.Visible;
-        PayrollGrid.Visibility = Visibility.Collapsed;
-        EmployeeActions.Visibility = Visibility.Visible;
-        PayrollActions.Visibility = Visibility.Collapsed;
-        StatusTotal.Visibility = Visibility.Collapsed;
+        if (PanelEmployees == null || MainTabControl == null) return;
+
+        var idx = MainTabControl.SelectedIndex;
+        PanelEmployees.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
+        PanelPayroll.Visibility = idx == 1 ? Visibility.Visible : Visibility.Collapsed;
+
+        // Toggle filters per tab
+        FilterEmployees.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
+        FilterPayroll.Visibility = idx == 1 ? Visibility.Visible : Visibility.Collapsed;
+
+        // Toggle action buttons per tab
+        BtnEmployees.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
+        BtnPayroll.Visibility = idx == 1 ? Visibility.Visible : Visibility.Collapsed;
 
         if (DataContext is EmployeeManagementViewModel vm)
-        {
-            SearchBox.SetBinding(TextBox.TextProperty, new System.Windows.Data.Binding("EmployeeSearch")
-            {
-                UpdateSourceTrigger = System.Windows.Data.UpdateSourceTrigger.PropertyChanged
-            });
-            StatusCount.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("EmployeeCountText"));
-        }
-    }
-
-    private void TabPayroll_Click(object sender, RoutedEventArgs e)
-    {
-        EmployeesGrid.Visibility = Visibility.Collapsed;
-        PayrollGrid.Visibility = Visibility.Visible;
-        EmployeeActions.Visibility = Visibility.Collapsed;
-        PayrollActions.Visibility = Visibility.Visible;
-        StatusTotal.Visibility = Visibility.Visible;
-
-        if (DataContext is EmployeeManagementViewModel vm)
-        {
-            SearchBox.SetBinding(TextBox.TextProperty, new System.Windows.Data.Binding("PayrollSearch")
-            {
-                UpdateSourceTrigger = System.Windows.Data.UpdateSourceTrigger.PropertyChanged
-            });
-            StatusCount.SetBinding(TextBlock.TextProperty, new System.Windows.Data.Binding("PayrollCountText"));
-        }
+            vm.SelectedTab = idx;
     }
 }

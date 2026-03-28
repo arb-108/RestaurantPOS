@@ -287,6 +287,14 @@ public partial class EmployeeManagementViewModel : BaseViewModel
 
         if (result == MessageBoxResult.Yes)
         {
+            var payrollCount = await _db.Payrolls.CountAsync(p => p.EmployeeId == SelectedEmployee.Id && p.IsActive);
+            if (payrollCount > 0)
+            {
+                MessageBox.Show($"Cannot delete '{SelectedEmployee.Name}' — has {payrollCount} active payroll record(s).\nDelete payroll records first.",
+                    "Delete Blocked", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
             var emp = await _db.Employees.FindAsync(SelectedEmployee.Id);
             if (emp != null)
             {
