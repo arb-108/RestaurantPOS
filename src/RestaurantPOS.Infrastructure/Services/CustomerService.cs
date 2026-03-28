@@ -62,10 +62,24 @@ public class CustomerService : ICustomerService
 
     public async Task<Customer?> GetByIdWithOrdersAsync(int id)
     {
-        return await _db.Customers
+        var customer = await _db.Customers
             .Include(c => c.Addresses)
-            .Include(c => c.Orders.OrderByDescending(o => o.CreatedAt).Take(50))
             .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (customer != null)
+        {
+            // Load orders separately to avoid filtered-Include issues
+            var orders = await _db.Orders
+                .Where(o => o.CustomerId == id)
+                .OrderByDescending(o => o.CreatedAt)
+                .Take(50)
+                .ToListAsync();
+
+            foreach (var o in orders)
+                customer.Orders.Add(o);
+        }
+
+        return customer;
     }
 
     public async Task UpdateCustomerAsync(Customer customer)

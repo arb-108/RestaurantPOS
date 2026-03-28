@@ -296,6 +296,19 @@ public partial class MainPOSViewModel : BaseViewModel
     [ObservableProperty]
     private string _takeawayFilter = "All";
 
+    // ── Delivery/Takeaway full-screen toggle ──
+    [ObservableProperty]
+    private bool _isDeliveryMaximized;
+
+    [ObservableProperty]
+    private bool _isTakeawayMaximized;
+
+    [RelayCommand]
+    private void ToggleDeliveryMaximize() => IsDeliveryMaximized = !IsDeliveryMaximized;
+
+    [RelayCommand]
+    private void ToggleTakeawayMaximize() => IsTakeawayMaximized = !IsTakeawayMaximized;
+
     // ── HOLD tab: all open (non-checkout, non-unpaid) orders ──
     public ObservableCollection<HoldOrderViewModel> HoldOrders { get; } = [];
 
@@ -1860,6 +1873,8 @@ public partial class MainPOSViewModel : BaseViewModel
         OnPropertyChanged(nameof(OrderTypeDisplay));
         OnPropertyChanged(nameof(TableDisplay));
         RefreshHoldOrders();
+        RefreshDeliveryOrders();
+        RefreshTakeawayOrders();
 
         System.Windows.MessageBox.Show(
             $"Order marked as Un-Paid.\nReason: {reason}",

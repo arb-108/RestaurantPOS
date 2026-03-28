@@ -220,6 +220,7 @@
                             <DataGridTextColumn Header="Phone" Binding="{Binding Phone}" Width="120"/>
                             <DataGridTextColumn Header="Email" Binding="{Binding Email}" Width="160"/>
                             <DataGridTextColumn Header="Address" Binding="{Binding Address}" Width="180"/>
+                            <DataGridTextColumn Header="Orders" Binding="{Binding OrderCount}" Width="60"/>
                             <DataGridTemplateColumn Header="Tier" Width="80">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
@@ -366,10 +367,19 @@
                                   ScrollViewer.VerticalScrollBarVisibility="Auto"
                                   FontSize="11">
                             <DataGrid.Columns>
-                                <DataGridTextColumn Header="Order #" Binding="{Binding OrderNumber}" Width="80"/>
-                                <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="95"/>
-                                <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="65"/>
-                                <DataGridTemplateColumn Header="Status" Width="65">
+                                <DataGridTextColumn Header="Order #" Binding="{Binding OrderNumber}" Width="70"/>
+                                <DataGridTextColumn Header="Date" Binding="{Binding Date}" Width="85"/>
+                                <DataGridTextColumn Header="Type" Binding="{Binding Type}" Width="55"/>
+                                <DataGridTemplateColumn Header="Items" Width="42">
+                                    <DataGridTemplateColumn.CellTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Items}" FontSize="10"
+                                                       ToolTip="{Binding ItemsSummary}"
+                                                       VerticalAlignment="Center"/>
+                                        </DataTemplate>
+                                    </DataGridTemplateColumn.CellTemplate>
+                                </DataGridTemplateColumn>
+                                <DataGridTemplateColumn Header="Status" Width="55">
                                     <DataGridTemplateColumn.CellTemplate>
                                         <DataTemplate>
                                             <Border CornerRadius="3" Padding="4,1" HorizontalAlignment="Left">

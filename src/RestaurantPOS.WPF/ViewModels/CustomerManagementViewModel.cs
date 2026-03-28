@@ -153,9 +153,11 @@ public partial class CustomerManagementViewModel : BaseViewModel
         DetailLoyaltyPoints = $"{customer.LoyaltyPoints}";
         DetailNotes = customer.Notes ?? "";
 
-        // Load orders
+        // Load orders with items
         CustomerOrders.Clear();
         var orders = await _db.Orders
+            .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.MenuItem)
             .Where(o => o.CustomerId == customer.Id)
             .OrderByDescending(o => o.CreatedAt)
             .Take(50)
@@ -164,13 +166,18 @@ public partial class CustomerManagementViewModel : BaseViewModel
         DetailOrderCount = orders.Count;
         foreach (var o in orders)
         {
+            var itemsSummary = string.Join(", ",
+                o.OrderItems.Select(oi => $"{oi.MenuItem?.Name ?? "Item"} x{oi.Quantity}"));
+
             CustomerOrders.Add(new CustomerOrderViewModel
             {
                 OrderNumber = o.OrderNumber,
                 Date = o.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm"),
                 Type = o.OrderType.ToString(),
                 Status = o.Status.ToString(),
-                Total = $"Rs. {o.GrandTotal / 100m:N0}"
+                Total = $"Rs. {o.GrandTotal / 100m:N0}",
+                Items = o.OrderItems.Count,
+                ItemsSummary = itemsSummary
             });
         }
 
@@ -298,4 +305,6 @@ public partial class CustomerOrderViewModel : ObservableObject
     public string Type { get; set; } = "";
     public string Status { get; set; } = "";
     public string Total { get; set; } = "";
+    public int Items { get; set; }
+    public string ItemsSummary { get; set; } = "";
 }
