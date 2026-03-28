@@ -2510,6 +2510,31 @@ public partial class MainPOSViewModel : BaseViewModel
                 ).ToList();
             }
 
+            // Retroactively link orders that have customer phone in notes but no CustomerId
+            var unlinked = list.Where(o => o.CustomerId == null && !string.IsNullOrEmpty(o.Notes) && o.Notes.Contains("Mobile:")).ToList();
+            if (unlinked.Count > 0)
+            {
+                foreach (var order in unlinked)
+                {
+                    // Extract phone from "Mobile: xxx" line in notes
+                    var mobileLine = order.Notes!.Split('\n').FirstOrDefault(l => l.TrimStart().StartsWith("Mobile:"));
+                    if (mobileLine != null)
+                    {
+                        var phone = mobileLine.Substring(mobileLine.IndexOf(':') + 1).Trim();
+                        if (!string.IsNullOrEmpty(phone))
+                        {
+                            var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Phone == phone);
+                            if (customer != null)
+                            {
+                                order.CustomerId = customer.Id;
+                                order.Customer = customer;
+                            }
+                        }
+                    }
+                }
+                await _db.SaveChangesAsync();
+            }
+
             BillingHistory.Clear();
             foreach (var order in list)
                 BillingHistory.Add(order);
