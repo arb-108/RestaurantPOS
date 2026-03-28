@@ -1167,13 +1167,21 @@ public partial class MainPOSViewModel : BaseViewModel
 
                 if (state.Order != null)
                 {
+                    // Link customer to order (so it shows in Customer Management)
+                    int? custId = state.MatchedCustomer?.Id;
+
                     // Save notes if any
+                    var noteInfo = new System.Text.StringBuilder();
                     if (!string.IsNullOrEmpty(state.OrderNote))
-                    {
-                        var noteInfo = $"Note: {state.OrderNote}";
-                        int? custId = state.Order.CustomerId;
-                        await _orderService.UpdateOrderNotesAsync(state.Order.Id, noteInfo, custId);
-                    }
+                        noteInfo.AppendLine($"Note: {state.OrderNote}");
+                    if (!string.IsNullOrEmpty(state.CustomerName))
+                        noteInfo.AppendLine($"Customer: {state.CustomerName}");
+                    if (!string.IsNullOrEmpty(state.CustomerPhone))
+                        noteInfo.AppendLine($"Mobile: {state.CustomerPhone}");
+
+                    var notes = noteInfo.ToString().TrimEnd();
+                    if (!string.IsNullOrEmpty(notes) || custId.HasValue)
+                        await _orderService.UpdateOrderNotesAsync(state.Order.Id, string.IsNullOrEmpty(notes) ? null : notes, custId);
 
                     await _orderService.CalculateTotalsAsync(state.Order.Id, state.DiscountPercent, state.TaxPercent);
                     await _orderService.CheckoutAsync(state.Order.Id, settleWindow.SelectedPaymentMethodId, takeaway.TotalAmount);
@@ -1361,8 +1369,8 @@ public partial class MainPOSViewModel : BaseViewModel
                     if (!string.IsNullOrEmpty(state.CustomerAddress))
                         deliveryInfo.AppendLine($"Address: {state.CustomerAddress}");
 
-                    // Use the order's own CustomerId (not the current billing panel's customer)
-                    int? custId = state.Order.CustomerId;
+                    // Link customer to order (so it shows in Customer Management)
+                    int? custId = state.MatchedCustomer?.Id;
                     await _orderService.UpdateOrderNotesAsync(state.Order.Id, deliveryInfo.ToString().TrimEnd(), custId);
 
                     await _orderService.CalculateTotalsAsync(state.Order.Id, state.DiscountPercent, state.TaxPercent);
