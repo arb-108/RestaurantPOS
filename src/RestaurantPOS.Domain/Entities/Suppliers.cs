@@ -15,8 +15,8 @@ public class Supplier : BaseEntity
 
 public class SupplierExpense : BaseEntity
 {
-    public int SupplierId { get; set; }
-    public Supplier Supplier { get; set; } = null!;
+    public int? SupplierId { get; set; }
+    public Supplier? Supplier { get; set; }
     public string Description { get; set; } = string.Empty;
     public long Amount { get; set; }          // paisa
     public DateTime ExpenseDate { get; set; } = DateTime.UtcNow;
