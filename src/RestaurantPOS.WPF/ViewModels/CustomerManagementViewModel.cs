@@ -66,12 +66,27 @@ public partial class CustomerManagementViewModel : BaseViewModel
     {
         _allCustomers = (await _customerService.GetAllCustomersAsync()).ToList();
 
-        // Load order counts for all customers in one query
+        // Load order counts and actual totals for all customers in one query
         var customerIds = _allCustomers.Select(c => c.Id).ToList();
-        _customerOrderCounts = await _db.Orders
+        var orderStats = await _db.Orders
             .Where(o => o.CustomerId != null && customerIds.Contains(o.CustomerId!.Value) && o.Status == OrderStatus.Closed)
             .GroupBy(o => o.CustomerId!.Value)
-            .ToDictionaryAsync(g => g.Key, g => g.Count());
+            .Select(g => new { CustomerId = g.Key, Count = g.Count(), TotalSpent = g.Sum(o => o.GrandTotal) })
+            .ToDictionaryAsync(x => x.CustomerId);
+
+        _customerOrderCounts = orderStats.ToDictionary(x => x.Key, x => x.Value.Count);
+
+        // Sync TotalSpent from actual order data (fixes stale/zero values)
+        bool needsSave = false;
+        foreach (var c in _allCustomers)
+        {
+            if (orderStats.TryGetValue(c.Id, out var stats) && c.TotalSpent != stats.TotalSpent)
+            {
+                c.TotalSpent = stats.TotalSpent;
+                needsSave = true;
+            }
+        }
+        if (needsSave) await _db.SaveChangesAsync();
 
         ApplyFilter();
         UpdateStats();
