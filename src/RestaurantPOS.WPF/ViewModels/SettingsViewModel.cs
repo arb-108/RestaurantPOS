@@ -18,9 +18,20 @@ namespace RestaurantPOS.WPF.ViewModels;
 public partial class SettingsViewModel : BaseViewModel
 {
     private readonly ISettingsService _settingsService;
+    private readonly IAuthService _authService;
     private readonly PosDbContext _db;
 
     [ObservableProperty] private int _selectedTab;
+
+    // ═══════════════════════════════════════════════
+    //  TAB VISIBILITY (permission-based)
+    // ═══════════════════════════════════════════════
+    [ObservableProperty] private bool _canAccessGeneralTab = true;
+    [ObservableProperty] private bool _canAccessPrintersTab = true;
+    [ObservableProperty] private bool _canAccessBackupTab = true;
+    [ObservableProperty] private bool _canAccessReceiptTab = true;
+    [ObservableProperty] private bool _canAccessTaxTab = true;
+    [ObservableProperty] private bool _canAccessUsersTab = true;
 
     // ══════════════════════════════════════════════
     //  TAB 0: GENERAL SETTINGS
@@ -172,14 +183,38 @@ public partial class SettingsViewModel : BaseViewModel
     //  CONSTRUCTOR
     // ══════════════════════════════════════════════
 
-    public SettingsViewModel(ISettingsService settingsService, PosDbContext db)
+    public SettingsViewModel(ISettingsService settingsService, IAuthService authService, PosDbContext db)
     {
         _settingsService = settingsService;
+        _authService = authService;
         _db = db;
         Title = "Settings";
         BackupPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "RestaurantPOS", "backups");
+        ApplyTabPermissions();
+    }
+
+    private void ApplyTabPermissions()
+    {
+        // Tab 0: General — requires System app settings
+        CanAccessGeneralTab = _authService.HasPermission("System app settings");
+
+        // Tab 1: Printers — requires Manage printers & terminals
+        CanAccessPrintersTab = _authService.HasPermission("Manage printers & terminals");
+
+        // Tab 2: Backup — admin only (System app settings level 5)
+        CanAccessBackupTab = _authService.HasPermission("System app settings", minimumLevel: 5);
+
+        // Tab 3: Receipt — requires System app settings or Manage printers & terminals
+        CanAccessReceiptTab = _authService.HasPermission("System app settings")
+            || _authService.HasPermission("Manage printers & terminals");
+
+        // Tab 4: Tax — requires Manage tax & discounts
+        CanAccessTaxTab = _authService.HasPermission("Manage tax & discounts");
+
+        // Tab 5: Users & Roles — requires Manage users & roles
+        CanAccessUsersTab = _authService.HasPermission("Manage users & roles");
     }
 
     // ══════════════════════════════════════════════

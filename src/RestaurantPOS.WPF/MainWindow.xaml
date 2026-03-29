@@ -91,7 +91,8 @@
                     </Button>
                     <!-- Menu Settings (merged: Products, Deals, Tables, Suppliers) -->
                     <Button Style="{StaticResource ToolbarButton}"
-                            Command="{Binding NavigateToMenuCommand}" ToolTip="Menu Settings">
+                            Command="{Binding NavigateToMenuCommand}" ToolTip="Menu Settings"
+                            Visibility="{Binding CanAccessMenu, Converter={StaticResource BoolToVis}}">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="&#xE8BA;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#333"/>
@@ -101,7 +102,8 @@
                     </Button>
                     <!-- Expense (Suppliers + Expenses) -->
                     <Button Style="{StaticResource ToolbarButton}"
-                            Command="{Binding NavigateToExpensesCommand}" ToolTip="Expenses">
+                            Command="{Binding NavigateToExpensesCommand}" ToolTip="Expenses"
+                            Visibility="{Binding CanAccessExpenses, Converter={StaticResource BoolToVis}}">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="&#xE719;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#333"/>
@@ -111,7 +113,8 @@
                     </Button>
                     <!-- Stock Management -->
                     <Button Style="{StaticResource ToolbarButton}"
-                            Command="{Binding NavigateToStockCommand}" ToolTip="Stock Management">
+                            Command="{Binding NavigateToStockCommand}" ToolTip="Stock Management"
+                            Visibility="{Binding CanAccessStock, Converter={StaticResource BoolToVis}}">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="&#xE82D;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#333"/>
@@ -121,7 +124,8 @@
                     </Button>
                     <!-- Reports -->
                     <Button Style="{StaticResource ToolbarButton}"
-                            Command="{Binding NavigateToReportsCommand}" ToolTip="Reports">
+                            Command="{Binding NavigateToReportsCommand}" ToolTip="Reports"
+                            Visibility="{Binding CanAccessReports, Converter={StaticResource BoolToVis}}">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="&#xE9F9;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#333"/>
@@ -131,7 +135,8 @@
                     </Button>
                     <!-- Customers -->
                     <Button Style="{StaticResource ToolbarButton}" ToolTip="Customers"
-                            Command="{Binding NavigateToCustomersCommand}">
+                            Command="{Binding NavigateToCustomersCommand}"
+                            Visibility="{Binding CanAccessCustomers, Converter={StaticResource BoolToVis}}">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="&#xE77B;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#333"/>
@@ -141,7 +146,8 @@
                     </Button>
                     <!-- Returns -->
                     <Button Style="{StaticResource ToolbarButton}"
-                            Command="{Binding NavigateToOrdersCommand}" ToolTip="Returns">
+                            Command="{Binding NavigateToOrdersCommand}" ToolTip="Returns"
+                            Visibility="{Binding CanAccessReturns, Converter={StaticResource BoolToVis}}">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="&#xE7A7;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#333"/>
@@ -151,7 +157,8 @@
                     </Button>
                     <!-- Employees -->
                     <Button Style="{StaticResource ToolbarButton}" ToolTip="Employees"
-                            Command="{Binding NavigateToEmployeesCommand}">
+                            Command="{Binding NavigateToEmployeesCommand}"
+                            Visibility="{Binding CanAccessEmployees, Converter={StaticResource BoolToVis}}">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="&#xE716;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#333"/>
@@ -171,7 +178,8 @@
                     </Button>
                     <!-- Settings -->
                     <Button Style="{StaticResource ToolbarButton}"
-                            Command="{Binding NavigateToSettingsCommand}" ToolTip="Settings">
+                            Command="{Binding NavigateToSettingsCommand}" ToolTip="Settings"
+                            Visibility="{Binding CanAccessSettings, Converter={StaticResource BoolToVis}}">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="&#xE713;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#333"/>

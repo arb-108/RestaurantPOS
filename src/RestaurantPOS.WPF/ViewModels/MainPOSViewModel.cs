@@ -123,8 +123,44 @@ public partial class MainPOSViewModel : BaseViewModel
 
     // ── Current logged-in user (for role-based billing history) ──
     private User? _loggedInUser;
+    private IAuthService? _authService;
 
-    public void SetCurrentUser(User user) => _loggedInUser = user;
+    public void SetCurrentUser(User user, IAuthService authService)
+    {
+        _loggedInUser = user;
+        _authService = authService;
+        ApplyPermissions();
+    }
+
+    // ═══════════════════════════════════════════════
+    //  PERMISSION-BASED UI GUARDS
+    // ═══════════════════════════════════════════════
+
+    [ObservableProperty] private bool _canVoidOrder;
+    [ObservableProperty] private bool _canApplyDiscount;
+    [ObservableProperty] private bool _canCreateDiscount;
+    [ObservableProperty] private bool _canIssueRefund;
+    [ObservableProperty] private bool _canHoldRecallOrders;
+    [ObservableProperty] private bool _canProcessPayments;
+    [ObservableProperty] private bool _canManageTables;
+    [ObservableProperty] private bool _canOpenCashDrawer;
+
+    private void ApplyPermissions()
+    {
+        if (_authService == null) return;
+
+        CanVoidOrder = _authService.HasPermission("Void / cancel orders", minimumLevel: 5);
+        CanIssueRefund = _authService.HasPermission("Issue refunds", minimumLevel: 5);
+        CanHoldRecallOrders = _authService.HasPermission("Hold & recall orders");
+        CanProcessPayments = _authService.HasPermission("Process payments");
+        CanManageTables = _authService.HasPermission("Manage tables & sessions");
+        CanOpenCashDrawer = _authService.HasPermission("Cash drawer operations");
+
+        // Discount: level >= 2 can apply existing, level >= 5 can create new
+        int discountLevel = _authService.GetAccessLevel("Apply discounts");
+        CanApplyDiscount = discountLevel >= 2;
+        CanCreateDiscount = discountLevel >= 5;
+    }
 
     // ── Multi-order state store ──
     private readonly Dictionary<string, SavedOrderState> _orderStates = new();

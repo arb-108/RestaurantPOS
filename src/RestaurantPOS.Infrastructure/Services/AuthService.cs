@@ -11,6 +11,9 @@ public class AuthService : IAuthService
 {
     private readonly PosDbContext _db;
 
+    /// <summary>In-memory cache: permission name → access level (0-5).</summary>
+    private Dictionary<string, int> _permissionCache = new(StringComparer.OrdinalIgnoreCase);
+
     public AuthService(PosDbContext db) => _db = db;
 
     public async Task<User?> LoginAsync(string username, string password)
@@ -82,6 +85,33 @@ public class AuthService : IAuthService
             .Where(u => u.Id == userId)
             .SelectMany(u => u.Role.RolePermissions)
             .AnyAsync(rp => rp.Permission.Name == permissionName);
+    }
+
+    // ═══════════════════════════════════════════════════════
+    //  SYNCHRONOUS PERMISSION API (cached after login)
+    // ═══════════════════════════════════════════════════════
+
+    public async Task LoadPermissionsForUserAsync(User user)
+    {
+        var perms = await _db.RolePermissions
+            .Where(rp => rp.RoleId == user.RoleId)
+            .Include(rp => rp.Permission)
+            .ToListAsync();
+
+        _permissionCache = perms.ToDictionary(
+            rp => rp.Permission.Name,
+            rp => rp.AccessLevel,
+            StringComparer.OrdinalIgnoreCase);
+    }
+
+    public bool HasPermission(string permissionName, int minimumLevel = 1)
+    {
+        return _permissionCache.TryGetValue(permissionName, out var level) && level >= minimumLevel;
+    }
+
+    public int GetAccessLevel(string permissionName)
+    {
+        return _permissionCache.GetValueOrDefault(permissionName, 0);
     }
 
     private static string HashPin(string pin)
