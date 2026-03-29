@@ -205,6 +205,43 @@ public partial class ReportsViewModel : BaseViewModel
     private string _summaryMargin = "0%";
 
     // ══════════════════════════════════════════════
+    //  TAB 7: SALES REPORT (Reference-style)
+    // ══════════════════════════════════════════════
+
+    [ObservableProperty]
+    private DateTime _salesReportFrom = DateTime.Today;
+
+    [ObservableProperty]
+    private DateTime _salesReportTo = DateTime.Today;
+
+    [ObservableProperty]
+    private string _salesReportMode = "All Sale";
+
+    [ObservableProperty]
+    private string _salesReportCategory = "All";
+
+    public ObservableCollection<string> SalesReportModeOptions { get; } = ["All Sale", "Bill Wise"];
+    public ObservableCollection<string> SalesReportCategories { get; } = ["All"];
+    public ObservableCollection<SalesReportRow> SalesReportItems { get; } = [];
+
+    [ObservableProperty] private string _saleCategoryTotal = "";
+    [ObservableProperty] private string _saleTotal = "0";
+    [ObservableProperty] private string _saleDiscount = "0";
+    [ObservableProperty] private string _saleGrandTotal = "0";
+    [ObservableProperty] private string _saleExpenses = "0";
+    [ObservableProperty] private string _saleCashInHand = "0";
+    [ObservableProperty] private string _salesReportCount = "0 items";
+    [ObservableProperty] private bool _isCategoryMode;
+
+    // Auto-filter when category changes
+    partial void OnSalesReportCategoryChanged(string value) => _ = LoadSalesReportAsync();
+    partial void OnSalesReportModeChanged(string value)
+    {
+        IsCategoryMode = value != "All Sale";
+        _ = LoadSalesReportAsync();
+    }
+
+    // ══════════════════════════════════════════════
     //  CONSTRUCTOR
     // ══════════════════════════════════════════════
 
@@ -237,6 +274,8 @@ public partial class ReportsViewModel : BaseViewModel
             await LoadKitchenAsync();
             await LoadExpensesAsync();
             await LoadProfitLossAsync();
+            await LoadSalesReportCategoriesAsync();
+            await LoadSalesReportAsync();
         }
         catch (Exception ex)
         {
@@ -263,6 +302,7 @@ public partial class ReportsViewModel : BaseViewModel
                 case 4: await LoadKitchenAsync(); break;
                 case 5: await LoadExpensesAsync(); break;
                 case 6: await LoadProfitLossAsync(); break;
+                case 7: await LoadSalesReportAsync(); break;
             }
         }
         catch (Exception ex)
@@ -990,6 +1030,214 @@ public partial class ReportsViewModel : BaseViewModel
     }
 
     // ══════════════════════════════════════════════
+    //  TAB 7: SALES REPORT
+    // ══════════════════════════════════════════════
+
+    private async Task LoadSalesReportCategoriesAsync()
+    {
+        try
+        {
+            var categories = await _db.Categories
+                .Where(c => c.IsActive)
+                .OrderBy(c => c.Name)
+                .Select(c => c.Name)
+                .ToListAsync();
+
+            SalesReportCategories.Clear();
+            SalesReportCategories.Add("All");
+            foreach (var cat in categories)
+                SalesReportCategories.Add(cat);
+        }
+        catch { }
+    }
+
+    [RelayCommand]
+    private async Task LoadSalesReportAsync()
+    {
+        try
+        {
+            var fromUtc = SalesReportFrom.Date.ToUniversalTime();
+            var toUtc = SalesReportTo.Date.AddDays(1).ToUniversalTime();
+
+            if (SalesReportMode == "Bill Wise")
+            {
+                // Bill-wise: show each order as a row
+                var orders = await _db.Orders
+                    .Include(o => o.Customer)
+                    .Include(o => o.Payments).ThenInclude(p => p.PaymentMethod)
+                    .Where(o => o.Status == OrderStatus.Closed
+                        && o.CreatedAt >= fromUtc && o.CreatedAt < toUtc)
+                    .OrderByDescending(o => o.CreatedAt)
+                    .ToListAsync();
+
+                SalesReportItems.Clear();
+                int serial = 1;
+                long totalSale = 0, totalDiscount = 0, totalGrand = 0;
+
+                foreach (var o in orders)
+                {
+                    SalesReportItems.Add(new SalesReportRow
+                    {
+                        Serial = serial++,
+                        ItemName = $"{o.OrderNumber} - {o.OrderType} ({o.Customer?.Name ?? "Walk-in"})",
+                        Qty = 1,
+                        Total = $"Rs. {o.GrandTotal / 100m:N0}",
+                        RawTotal = o.GrandTotal
+                    });
+                    totalSale += o.SubTotal;
+                    totalDiscount += o.DiscountAmount;
+                    totalGrand += o.GrandTotal;
+                }
+
+                await SetSalesSummary(totalSale, totalDiscount, totalGrand, fromUtc, toUtc);
+                SalesReportCount = $"{orders.Count} bills";
+                SaleCategoryTotal = "";
+            }
+            else
+            {
+                // Item-wise (All Sale or filtered by category)
+                var query = _db.OrderItems
+                    .Include(oi => oi.MenuItem).ThenInclude(mi => mi.Category)
+                    .Include(oi => oi.Order)
+                    .Where(oi => oi.Order.Status == OrderStatus.Closed
+                        && oi.Order.CreatedAt >= fromUtc
+                        && oi.Order.CreatedAt < toUtc
+                        && oi.Status != OrderStatus.Void);
+
+                if (SalesReportCategory != "All")
+                    query = query.Where(oi => oi.MenuItem.Category.Name == SalesReportCategory);
+
+                var items = await query.ToListAsync();
+
+                var grouped = items
+                    .GroupBy(oi => oi.MenuItem?.Name ?? "Unknown")
+                    .Select(g => new
+                    {
+                        Name = g.Key,
+                        Qty = g.Sum(x => x.Quantity),
+                        Total = g.Sum(x => x.LineTotal)
+                    })
+                    .OrderByDescending(x => x.Total)
+                    .ToList();
+
+                SalesReportItems.Clear();
+                int serial = 1;
+                long itemTotal = 0;
+
+                foreach (var g in grouped)
+                {
+                    SalesReportItems.Add(new SalesReportRow
+                    {
+                        Serial = serial++,
+                        ItemName = g.Name,
+                        Qty = g.Qty,
+                        Total = $"Rs. {g.Total / 100m:N0}",
+                        RawTotal = g.Total
+                    });
+                    itemTotal += g.Total;
+                }
+
+                // Get order-level totals for the summary
+                var orderIds = items.Select(oi => oi.OrderId).Distinct().ToList();
+                var orderSummary = await _db.Orders
+                    .Where(o => orderIds.Contains(o.Id))
+                    .GroupBy(o => 1)
+                    .Select(g => new
+                    {
+                        SubTotal = g.Sum(o => o.SubTotal),
+                        Discount = g.Sum(o => o.DiscountAmount),
+                        Grand = g.Sum(o => o.GrandTotal)
+                    })
+                    .FirstOrDefaultAsync();
+
+                var sale = orderSummary?.SubTotal ?? itemTotal;
+                var disc = orderSummary?.Discount ?? 0;
+                var grand = orderSummary?.Grand ?? itemTotal;
+
+                await SetSalesSummary(sale, disc, grand, fromUtc, toUtc);
+                SalesReportCount = $"{grouped.Count} items";
+
+                if (SalesReportCategory != "All")
+                    SaleCategoryTotal = $"{SalesReportCategory}: Rs. {itemTotal / 100m:N0}";
+                else
+                    SaleCategoryTotal = "";
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Reports] SalesReport error: {ex.Message}");
+        }
+    }
+
+    private async Task SetSalesSummary(long sale, long discount, long grand, DateTime fromUtc, DateTime toUtc)
+    {
+        SaleTotal = $"Rs. {sale / 100m:N0}";
+        SaleDiscount = $"Rs. {discount / 100m:N0}";
+        SaleGrandTotal = $"Rs. {grand / 100m:N0}";
+
+        var expenses = await _db.SupplierExpenses
+            .Where(e => e.ExpenseDate >= fromUtc && e.ExpenseDate < toUtc)
+            .SumAsync(e => (long?)e.Amount) ?? 0;
+
+        SaleExpenses = $"Rs. {expenses / 100m:N0}";
+        var cashInHand = grand - expenses;
+        SaleCashInHand = $"Rs. {cashInHand / 100m:N0}";
+    }
+
+    [RelayCommand]
+    private void PrintSalesReport()
+    {
+        try
+        {
+            var data = new ReceiptData
+            {
+                RestaurantName = "KFC Restaurant",
+                OrderNumber = "Sales Report",
+                OrderType = SalesReportMode == "Bill Wise" ? "Bill Wise Sales" : (SalesReportCategory != "All" ? $"Category: {SalesReportCategory}" : "All Items"),
+                DateTime = DateTime.Now,
+                SubTotal = 0,
+                TaxAmount = 0,
+                DiscountAmount = 0,
+                GrandTotal = 0,
+                PaymentMethod = "-",
+                Items = []
+            };
+
+            // Header info
+            data.Items.Add(new ReceiptItem { Name = $"Period: {SalesReportFrom:dd/MM/yy} - {SalesReportTo:dd/MM/yy}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
+            data.Items.Add(new ReceiptItem { Name = "─────────────────────────────", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
+
+            // Items
+            foreach (var item in SalesReportItems)
+            {
+                data.Items.Add(new ReceiptItem
+                {
+                    Name = item.ItemName,
+                    Quantity = item.Qty,
+                    UnitPrice = item.Qty > 0 ? item.RawTotal / item.Qty : 0,
+                    LineTotal = item.RawTotal
+                });
+            }
+
+            // Summary
+            data.Items.Add(new ReceiptItem { Name = "─────────────────────────────", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
+            data.Items.Add(new ReceiptItem { Name = $"Sale: {SaleTotal}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
+            data.Items.Add(new ReceiptItem { Name = $"Discount: {SaleDiscount}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
+            data.Items.Add(new ReceiptItem { Name = $"Grand Total: {SaleGrandTotal}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
+            data.Items.Add(new ReceiptItem { Name = $"Expenses: {SaleExpenses}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
+            data.Items.Add(new ReceiptItem { Name = $"Cash In Hand: {SaleCashInHand}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
+
+            var preview = new Views.PrintPreviewWindow(data, _printService);
+            preview.Owner = AppWindow.Current.MainWindow;
+            preview.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Reports] PrintSalesReport error: {ex.Message}");
+        }
+    }
+
+    // ══════════════════════════════════════════════
     //  HELPER: Build report receipt and open preview
     // ══════════════════════════════════════════════
 
@@ -1097,4 +1345,13 @@ public class ProfitLossRow
     public string Margin { get; set; } = string.Empty;
     public long RawProfit { get; set; }
     public bool IsNegative => RawProfit < 0;
+}
+
+public class SalesReportRow
+{
+    public int Serial { get; set; }
+    public string ItemName { get; set; } = string.Empty;
+    public int Qty { get; set; }
+    public string Total { get; set; } = string.Empty;
+    public long RawTotal { get; set; }
 }
