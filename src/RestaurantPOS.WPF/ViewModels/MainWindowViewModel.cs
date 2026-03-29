@@ -216,12 +216,11 @@ public partial class MainWindowViewModel : BaseViewModel
         // Employees — requires Manage employees
         CanAccessEmployees = _authService.HasPermission("Manage employees");
 
-        // Settings — admin only (System app settings) or any config permission
+        // Settings — requires at least one config/admin permission
         CanAccessSettings = _authService.HasPermission("System app settings")
             || _authService.HasPermission("Manage printers & terminals")
             || _authService.HasPermission("Manage tax & discounts")
-            || _authService.HasPermission("Manage users & roles")
-            || _authService.HasPermission("View own profile");
+            || _authService.HasPermission("Manage users & roles");
     }
 
     private async void CheckActiveShiftAsync()
