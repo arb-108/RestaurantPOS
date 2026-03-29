@@ -53,7 +53,9 @@
       "Read(//d/Software/KFC/$LOCALAPPDATA/**)",
       "Bash(find D:/Software/KFC -path */Converters* -name *.cs)",
       "Bash(grep -rn \"KotData\\\\|PrintKotAsync\" \"D:\\\\Software\\\\KFC\\\\src\\\\RestaurantPOS.WPF\"\" --include=\"*.cs \")",
-      "Bash(tasklist)"
+      "Bash(tasklist)",
+      "Bash(powershell -Command \"Get-ChildItem -Path ''D:\\\\Software\\\\KFC\\\\src\\\\RestaurantPOS.WPF\\\\bin'' -Recurse -Filter ''*.exe'' | Unblock-File; Get-ChildItem -Path ''D:\\\\Software\\\\KFC\\\\src\\\\RestaurantPOS.WPF\\\\bin'' -Recurse -Filter ''*.dll'' | Unblock-File\")",
+      "Bash(wc -l *.cs)"
     ]
   }
 }

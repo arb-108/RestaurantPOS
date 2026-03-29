@@ -141,12 +141,12 @@
                     </Grid>
                 </ControlTemplate>
             </TabControl.Template>
-            <TabItem Header="General" Style="{StaticResource FolderTab}"/>
-            <TabItem Header="Printers" Style="{StaticResource FolderTab}"/>
-            <TabItem Header="Backup" Style="{StaticResource FolderTab}"/>
-            <TabItem Header="Receipt" Style="{StaticResource FolderTab}"/>
-            <TabItem Header="Tax" Style="{StaticResource FolderTab}"/>
-            <TabItem Header="Users &amp; Roles" Style="{StaticResource FolderTab}"/>
+            <TabItem Header="General" Style="{StaticResource FolderTab}" Visibility="{Binding CanAccessGeneralTab, Converter={StaticResource BoolToVis}}"/>
+            <TabItem Header="Printers" Style="{StaticResource FolderTab}" Visibility="{Binding CanAccessPrintersTab, Converter={StaticResource BoolToVis}}"/>
+            <TabItem Header="Backup" Style="{StaticResource FolderTab}" Visibility="{Binding CanAccessBackupTab, Converter={StaticResource BoolToVis}}"/>
+            <TabItem Header="Receipt" Style="{StaticResource FolderTab}" Visibility="{Binding CanAccessReceiptTab, Converter={StaticResource BoolToVis}}"/>
+            <TabItem Header="Tax" Style="{StaticResource FolderTab}" Visibility="{Binding CanAccessTaxTab, Converter={StaticResource BoolToVis}}"/>
+            <TabItem Header="Users &amp; Roles" Style="{StaticResource FolderTab}" Visibility="{Binding CanAccessUsersTab, Converter={StaticResource BoolToVis}}"/>
         </TabControl>
 
         <!-- ROW 2: ACTION BAR -->

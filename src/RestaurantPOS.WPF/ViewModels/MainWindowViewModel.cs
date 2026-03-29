@@ -1,11 +1,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using RestaurantPOS.Application.Interfaces;
 
 namespace RestaurantPOS.WPF.ViewModels;
 
 public partial class MainWindowViewModel : BaseViewModel
 {
     private readonly IServiceProvider _serviceProvider;
+    private readonly IAuthService _authService;
     private readonly Dictionary<Type, BaseViewModel> _viewModelCache = [];
 
     [ObservableProperty]
@@ -32,14 +34,28 @@ public partial class MainWindowViewModel : BaseViewModel
     [ObservableProperty]
     private string _shiftIndicatorText = "No Shift";
 
+    // ═══════════════════════════════════════════════
+    //  NAV BUTTON VISIBILITY (permission-based)
+    // ═══════════════════════════════════════════════
+
+    [ObservableProperty] private bool _canAccessMenu = true;
+    [ObservableProperty] private bool _canAccessExpenses = true;
+    [ObservableProperty] private bool _canAccessStock = true;
+    [ObservableProperty] private bool _canAccessReports = true;
+    [ObservableProperty] private bool _canAccessCustomers = true;
+    [ObservableProperty] private bool _canAccessReturns = true;
+    [ObservableProperty] private bool _canAccessEmployees = true;
+    [ObservableProperty] private bool _canAccessSettings = true;
+
     /// <summary>The currently logged-in user object (for role-based features).</summary>
     public Domain.Entities.User? LoggedInUser { get; private set; }
 
     private System.Windows.Threading.DispatcherTimer? _clockTimer;
 
-    public MainWindowViewModel(IServiceProvider serviceProvider)
+    public MainWindowViewModel(IServiceProvider serviceProvider, IAuthService authService)
     {
         _serviceProvider = serviceProvider;
+        _authService = authService;
         Title = "Restaurant POS";
         StartClock();
     }
@@ -155,20 +171,57 @@ public partial class MainWindowViewModel : BaseViewModel
         NavigateTo<LoginViewModel>();
     }
 
-    public void OnUserLoggedIn(Domain.Entities.User user)
+    public async void OnUserLoggedIn(Domain.Entities.User user)
     {
         LoggedInUser = user;
         CurrentUser = user.FullName;
         IsLoggedIn = true;
 
+        // Load permissions for the logged-in user
+        await _authService.LoadPermissionsForUserAsync(user);
+
+        // Set nav button visibility based on permissions
+        ApplyNavPermissions();
+
         // Set the logged-in user on MainPOSViewModel (singleton)
         var posVm = (MainPOSViewModel)_serviceProvider.GetService(typeof(MainPOSViewModel))!;
-        posVm.SetCurrentUser(user);
+        posVm.SetCurrentUser(user, _authService);
 
         // Check if there's an active shift
         CheckActiveShiftAsync();
 
         NavigateTo<MainPOSViewModel>();
+    }
+
+    private void ApplyNavPermissions()
+    {
+        // Menu Settings — requires Manage menu items (level >= 1)
+        CanAccessMenu = _authService.HasPermission("Manage menu items");
+
+        // Expenses — requires Manage expenses or Manage suppliers
+        CanAccessExpenses = _authService.HasPermission("Manage expenses") || _authService.HasPermission("Manage suppliers");
+
+        // Stock — requires Manage stock & recipes
+        CanAccessStock = _authService.HasPermission("Manage stock & recipes");
+
+        // Reports — requires View reports & analytics
+        CanAccessReports = _authService.HasPermission("View reports & analytics");
+
+        // Customers — requires Manage customers & loyalty
+        CanAccessCustomers = _authService.HasPermission("Manage customers & loyalty");
+
+        // Returns (Order History) — requires Issue refunds or Void / cancel orders
+        CanAccessReturns = _authService.HasPermission("Issue refunds") || _authService.HasPermission("Void / cancel orders");
+
+        // Employees — requires Manage employees
+        CanAccessEmployees = _authService.HasPermission("Manage employees");
+
+        // Settings — admin only (System app settings) or any config permission
+        CanAccessSettings = _authService.HasPermission("System app settings")
+            || _authService.HasPermission("Manage printers & terminals")
+            || _authService.HasPermission("Manage tax & discounts")
+            || _authService.HasPermission("Manage users & roles")
+            || _authService.HasPermission("View own profile");
     }
 
     private async void CheckActiveShiftAsync()

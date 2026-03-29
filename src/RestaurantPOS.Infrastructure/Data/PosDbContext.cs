@@ -160,51 +160,119 @@ public class PosDbContext : DbContext
     {
         var now = new DateTime(2025, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        // Roles
+        // Roles — only 3 roles
         mb.Entity<Role>().HasData(
             new Role { Id = 1, Name = "admin", Description = "System Administrator", CreatedAt = now, UpdatedAt = now },
             new Role { Id = 2, Name = "manager", Description = "Restaurant Manager", CreatedAt = now, UpdatedAt = now },
-            new Role { Id = 3, Name = "cashier", Description = "Cashier / POS Operator", CreatedAt = now, UpdatedAt = now },
-            new Role { Id = 4, Name = "waiter", Description = "Waiter / Server", CreatedAt = now, UpdatedAt = now },
-            new Role { Id = 5, Name = "kitchen", Description = "Kitchen Staff", CreatedAt = now, UpdatedAt = now }
+            new Role { Id = 3, Name = "cashier", Description = "Cashier / POS Operator", CreatedAt = now, UpdatedAt = now }
         );
 
-        // Permissions (matching reference POS access-level pattern)
+        // Permissions — 27 permissions across 5 modules
         mb.Entity<Permission>().HasData(
-            // General
-            new Permission { Id = 1, Name = "Management", Module = "General", Description = "Access management features", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 2, Name = "Settings", Module = "General", Description = "Modify system settings", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 3, Name = "End of Day", Module = "General", Description = "Run end-of-day process", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 4, Name = "User Profile", Module = "General", Description = "View/edit own profile", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 5, Name = "Design Floor Plans", Module = "General", Description = "Edit floor plan layout", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 6, Name = "View Reports", Module = "General", Description = "Access reports module", CreatedAt = now, UpdatedAt = now },
-            // Sales
-            new Permission { Id = 7, Name = "View All Open Orders", Module = "Sales", Description = "See all open orders", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 8, Name = "Void Order", Module = "Sales", Description = "Void an entire order", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 9, Name = "Void Item", Module = "Sales", Description = "Void individual items", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 10, Name = "Lock Sale", Module = "Sales", Description = "Lock a sale/hold order", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 11, Name = "Unlock Sale", Module = "Sales", Description = "Unlock a held sale", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 12, Name = "Split Order", Module = "Sales", Description = "Split order between bills", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 13, Name = "Reprint Receipt", Module = "Sales", Description = "Reprint any receipt", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 14, Name = "Starting Cash", Module = "Sales", Description = "Set starting cash amount", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 15, Name = "Open Cash Drawer", Module = "Sales", Description = "Open the cash drawer", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 16, Name = "Apply Discount", Module = "Sales", Description = "Apply discounts to orders", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 17, Name = "Zero Stock Quantity Sale", Module = "Sales", Description = "Sell items with zero stock", CreatedAt = now, UpdatedAt = now },
-            // Inventory
-            new Permission { Id = 18, Name = "Manage Stock", Module = "Inventory", Description = "Adjust stock levels", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 19, Name = "Manage Menu", Module = "Inventory", Description = "Edit menu items/categories", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 20, Name = "Manage Suppliers", Module = "Inventory", Description = "Manage suppliers/expenses", CreatedAt = now, UpdatedAt = now },
-            // HR
-            new Permission { Id = 21, Name = "Manage Employees", Module = "HR", Description = "Manage employee records", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 22, Name = "Manage Payroll", Module = "HR", Description = "Process payroll", CreatedAt = now, UpdatedAt = now },
-            new Permission { Id = 23, Name = "Manage Customers", Module = "HR", Description = "Manage customer records", CreatedAt = now, UpdatedAt = now }
+            // General (1–4)
+            new Permission { Id = 1,  Name = "Login / authentication",     Module = "General",      Description = "Login and authenticate", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 2,  Name = "View own profile",           Module = "General",      Description = "View/edit own profile", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 3,  Name = "Manage users & roles",       Module = "General",      Description = "Create/edit users and roles", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 4,  Name = "View audit log",             Module = "General",      Description = "View system audit trail", CreatedAt = now, UpdatedAt = now },
+            // Sales (5–14)
+            new Permission { Id = 5,  Name = "Create & process orders",    Module = "Sales",        Description = "Create and process orders", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 6,  Name = "Apply discounts",            Module = "Sales",        Description = "Apply discounts to orders", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 7,  Name = "Void / cancel orders",       Module = "Sales",        Description = "Void or cancel orders", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 8,  Name = "Hold & recall orders",       Module = "Sales",        Description = "Hold and recall orders", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 9,  Name = "Process payments",           Module = "Sales",        Description = "Process order payments", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 10, Name = "Issue refunds",              Module = "Sales",        Description = "Issue refunds on orders", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 11, Name = "Manage tables & sessions",   Module = "Sales",        Description = "Manage table assignments", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 12, Name = "Manage customers & loyalty", Module = "Sales",        Description = "Manage customers and loyalty", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 13, Name = "Open / close shift",         Module = "Sales",        Description = "Open and close shifts", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 14, Name = "Cash drawer operations",     Module = "Sales",        Description = "Cash drawer open/close", CreatedAt = now, UpdatedAt = now },
+            // Inventory (15–18)
+            new Permission { Id = 15, Name = "View menu & categories",     Module = "Inventory",    Description = "View menu items and categories", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 16, Name = "Manage menu items",          Module = "Inventory",    Description = "Add/edit/delete menu items", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 17, Name = "Manage stock & recipes",     Module = "Inventory",    Description = "Manage stock and recipes", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 18, Name = "View kitchen orders",        Module = "Inventory",    Description = "View kitchen display orders", CreatedAt = now, UpdatedAt = now },
+            // HR & Finance (19–22)
+            new Permission { Id = 19, Name = "Manage employees",           Module = "HR & Finance", Description = "Manage employee records", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 20, Name = "Manage suppliers",           Module = "HR & Finance", Description = "Manage supplier records", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 21, Name = "Manage expenses",            Module = "HR & Finance", Description = "Manage expenses", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 22, Name = "Generate payroll",           Module = "HR & Finance", Description = "Generate payroll", CreatedAt = now, UpdatedAt = now },
+            // Config (23–27)
+            new Permission { Id = 23, Name = "View reports & analytics",   Module = "Config",       Description = "Access reports and analytics", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 24, Name = "Manage tax & discounts",     Module = "Config",       Description = "Manage tax rates and discounts", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 25, Name = "Manage printers & terminals", Module = "Config",      Description = "Manage printers and terminals", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 26, Name = "System app settings",        Module = "Config",       Description = "System application settings", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 27, Name = "Floor plan & table config",  Module = "Config",       Description = "Floor plan and table configuration", CreatedAt = now, UpdatedAt = now }
         );
 
-        // Admin role gets ALL permissions (access level 5 = full)
-        var adminPermissions = new List<object>();
-        for (int i = 1; i <= 23; i++)
-            adminPermissions.Add(new { RoleId = 1, PermissionId = i, AccessLevel = 5 });
-        mb.Entity<RolePermission>().HasData(adminPermissions.ToArray());
+        // ── RolePermission seed: only rows where AccessLevel > 0 ──
+
+        // ADMIN (RoleId=1) — all 27 permissions at level 5
+        var adminPerms = new List<object>();
+        for (int i = 1; i <= 27; i++)
+            adminPerms.Add(new { RoleId = 1, PermissionId = i, AccessLevel = 5 });
+
+        // MANAGER (RoleId=2) — per access matrix
+        var managerPerms = new object[]
+        {
+            // General
+            new { RoleId = 2, PermissionId = 1,  AccessLevel = 5 }, // Login / authentication
+            new { RoleId = 2, PermissionId = 2,  AccessLevel = 5 }, // View own profile
+            // Manage users & roles = 0 (no row)
+            new { RoleId = 2, PermissionId = 4,  AccessLevel = 4 }, // View audit log
+            // Sales
+            new { RoleId = 2, PermissionId = 5,  AccessLevel = 5 }, // Create & process orders
+            new { RoleId = 2, PermissionId = 6,  AccessLevel = 5 }, // Apply discounts
+            new { RoleId = 2, PermissionId = 7,  AccessLevel = 5 }, // Void / cancel orders
+            new { RoleId = 2, PermissionId = 8,  AccessLevel = 5 }, // Hold & recall orders
+            new { RoleId = 2, PermissionId = 9,  AccessLevel = 5 }, // Process payments
+            new { RoleId = 2, PermissionId = 10, AccessLevel = 5 }, // Issue refunds
+            new { RoleId = 2, PermissionId = 11, AccessLevel = 5 }, // Manage tables & sessions
+            new { RoleId = 2, PermissionId = 12, AccessLevel = 5 }, // Manage customers & loyalty
+            new { RoleId = 2, PermissionId = 13, AccessLevel = 5 }, // Open / close shift
+            new { RoleId = 2, PermissionId = 14, AccessLevel = 5 }, // Cash drawer operations
+            // Inventory
+            new { RoleId = 2, PermissionId = 15, AccessLevel = 5 }, // View menu & categories
+            new { RoleId = 2, PermissionId = 16, AccessLevel = 5 }, // Manage menu items
+            new { RoleId = 2, PermissionId = 17, AccessLevel = 5 }, // Manage stock & recipes
+            new { RoleId = 2, PermissionId = 18, AccessLevel = 5 }, // View kitchen orders
+            // HR & Finance
+            new { RoleId = 2, PermissionId = 19, AccessLevel = 4 }, // Manage employees
+            new { RoleId = 2, PermissionId = 20, AccessLevel = 4 }, // Manage suppliers
+            new { RoleId = 2, PermissionId = 21, AccessLevel = 4 }, // Manage expenses
+            // Generate payroll = 0 (no row)
+            // Config
+            new { RoleId = 2, PermissionId = 23, AccessLevel = 5 }, // View reports & analytics
+            // Manage tax & discounts = 0
+            // Manage printers & terminals = 0
+            // System app settings = 0
+            new { RoleId = 2, PermissionId = 27, AccessLevel = 4 }, // Floor plan & table config
+        };
+
+        // CASHIER (RoleId=3) — per access matrix
+        var cashierPerms = new object[]
+        {
+            // General
+            new { RoleId = 3, PermissionId = 1,  AccessLevel = 5 }, // Login / authentication
+            new { RoleId = 3, PermissionId = 2,  AccessLevel = 5 }, // View own profile
+            // Sales
+            new { RoleId = 3, PermissionId = 5,  AccessLevel = 5 }, // Create & process orders
+            new { RoleId = 3, PermissionId = 6,  AccessLevel = 2 }, // Apply discounts (read+create only)
+            // Void / cancel orders = 0
+            new { RoleId = 3, PermissionId = 8,  AccessLevel = 5 }, // Hold & recall orders
+            new { RoleId = 3, PermissionId = 9,  AccessLevel = 5 }, // Process payments
+            // Issue refunds = 0
+            new { RoleId = 3, PermissionId = 11, AccessLevel = 2 }, // Manage tables & sessions (read+create)
+            new { RoleId = 3, PermissionId = 12, AccessLevel = 2 }, // Manage customers & loyalty (read+create)
+            new { RoleId = 3, PermissionId = 13, AccessLevel = 5 }, // Open / close shift
+            new { RoleId = 3, PermissionId = 14, AccessLevel = 5 }, // Cash drawer operations
+            // Inventory
+            new { RoleId = 3, PermissionId = 15, AccessLevel = 5 }, // View menu & categories
+            // Manage menu items = 0
+            // Manage stock & recipes = 0
+            new { RoleId = 3, PermissionId = 18, AccessLevel = 2 }, // View kitchen orders (read+create)
+        };
+
+        mb.Entity<RolePermission>().HasData(
+            [.. adminPerms, .. managerPerms, .. cashierPerms]);
 
         // Default admin user (password: admin123, PIN: 1234)
         mb.Entity<User>().HasData(
