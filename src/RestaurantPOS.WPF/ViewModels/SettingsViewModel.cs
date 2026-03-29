@@ -681,29 +681,46 @@ public partial class SettingsViewModel : BaseViewModel
 
     private async Task LoadRolesAsync()
     {
-        var roles = await _db.Roles.Include(r => r.RolePermissions).Where(r => r.IsActive).OrderBy(r => r.Name).ToListAsync();
-        Roles.Clear();
-        foreach (var r in roles) Roles.Add(r);
-        RoleCount = $"{roles.Count} roles";
+        try
+        {
+            var roles = await _db.Roles.Where(r => r.IsActive).OrderBy(r => r.Name).ToListAsync();
+            Roles.Clear();
+            foreach (var r in roles) Roles.Add(r);
+            RoleCount = $"{roles.Count} roles";
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Settings] LoadRoles error: {ex.Message}");
+        }
     }
 
     private async Task LoadRolePermissionsAsync(int roleId)
     {
-        var allPermissions = await _db.Permissions.Where(p => p.IsActive).OrderBy(p => p.Module).ThenBy(p => p.Name).ToListAsync();
-        var rolePerms = await _db.RolePermissions.Where(rp => rp.RoleId == roleId).ToDictionaryAsync(rp => rp.PermissionId, rp => rp.AccessLevel);
-
-        RolePermissions.Clear();
-        foreach (var p in allPermissions)
+        try
         {
-            RolePermissions.Add(new RolePermissionRow
+            var allPermissions = await _db.Permissions.Where(p => p.IsActive).OrderBy(p => p.Module).ThenBy(p => p.Name).ToListAsync();
+
+            // Build dict manually to avoid AccessLevel column issues on older DBs
+            var rolePermsList = await _db.RolePermissions.Where(rp => rp.RoleId == roleId).ToListAsync();
+            var rolePerms = rolePermsList.ToDictionary(rp => rp.PermissionId, rp => rp.AccessLevel);
+
+            RolePermissions.Clear();
+            foreach (var p in allPermissions)
             {
-                PermissionId = p.Id,
-                PermissionName = p.Name,
-                Module = p.Module ?? "Other",
-                Description = p.Description ?? "",
-                AccessLevel = rolePerms.GetValueOrDefault(p.Id, 0),
-                IsGranted = rolePerms.ContainsKey(p.Id)
-            });
+                RolePermissions.Add(new RolePermissionRow
+                {
+                    PermissionId = p.Id,
+                    PermissionName = p.Name,
+                    Module = p.Module ?? "Other",
+                    Description = p.Description ?? "",
+                    AccessLevel = rolePerms.GetValueOrDefault(p.Id, 0),
+                    IsGranted = rolePerms.ContainsKey(p.Id)
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Settings] LoadRolePermissions error: {ex.Message}");
         }
     }
 

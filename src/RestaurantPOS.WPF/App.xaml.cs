@@ -94,98 +94,33 @@ public partial class App : System.Windows.Application
                 Log.Information("Database created with EnsureCreated");
             }
 
-            // Ensure new tables exist (EnsureCreated won't add to existing DB)
+            // Add AccessLevel column to RolePermissions if missing
             try
             {
-                await db.Database.ExecuteSqlRawAsync(@"
-                    CREATE TABLE IF NOT EXISTS Employees (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        Name TEXT NOT NULL,
-                        Phone TEXT,
-                        Email TEXT,
-                        CNIC TEXT,
-                        Address TEXT,
-                        EmergencyContact TEXT,
-                        Category TEXT NOT NULL DEFAULT 'Service',
-                        EmploymentType TEXT NOT NULL DEFAULT 'FullTime',
-                        Designation TEXT,
-                        JoiningDate TEXT NOT NULL,
-                        LeavingDate TEXT,
-                        BasicSalary INTEGER NOT NULL DEFAULT 0,
-                        Allowances INTEGER NOT NULL DEFAULT 0,
-                        Deductions INTEGER NOT NULL DEFAULT 0,
-                        UserId INTEGER,
-                        CreatedAt TEXT NOT NULL DEFAULT (datetime('now')),
-                        UpdatedAt TEXT NOT NULL DEFAULT (datetime('now')),
-                        IsActive INTEGER NOT NULL DEFAULT 1,
-                        FOREIGN KEY (UserId) REFERENCES Users(Id)
-                    )");
-                await db.Database.ExecuteSqlRawAsync(@"
-                    CREATE TABLE IF NOT EXISTS Payrolls (
-                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                        EmployeeId INTEGER NOT NULL,
-                        Month INTEGER NOT NULL,
-                        Year INTEGER NOT NULL,
-                        BasicSalary INTEGER NOT NULL DEFAULT 0,
-                        Allowances INTEGER NOT NULL DEFAULT 0,
-                        Deductions INTEGER NOT NULL DEFAULT 0,
-                        Bonus INTEGER NOT NULL DEFAULT 0,
-                        Advance INTEGER NOT NULL DEFAULT 0,
-                        NetSalary INTEGER NOT NULL DEFAULT 0,
-                        Status TEXT NOT NULL DEFAULT 'Pending',
-                        PaidAt TEXT,
-                        Notes TEXT,
-                        ExpenseId INTEGER,
-                        CreatedAt TEXT NOT NULL DEFAULT (datetime('now')),
-                        UpdatedAt TEXT NOT NULL DEFAULT (datetime('now')),
-                        IsActive INTEGER NOT NULL DEFAULT 1,
-                        FOREIGN KEY (EmployeeId) REFERENCES Employees(Id)
-                    )");
-                await db.Database.ExecuteSqlRawAsync(@"
-                    CREATE UNIQUE INDEX IF NOT EXISTS IX_Payrolls_Employee_Year_Month
-                    ON Payrolls (EmployeeId, Year, Month)");
-
-                // Make SupplierExpense.SupplierId nullable (for salary expenses without supplier)
-                // SQLite can't ALTER COLUMN, so recreate if the column is still NOT NULL
+                await db.Database.ExecuteSqlRawAsync("SELECT AccessLevel FROM RolePermissions LIMIT 0");
+            }
+            catch
+            {
                 try
                 {
-                    await db.Database.ExecuteSqlRawAsync(
-                        "INSERT INTO SupplierExpenses (SupplierId, Description, Amount) VALUES (NULL, '__test__', 0)");
-                    await db.Database.ExecuteSqlRawAsync(
-                        "DELETE FROM SupplierExpenses WHERE Description = '__test__'");
+                    await db.Database.ExecuteSqlRawAsync("ALTER TABLE RolePermissions ADD COLUMN AccessLevel INTEGER NOT NULL DEFAULT 5");
+                    Log.Information("Added AccessLevel column to RolePermissions");
                 }
-                catch
-                {
-                    // SupplierId is NOT NULL — recreate table
-                    await db.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys=OFF");
-                    await db.Database.ExecuteSqlRawAsync(@"
-                        CREATE TABLE SupplierExpenses_new (
-                            Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                            SupplierId INTEGER,
-                            Description TEXT NOT NULL,
-                            Amount INTEGER NOT NULL DEFAULT 0,
-                            ExpenseDate TEXT NOT NULL DEFAULT (datetime('now')),
-                            InvoiceNumber TEXT,
-                            Category TEXT,
-                            IsPaid INTEGER NOT NULL DEFAULT 0,
-                            Notes TEXT,
-                            CreatedAt TEXT NOT NULL DEFAULT (datetime('now')),
-                            UpdatedAt TEXT NOT NULL DEFAULT (datetime('now')),
-                            IsActive INTEGER NOT NULL DEFAULT 1,
-                            FOREIGN KEY (SupplierId) REFERENCES Suppliers(Id)
-                        )");
-                    await db.Database.ExecuteSqlRawAsync(
-                        "INSERT INTO SupplierExpenses_new SELECT * FROM SupplierExpenses");
-                    await db.Database.ExecuteSqlRawAsync("DROP TABLE SupplierExpenses");
-                    await db.Database.ExecuteSqlRawAsync(
-                        "ALTER TABLE SupplierExpenses_new RENAME TO SupplierExpenses");
-                    await db.Database.ExecuteSqlRawAsync("PRAGMA foreign_keys=ON");
-                }
+                catch { /* column may already exist */ }
             }
-            catch (Exception ex)
+
+            // Seed Permissions table if empty
+            try
             {
-                Log.Warning(ex, "Failed to create Employee/Payroll tables");
+                var permCount = await db.Database.ExecuteSqlRawAsync("SELECT COUNT(*) FROM Permissions");
+                var hasPerms = await db.Permissions.AnyAsync();
+                if (!hasPerms)
+                {
+                    await SeedPermissionsAsync(db);
+                    Log.Information("Seeded permissions data");
+                }
             }
+            catch { }
 
             // Validate schema: check a column from a recent change
             try
@@ -275,6 +210,56 @@ public partial class App : System.Windows.Application
 
         mainWindow.Show();
         base.OnStartup(e);
+    }
+
+    private static async Task SeedPermissionsAsync(PosDbContext db)
+    {
+        var perms = new (string Name, string Module, string Desc)[]
+        {
+            ("Management", "General", "Access management features"),
+            ("Settings", "General", "Modify system settings"),
+            ("End of Day", "General", "Run end-of-day process"),
+            ("User Profile", "General", "View/edit own profile"),
+            ("Design Floor Plans", "General", "Edit floor plan layout"),
+            ("View Reports", "General", "Access reports module"),
+            ("View All Open Orders", "Sales", "See all open orders"),
+            ("Void Order", "Sales", "Void an entire order"),
+            ("Void Item", "Sales", "Void individual items"),
+            ("Lock Sale", "Sales", "Lock a sale/hold order"),
+            ("Unlock Sale", "Sales", "Unlock a held sale"),
+            ("Split Order", "Sales", "Split order between bills"),
+            ("Reprint Receipt", "Sales", "Reprint any receipt"),
+            ("Starting Cash", "Sales", "Set starting cash amount"),
+            ("Open Cash Drawer", "Sales", "Open the cash drawer"),
+            ("Apply Discount", "Sales", "Apply discounts to orders"),
+            ("Zero Stock Quantity Sale", "Sales", "Sell items with zero stock"),
+            ("Manage Stock", "Inventory", "Adjust stock levels"),
+            ("Manage Menu", "Inventory", "Edit menu items/categories"),
+            ("Manage Suppliers", "Inventory", "Manage suppliers/expenses"),
+            ("Manage Employees", "HR", "Manage employee records"),
+            ("Manage Payroll", "HR", "Process payroll"),
+            ("Manage Customers", "HR", "Manage customer records"),
+        };
+
+        foreach (var (name, module, desc) in perms)
+        {
+            db.Permissions.Add(new RestaurantPOS.Domain.Entities.Permission
+            {
+                Name = name, Module = module, Description = desc
+            });
+        }
+        await db.SaveChangesAsync();
+
+        // Give admin role (Id=1) all permissions
+        var allPerms = await db.Permissions.ToListAsync();
+        foreach (var p in allPerms)
+        {
+            db.RolePermissions.Add(new RestaurantPOS.Domain.Entities.RolePermission
+            {
+                RoleId = 1, PermissionId = p.Id, AccessLevel = 5
+            });
+        }
+        await db.SaveChangesAsync();
     }
 
     protected override async void OnExit(System.Windows.ExitEventArgs e)
