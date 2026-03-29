@@ -243,48 +243,59 @@
 
                     <!-- Tab 1: Order History buttons -->
                     <StackPanel x:Name="BtnOrders" Orientation="Horizontal" Visibility="Collapsed">
-                        <Button Style="{StaticResource Btn}" Background="#2563EB" Content="&#xE16E;  Load"
-                                FontFamily="Segoe MDL2 Assets, Segoe UI" Command="{Binding LoadOrderHistoryCommand}"/>
+                        <Button Style="{StaticResource Btn}" Background="#2563EB" Command="{Binding LoadOrderHistoryCommand}">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Load"/></StackPanel>
+                        </Button>
                     </StackPanel>
 
                     <!-- Tab 2: Menu Performance buttons -->
                     <StackPanel x:Name="BtnMenu" Orientation="Horizontal" Visibility="Collapsed">
-                        <Button Style="{StaticResource Btn}" Background="#059669" Content="&#xE16E;  Load"
-                                FontFamily="Segoe MDL2 Assets, Segoe UI" Command="{Binding LoadMenuPerformanceCommand}" Margin="0,0,6,0"/>
-                        <Button Style="{StaticResource Btn}" Background="#6366F1" Content="&#xE749;  Print Report"
-                                FontFamily="Segoe MDL2 Assets, Segoe UI" Command="{Binding PrintMenuReportCommand}"/>
+                        <Button Style="{StaticResource Btn}" Background="#059669" Command="{Binding LoadMenuPerformanceCommand}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Load"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Btn}" Background="#6366F1" Command="{Binding PrintMenuReportCommand}">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE749;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Print Report"/></StackPanel>
+                        </Button>
                     </StackPanel>
 
                     <!-- Tab 3: Delivery Drivers buttons -->
                     <StackPanel x:Name="BtnDrivers" Orientation="Horizontal" Visibility="Collapsed">
-                        <Button Style="{StaticResource Btn}" Background="#4F46E5" Content="&#xE16E;  Load"
-                                FontFamily="Segoe MDL2 Assets, Segoe UI" Command="{Binding LoadDriverPerformanceCommand}" Margin="0,0,6,0"/>
-                        <Button Style="{StaticResource Btn}" Background="#6366F1" Content="&#xE749;  Print Report"
-                                FontFamily="Segoe MDL2 Assets, Segoe UI" Command="{Binding PrintDriverReportCommand}"/>
+                        <Button Style="{StaticResource Btn}" Background="#4F46E5" Command="{Binding LoadDriverPerformanceCommand}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Load"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Btn}" Background="#6366F1" Command="{Binding PrintDriverReportCommand}">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE749;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Print Report"/></StackPanel>
+                        </Button>
                     </StackPanel>
 
                     <!-- Tab 4: Kitchen buttons -->
                     <StackPanel x:Name="BtnKitchen" Orientation="Horizontal" Visibility="Collapsed">
-                        <Button Style="{StaticResource Btn}" Background="#EA580C" Content="&#xE16E;  Load"
-                                FontFamily="Segoe MDL2 Assets, Segoe UI" Command="{Binding LoadKitchenCommand}" Margin="0,0,6,0"/>
-                        <Button Style="{StaticResource Btn}" Background="#6366F1" Content="&#xE749;  Print Report"
-                                FontFamily="Segoe MDL2 Assets, Segoe UI" Command="{Binding PrintKitchenReportCommand}"/>
+                        <Button Style="{StaticResource Btn}" Background="#EA580C" Command="{Binding LoadKitchenCommand}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Load"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Btn}" Background="#6366F1" Command="{Binding PrintKitchenReportCommand}">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE749;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Print Report"/></StackPanel>
+                        </Button>
                     </StackPanel>
 
                     <!-- Tab 5: Expenses buttons -->
                     <StackPanel x:Name="BtnExpenses" Orientation="Horizontal" Visibility="Collapsed">
-                        <Button Style="{StaticResource Btn}" Background="#DC2626" Content="&#xE16E;  Load"
-                                FontFamily="Segoe MDL2 Assets, Segoe UI" Command="{Binding LoadExpensesCommand}" Margin="0,0,6,0"/>
-                        <Button Style="{StaticResource Btn}" Background="#6366F1" Content="&#xE749;  Print Report"
-                                FontFamily="Segoe MDL2 Assets, Segoe UI" Command="{Binding PrintExpenseReportCommand}"/>
+                        <Button Style="{StaticResource Btn}" Background="#DC2626" Command="{Binding LoadExpensesCommand}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Load"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Btn}" Background="#6366F1" Command="{Binding PrintExpenseReportCommand}">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE749;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Print Report"/></StackPanel>
+                        </Button>
                     </StackPanel>
 
                     <!-- Tab 6: Profit & Loss buttons -->
                     <StackPanel x:Name="BtnProfit" Orientation="Horizontal" Visibility="Collapsed">
-                        <Button Style="{StaticResource Btn}" Background="#7C3AED" Content="&#xE16E;  Load"
-                                FontFamily="Segoe MDL2 Assets, Segoe UI" Command="{Binding LoadProfitLossCommand}" Margin="0,0,6,0"/>
-                        <Button Style="{StaticResource Btn}" Background="#6366F1" Content="&#xE749;  Print Report"
-                                FontFamily="Segoe MDL2 Assets, Segoe UI" Command="{Binding PrintProfitLossCommand}"/>
+                        <Button Style="{StaticResource Btn}" Background="#7C3AED" Command="{Binding LoadProfitLossCommand}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Load"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Btn}" Background="#6366F1" Command="{Binding PrintProfitLossCommand}">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE749;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Print Report"/></StackPanel>
+                        </Button>
                     </StackPanel>
                 </Grid>
             </Grid>
@@ -472,7 +483,7 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="DATE" Binding="{Binding OrderDate, StringFormat='{}{0:dd MMM yyyy HH:mm}'}" Width="150"/>
+                        <DataGridTextColumn Header="DATE" Binding="{Binding Date}" Width="150"/>
                         <DataGridTemplateColumn Header="TYPE" Width="100">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -481,30 +492,30 @@
                                             <Style TargetType="Border">
                                                 <Setter Property="Background" Value="#E0E7FF"/>
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding OrderType}" Value="DineIn">
+                                                    <DataTrigger Binding="{Binding Type}" Value="DineIn">
                                                         <Setter Property="Background" Value="#DBEAFE"/>
                                                     </DataTrigger>
-                                                    <DataTrigger Binding="{Binding OrderType}" Value="TakeAway">
+                                                    <DataTrigger Binding="{Binding Type}" Value="TakeAway">
                                                         <Setter Property="Background" Value="#FEF3C7"/>
                                                     </DataTrigger>
-                                                    <DataTrigger Binding="{Binding OrderType}" Value="Delivery">
+                                                    <DataTrigger Binding="{Binding Type}" Value="Delivery">
                                                         <Setter Property="Background" Value="#FCE7F3"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
                                         </Border.Style>
-                                        <TextBlock Text="{Binding OrderType}" FontSize="10" FontWeight="Bold">
+                                        <TextBlock Text="{Binding Type}" FontSize="10" FontWeight="Bold">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Foreground" Value="#3730A3"/>
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding OrderType}" Value="DineIn">
+                                                        <DataTrigger Binding="{Binding Type}" Value="DineIn">
                                                             <Setter Property="Foreground" Value="#1E40AF"/>
                                                         </DataTrigger>
-                                                        <DataTrigger Binding="{Binding OrderType}" Value="TakeAway">
+                                                        <DataTrigger Binding="{Binding Type}" Value="TakeAway">
                                                             <Setter Property="Foreground" Value="#92400E"/>
                                                         </DataTrigger>
-                                                        <DataTrigger Binding="{Binding OrderType}" Value="Delivery">
+                                                        <DataTrigger Binding="{Binding Type}" Value="Delivery">
                                                             <Setter Property="Foreground" Value="#9D174D"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
@@ -562,7 +573,7 @@
                         <DataGridTemplateColumn Header="TOTAL" Width="120">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Total, Converter={StaticResource PaisaToCurrency}}"
+                                    <TextBlock Text="{Binding Total}"
                                                FontWeight="Bold" Foreground="#059669" HorizontalAlignment="Right"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
@@ -620,7 +631,7 @@
                         <DataGridTemplateColumn Header="REVENUE" Width="130">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Revenue, Converter={StaticResource PaisaToCurrency}}"
+                                    <TextBlock Text="{Binding Revenue}"
                                                FontWeight="Bold" Foreground="#059669" HorizontalAlignment="Right"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
@@ -628,7 +639,7 @@
                         <DataGridTemplateColumn Header="AVG PRICE" Width="120">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding AvgPrice, Converter={StaticResource PaisaToCurrency}}"
+                                    <TextBlock Text="{Binding AvgPrice}"
                                                HorizontalAlignment="Right"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
@@ -667,7 +678,7 @@
                         <DataGridTemplateColumn Header="TOTAL REVENUE" Width="150">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding TotalRevenue, Converter={StaticResource PaisaToCurrency}}"
+                                    <TextBlock Text="{Binding TotalRevenue}"
                                                FontWeight="Bold" Foreground="#059669" HorizontalAlignment="Right"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
@@ -675,7 +686,7 @@
                         <DataGridTemplateColumn Header="AVG/ORDER" Width="130">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding AvgPerOrder, Converter={StaticResource PaisaToCurrency}}"
+                                    <TextBlock Text="{Binding AvgPerOrder}"
                                                HorizontalAlignment="Right"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
@@ -703,7 +714,7 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="DATE" Binding="{Binding OrderDate, StringFormat='{}{0:dd MMM yyyy HH:mm}'}" Width="150"/>
+                        <DataGridTextColumn Header="DATE" Binding="{Binding Date}" Width="150"/>
                         <DataGridTemplateColumn Header="STATION" Width="130">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -713,7 +724,7 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="ITEMS" Binding="{Binding Items}" Width="*"/>
+                        <DataGridTextColumn Header="ITEMS" Binding="{Binding ItemsSummary}" Width="*"/>
                         <DataGridTemplateColumn Header="ITEM COUNT" Width="100">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
@@ -800,7 +811,7 @@
                         <DataGridTemplateColumn Header="AMOUNT" Width="130">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding Amount, Converter={StaticResource PaisaToCurrency}}"
+                                    <TextBlock Text="{Binding Amount}"
                                                FontWeight="Bold" Foreground="#DC2626" HorizontalAlignment="Right"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
@@ -859,7 +870,7 @@
                         <Border Background="#F0FDF4" CornerRadius="10" Padding="18,14" Margin="0,0,10,0">
                             <StackPanel>
                                 <TextBlock Text="Total Revenue" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                <TextBlock Text="{Binding SummaryRevenue, Converter={StaticResource PaisaToCurrency}}"
+                                <TextBlock Text="{Binding SummaryRevenue}"
                                            FontSize="24" FontWeight="Bold" Foreground="#059669"/>
                             </StackPanel>
                         </Border>
@@ -867,7 +878,7 @@
                         <Border Background="#FEF2F2" CornerRadius="10" Padding="18,14" Margin="0,0,10,0">
                             <StackPanel>
                                 <TextBlock Text="Total Expenses" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                <TextBlock Text="{Binding SummaryExpenses, Converter={StaticResource PaisaToCurrency}}"
+                                <TextBlock Text="{Binding SummaryExpenses}"
                                            FontSize="24" FontWeight="Bold" Foreground="#DC2626"/>
                             </StackPanel>
                         </Border>
@@ -880,7 +891,7 @@
                             </Border.Style>
                             <StackPanel>
                                 <TextBlock Text="Net Profit" FontSize="12" Foreground="#6B7280" Margin="0,0,0,4"/>
-                                <TextBlock Text="{Binding SummaryProfit, Converter={StaticResource PaisaToCurrency}}"
+                                <TextBlock Text="{Binding SummaryProfit}"
                                            FontSize="24" FontWeight="Bold" Foreground="#2563EB"/>
                             </StackPanel>
                         </Border>
@@ -914,7 +925,7 @@
                             <DataGridTemplateColumn Header="REVENUE" Width="150">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Revenue, Converter={StaticResource PaisaToCurrency}}"
+                                        <TextBlock Text="{Binding Revenue}"
                                                    Foreground="#059669" HorizontalAlignment="Right"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -922,7 +933,7 @@
                             <DataGridTemplateColumn Header="EXPENSES" Width="150">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Expenses, Converter={StaticResource PaisaToCurrency}}"
+                                        <TextBlock Text="{Binding Expenses}"
                                                    Foreground="#DC2626" HorizontalAlignment="Right"/>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>
@@ -930,7 +941,7 @@
                             <DataGridTemplateColumn Header="PROFIT" Width="150">
                                 <DataGridTemplateColumn.CellTemplate>
                                     <DataTemplate>
-                                        <TextBlock Text="{Binding Profit, Converter={StaticResource PaisaToCurrency}}"
+                                        <TextBlock Text="{Binding Profit}"
                                                    FontWeight="Bold" HorizontalAlignment="Right">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
@@ -981,7 +992,7 @@
                     <Border Width="1" Background="#D1D5DB" Margin="16,2"/>
                     <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
                         <Run Text="Total:"/>
-                        <Run Text="{Binding OrderHistoryTotal, Converter={StaticResource PaisaToCurrency}, Mode=OneWay}" FontWeight="SemiBold" Foreground="#059669"/>
+                        <Run Text="{Binding OrderHistoryTotal, Mode=OneWay}" FontWeight="SemiBold" Foreground="#059669"/>
                     </TextBlock>
                 </StackPanel>
 
@@ -994,7 +1005,7 @@
                     <Border Width="1" Background="#D1D5DB" Margin="16,2"/>
                     <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
                         <Run Text="Revenue:"/>
-                        <Run Text="{Binding MenuRevenueTotal, Converter={StaticResource PaisaToCurrency}, Mode=OneWay}" FontWeight="SemiBold" Foreground="#059669"/>
+                        <Run Text="{Binding MenuRevenueTotal, Mode=OneWay}" FontWeight="SemiBold" Foreground="#059669"/>
                     </TextBlock>
                 </StackPanel>
 
@@ -1007,7 +1018,7 @@
                     <Border Width="1" Background="#D1D5DB" Margin="16,2"/>
                     <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
                         <Run Text="Revenue:"/>
-                        <Run Text="{Binding DriverRevenueTotal, Converter={StaticResource PaisaToCurrency}, Mode=OneWay}" FontWeight="SemiBold" Foreground="#059669"/>
+                        <Run Text="{Binding DriverRevenueTotal, Mode=OneWay}" FontWeight="SemiBold" Foreground="#059669"/>
                     </TextBlock>
                 </StackPanel>
 
@@ -1026,7 +1037,7 @@
                     <Border Width="1" Background="#D1D5DB" Margin="16,2"/>
                     <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
                         <Run Text="Total:"/>
-                        <Run Text="{Binding ExpenseTotal, Converter={StaticResource PaisaToCurrency}, Mode=OneWay}" FontWeight="SemiBold" Foreground="#DC2626"/>
+                        <Run Text="{Binding ExpenseTotal, Mode=OneWay}" FontWeight="SemiBold" Foreground="#DC2626"/>
                     </TextBlock>
                 </StackPanel>
 
@@ -1034,17 +1045,17 @@
                 <StackPanel x:Name="StatusProfit" Orientation="Horizontal" Visibility="Collapsed">
                     <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
                         <Run Text="Revenue:"/>
-                        <Run Text="{Binding SummaryRevenue, Converter={StaticResource PaisaToCurrency}, Mode=OneWay}" FontWeight="SemiBold" Foreground="#059669"/>
+                        <Run Text="{Binding SummaryRevenue, Mode=OneWay}" FontWeight="SemiBold" Foreground="#059669"/>
                     </TextBlock>
                     <Border Width="1" Background="#D1D5DB" Margin="16,2"/>
                     <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
                         <Run Text="Expenses:"/>
-                        <Run Text="{Binding SummaryExpenses, Converter={StaticResource PaisaToCurrency}, Mode=OneWay}" FontWeight="SemiBold" Foreground="#DC2626"/>
+                        <Run Text="{Binding SummaryExpenses, Mode=OneWay}" FontWeight="SemiBold" Foreground="#DC2626"/>
                     </TextBlock>
                     <Border Width="1" Background="#D1D5DB" Margin="16,2"/>
                     <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
                         <Run Text="Profit:"/>
-                        <Run Text="{Binding SummaryProfit, Converter={StaticResource PaisaToCurrency}, Mode=OneWay}" FontWeight="SemiBold" Foreground="#2563EB"/>
+                        <Run Text="{Binding SummaryProfit, Mode=OneWay}" FontWeight="SemiBold" Foreground="#2563EB"/>
                     </TextBlock>
                 </StackPanel>
             </Grid>

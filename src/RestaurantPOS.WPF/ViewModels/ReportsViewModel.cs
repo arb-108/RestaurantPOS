@@ -1096,4 +1096,5 @@ public class ProfitLossRow
     public string Profit { get; set; } = string.Empty;
     public string Margin { get; set; } = string.Empty;
     public long RawProfit { get; set; }
+    public bool IsNegative => RawProfit < 0;
 }
