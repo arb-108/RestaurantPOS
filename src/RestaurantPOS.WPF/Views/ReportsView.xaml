@@ -147,6 +147,7 @@
             <TabItem Header="Kitchen" Style="{StaticResource FolderTab}"/>
             <TabItem Header="Expenses" Style="{StaticResource FolderTab}"/>
             <TabItem Header="Profit &amp; Loss" Style="{StaticResource FolderTab}"/>
+            <TabItem Header="Sales Report" Style="{StaticResource FolderTab}"/>
         </TabControl>
 
         <!-- ============================================================ -->
@@ -230,6 +231,20 @@
                         <ComboBox Style="{StaticResource FilterCombo}" ItemsSource="{Binding ProfitPeriodOptions}"
                                   SelectedItem="{Binding ProfitPeriod}" Margin="0,0,12,0"/>
                     </StackPanel>
+
+                    <!-- Tab 7: Sales Report filters -->
+                    <StackPanel x:Name="FilterSalesReport" Orientation="Horizontal" Visibility="Collapsed">
+                        <TextBlock Text="From:" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <DatePicker SelectedDate="{Binding SalesReportFrom}" FontSize="12" Height="30" Width="130" Margin="0,0,12,0"/>
+                        <TextBlock Text="To:" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <DatePicker SelectedDate="{Binding SalesReportTo}" FontSize="12" Height="30" Width="130" Margin="0,0,12,0"/>
+                        <TextBlock Text="Mode:" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <ComboBox Style="{StaticResource FilterCombo}" ItemsSource="{Binding SalesReportModeOptions}"
+                                  SelectedItem="{Binding SalesReportMode}" Margin="0,0,12,0"/>
+                        <TextBlock Text="Category:" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <ComboBox Style="{StaticResource FilterCombo}" ItemsSource="{Binding SalesReportCategories}"
+                                  SelectedItem="{Binding SalesReportCategory}" MinWidth="140"/>
+                    </StackPanel>
                 </Grid>
 
                 <!-- ACTION BUTTON PANELS -->
@@ -294,6 +309,16 @@
                             <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Load"/></StackPanel>
                         </Button>
                         <Button Style="{StaticResource Btn}" Background="#6366F1" Command="{Binding PrintProfitLossCommand}">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE749;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Print Report"/></StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- Tab 7: Sales Report buttons -->
+                    <StackPanel x:Name="BtnSalesReport" Orientation="Horizontal" Visibility="Collapsed">
+                        <Button Style="{StaticResource Btn}" Background="#0891B2" Command="{Binding LoadSalesReportCommand}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Load"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Btn}" Background="#6366F1" Command="{Binding PrintSalesReportCommand}">
                             <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE749;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Print Report"/></StackPanel>
                         </Button>
                     </StackPanel>
@@ -968,6 +993,112 @@
                     </DataGrid>
                 </Grid>
 
+                <!-- ======================================================== -->
+                <!-- TAB 7: SALES REPORT -->
+                <!-- ======================================================== -->
+                <Grid x:Name="PanelSalesReport" Visibility="Collapsed">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Items DataGrid -->
+                    <DataGrid Grid.Row="0"
+                              ItemsSource="{Binding SalesReportItems}" AutoGenerateColumns="False"
+                              IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
+                              SelectionMode="Single" GridLinesVisibility="Horizontal"
+                              HorizontalGridLinesBrush="#F3F4F6" HeadersVisibility="Column"
+                              AlternationCount="2" RowHeight="40" BorderThickness="0"
+                              ColumnHeaderStyle="{StaticResource DgHeader}"
+                              RowStyle="{StaticResource DgRow}"
+                              CellStyle="{StaticResource DgCell}">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="#" Width="60">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Serial}" HorizontalAlignment="Center" FontWeight="SemiBold" Foreground="#6B7280"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="ITEMS" Width="*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding ItemName}" FontWeight="Bold" Foreground="#1E293B"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="QTY" Width="80">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Qty}" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="TOTAL" Width="140">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding Total}" FontWeight="Bold" Foreground="#059669" HorizontalAlignment="Right"/>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+
+                    <!-- Summary Section -->
+                    <Border Grid.Row="1" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0" Padding="16,12">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Category total (shown when filtered) -->
+                            <TextBlock Grid.Column="0" Text="{Binding SaleCategoryTotal}" FontSize="14" FontWeight="Bold"
+                                       Foreground="#0891B2" VerticalAlignment="Center"
+                                       Visibility="{Binding IsCategoryMode, Converter={StaticResource BoolToVis}}"/>
+
+                            <!-- Summary cards -->
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right">
+                                <!-- Sale -->
+                                <Border Background="#EFF6FF" CornerRadius="8" Padding="16,10" Margin="0,0,8,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Sale" FontSize="10" Foreground="#6B7280" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding SaleTotal}" FontSize="16" FontWeight="Bold" Foreground="#2563EB"/>
+                                    </StackPanel>
+                                </Border>
+                                <!-- Discount -->
+                                <Border Background="#FEF3C7" CornerRadius="8" Padding="16,10" Margin="0,0,8,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Discount" FontSize="10" Foreground="#6B7280" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding SaleDiscount}" FontSize="16" FontWeight="Bold" Foreground="#D97706"/>
+                                    </StackPanel>
+                                </Border>
+                                <!-- G.Total -->
+                                <Border Background="#F0FDF4" CornerRadius="8" Padding="16,10" Margin="0,0,8,0">
+                                    <StackPanel>
+                                        <TextBlock Text="G.Total" FontSize="10" Foreground="#6B7280" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding SaleGrandTotal}" FontSize="16" FontWeight="Bold" Foreground="#059669"/>
+                                    </StackPanel>
+                                </Border>
+                                <!-- Expenses -->
+                                <Border Background="#FEF2F2" CornerRadius="8" Padding="16,10" Margin="0,0,8,0">
+                                    <StackPanel>
+                                        <TextBlock Text="Expenses" FontSize="10" Foreground="#6B7280" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding SaleExpenses}" FontSize="16" FontWeight="Bold" Foreground="#DC2626"/>
+                                    </StackPanel>
+                                </Border>
+                                <!-- Cash In Hand -->
+                                <Border Background="#ECFDF5" CornerRadius="8" Padding="16,10">
+                                    <StackPanel>
+                                        <TextBlock Text="Cash In Hand" FontSize="10" Foreground="#6B7280" FontWeight="SemiBold"/>
+                                        <TextBlock Text="{Binding SaleCashInHand}" FontSize="16" FontWeight="Bold" Foreground="#047857"/>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
+                </Grid>
+
             </Grid>
         </Border>
 
@@ -1056,6 +1187,24 @@
                     <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
                         <Run Text="Profit:"/>
                         <Run Text="{Binding SummaryProfit, Mode=OneWay}" FontWeight="SemiBold" Foreground="#2563EB"/>
+                    </TextBlock>
+                </StackPanel>
+
+                <!-- Sales Report status (Tab 7) -->
+                <StackPanel x:Name="StatusSalesReport" Orientation="Horizontal" Visibility="Collapsed">
+                    <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
+                        <Run Text="Items:"/>
+                        <Run Text="{Binding SalesReportCount, Mode=OneWay}" FontWeight="SemiBold"/>
+                    </TextBlock>
+                    <Border Width="1" Background="#D1D5DB" Margin="16,2"/>
+                    <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
+                        <Run Text="Grand Total:"/>
+                        <Run Text="{Binding SaleGrandTotal, Mode=OneWay}" FontWeight="SemiBold" Foreground="#059669"/>
+                    </TextBlock>
+                    <Border Width="1" Background="#D1D5DB" Margin="16,2"/>
+                    <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
+                        <Run Text="Cash In Hand:"/>
+                        <Run Text="{Binding SaleCashInHand, Mode=OneWay}" FontWeight="SemiBold" Foreground="#047857"/>
                     </TextBlock>
                 </StackPanel>
             </Grid>

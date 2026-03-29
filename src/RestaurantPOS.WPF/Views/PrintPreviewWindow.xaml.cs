@@ -172,9 +172,31 @@ public partial class PrintPreviewWindow : Window
         p.Children.Clear();
 
         // ── Restaurant Header ──
-        AddCenteredText(p, "KFC RESTAURANT", 16, FontWeights.ExtraBold, "#D32F2F");
-        AddCenteredText(p, "Stadium Road, Daska | 0300-1234567", 8, FontWeights.Normal, "#555");
-        AddSpacer(p, 3);
+        var headerBorder = new Border
+        {
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FEF2F2")!),
+            CornerRadius = new CornerRadius(4),
+            Padding = new Thickness(8, 6, 8, 6),
+            Margin = new Thickness(0, 0, 0, 4)
+        };
+        var headerStack = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
+        headerStack.Children.Add(new TextBlock
+        {
+            Text = "KFC RESTAURANT",
+            FontSize = 16, FontWeight = FontWeights.ExtraBold,
+            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D32F2F")!),
+            HorizontalAlignment = HorizontalAlignment.Center
+        });
+        headerStack.Children.Add(new TextBlock
+        {
+            Text = "Stadium Road, Daska | 0300-1234567",
+            FontSize = 8, FontWeight = FontWeights.Normal,
+            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#555")!),
+            HorizontalAlignment = HorizontalAlignment.Center
+        });
+        headerBorder.Child = headerStack;
+        p.Children.Add(headerBorder);
+        AddSpacer(p, 2);
         AddDoubleLine(p);
         AddSpacer(p, 2);
 
@@ -463,7 +485,14 @@ public partial class PrintPreviewWindow : Window
 
     private static void AddNetAmountRow(StackPanel p, long grandTotal)
     {
-        var netPanel = new Grid { Margin = new Thickness(0, 2, 0, 2) };
+        var netBorder = new Border
+        {
+            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFF8F8")!),
+            CornerRadius = new CornerRadius(3),
+            Padding = new Thickness(6, 4, 6, 4),
+            Margin = new Thickness(0, 2, 0, 2)
+        };
+        var netPanel = new Grid();
         netPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) });
         netPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
@@ -477,7 +506,7 @@ public partial class PrintPreviewWindow : Window
 
         var netValue = new TextBlock
         {
-            Text = FormatCurrency(grandTotal),
+            Text = $"Rs. {grandTotal / 100m:N2}",
             FontSize = 15, FontWeight = FontWeights.ExtraBold,
             Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D32F2F")!),
             HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center
@@ -486,7 +515,8 @@ public partial class PrintPreviewWindow : Window
 
         netPanel.Children.Add(netLabel);
         netPanel.Children.Add(netValue);
-        p.Children.Add(netPanel);
+        netBorder.Child = netPanel;
+        p.Children.Add(netBorder);
     }
 
     private static void AddCenteredText(StackPanel p, string text, double fontSize, FontWeight weight, string colorHex)
