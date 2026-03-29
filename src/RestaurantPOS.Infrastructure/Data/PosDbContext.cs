@@ -169,6 +169,43 @@ public class PosDbContext : DbContext
             new Role { Id = 5, Name = "kitchen", Description = "Kitchen Staff", CreatedAt = now, UpdatedAt = now }
         );
 
+        // Permissions (matching reference POS access-level pattern)
+        mb.Entity<Permission>().HasData(
+            // General
+            new Permission { Id = 1, Name = "Management", Module = "General", Description = "Access management features", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 2, Name = "Settings", Module = "General", Description = "Modify system settings", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 3, Name = "End of Day", Module = "General", Description = "Run end-of-day process", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 4, Name = "User Profile", Module = "General", Description = "View/edit own profile", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 5, Name = "Design Floor Plans", Module = "General", Description = "Edit floor plan layout", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 6, Name = "View Reports", Module = "General", Description = "Access reports module", CreatedAt = now, UpdatedAt = now },
+            // Sales
+            new Permission { Id = 7, Name = "View All Open Orders", Module = "Sales", Description = "See all open orders", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 8, Name = "Void Order", Module = "Sales", Description = "Void an entire order", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 9, Name = "Void Item", Module = "Sales", Description = "Void individual items", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 10, Name = "Lock Sale", Module = "Sales", Description = "Lock a sale/hold order", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 11, Name = "Unlock Sale", Module = "Sales", Description = "Unlock a held sale", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 12, Name = "Split Order", Module = "Sales", Description = "Split order between bills", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 13, Name = "Reprint Receipt", Module = "Sales", Description = "Reprint any receipt", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 14, Name = "Starting Cash", Module = "Sales", Description = "Set starting cash amount", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 15, Name = "Open Cash Drawer", Module = "Sales", Description = "Open the cash drawer", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 16, Name = "Apply Discount", Module = "Sales", Description = "Apply discounts to orders", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 17, Name = "Zero Stock Quantity Sale", Module = "Sales", Description = "Sell items with zero stock", CreatedAt = now, UpdatedAt = now },
+            // Inventory
+            new Permission { Id = 18, Name = "Manage Stock", Module = "Inventory", Description = "Adjust stock levels", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 19, Name = "Manage Menu", Module = "Inventory", Description = "Edit menu items/categories", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 20, Name = "Manage Suppliers", Module = "Inventory", Description = "Manage suppliers/expenses", CreatedAt = now, UpdatedAt = now },
+            // HR
+            new Permission { Id = 21, Name = "Manage Employees", Module = "HR", Description = "Manage employee records", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 22, Name = "Manage Payroll", Module = "HR", Description = "Process payroll", CreatedAt = now, UpdatedAt = now },
+            new Permission { Id = 23, Name = "Manage Customers", Module = "HR", Description = "Manage customer records", CreatedAt = now, UpdatedAt = now }
+        );
+
+        // Admin role gets ALL permissions (access level 5 = full)
+        var adminPermissions = new List<object>();
+        for (int i = 1; i <= 23; i++)
+            adminPermissions.Add(new { RoleId = 1, PermissionId = i, AccessLevel = 5 });
+        mb.Entity<RolePermission>().HasData(adminPermissions.ToArray());
+
         // Default admin user (password: admin123, PIN: 1234)
         mb.Entity<User>().HasData(
             new User

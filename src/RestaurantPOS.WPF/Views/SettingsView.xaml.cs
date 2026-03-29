@@ -1,3 +1,4 @@
+using System.Windows;
 using System.Windows.Controls;
 using RestaurantPOS.WPF.ViewModels;
 
@@ -10,9 +11,93 @@ public partial class SettingsView : UserControl
         InitializeComponent();
     }
 
-    private async void OnLoaded(object sender, System.Windows.RoutedEventArgs e)
+    private async void OnLoaded(object sender, RoutedEventArgs e)
     {
         if (DataContext is SettingsViewModel vm)
             await vm.LoadDataCommand.ExecuteAsync(null);
+    }
+
+    private void TabChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (MainTabControl == null || PanelGeneral == null) return;
+        var idx = MainTabControl.SelectedIndex;
+
+        if (DataContext is SettingsViewModel vm)
+        {
+            vm.SelectedTab = idx;
+            vm.StatusMessage = "";
+        }
+
+        // Filter/action buttons
+        BtnSaveGeneral.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
+        BtnPrinters.Visibility = idx == 1 ? Visibility.Visible : Visibility.Collapsed;
+        BtnBackup.Visibility = idx == 2 ? Visibility.Visible : Visibility.Collapsed;
+        BtnSaveReceipt.Visibility = idx == 3 ? Visibility.Visible : Visibility.Collapsed;
+        BtnTax.Visibility = idx == 4 ? Visibility.Visible : Visibility.Collapsed;
+        BtnUsers.Visibility = idx == 5 ? Visibility.Visible : Visibility.Collapsed;
+
+        // Content panels
+        PanelGeneral.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
+        PanelPrinters.Visibility = idx == 1 ? Visibility.Visible : Visibility.Collapsed;
+        PanelBackup.Visibility = idx == 2 ? Visibility.Visible : Visibility.Collapsed;
+        PanelReceipt.Visibility = idx == 3 ? Visibility.Visible : Visibility.Collapsed;
+        PanelTax.Visibility = idx == 4 ? Visibility.Visible : Visibility.Collapsed;
+        PanelUsers.Visibility = idx == 5 ? Visibility.Visible : Visibility.Collapsed;
+
+        // Status bar items
+        StatusGeneral.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
+        StatusPrinters.Visibility = idx == 1 ? Visibility.Visible : Visibility.Collapsed;
+        StatusBackup.Visibility = idx == 2 ? Visibility.Visible : Visibility.Collapsed;
+        StatusReceipt.Visibility = idx == 3 ? Visibility.Visible : Visibility.Collapsed;
+        StatusTax.Visibility = idx == 4 ? Visibility.Visible : Visibility.Collapsed;
+        StatusUsers.Visibility = idx == 5 ? Visibility.Visible : Visibility.Collapsed;
+
+        // Trigger refresh for the selected tab
+        if (DataContext is SettingsViewModel vm2)
+            _ = vm2.RefreshCommand.ExecuteAsync(null);
+    }
+
+    // PasswordBox doesn't support binding — forward manually
+    private void PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is SettingsViewModel vm)
+            vm.UserPassword = PasswordBox.Password;
+    }
+
+    private void ConfirmPasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is SettingsViewModel vm)
+            vm.UserConfirmPassword = ConfirmPasswordBox.Password;
+    }
+
+    private void PinChanged(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is SettingsViewModel vm)
+            vm.UserPin = PinBox.Password;
+    }
+
+    // Access level +/- buttons for role permissions
+    private void IncrementLevel(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is RolePermissionRow row)
+        {
+            if (row.AccessLevel < 5)
+            {
+                row.AccessLevel++;
+                row.IsGranted = true;
+            }
+        }
+    }
+
+    private void DecrementLevel(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is RolePermissionRow row)
+        {
+            if (row.AccessLevel > 0)
+            {
+                row.AccessLevel--;
+                if (row.AccessLevel == 0) row.IsGranted = false;
+            }
+        }
     }
 }
