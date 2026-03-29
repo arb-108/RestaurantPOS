@@ -22,6 +22,11 @@ public class RolePermission
     public Role Role { get; set; } = null!;
     public int PermissionId { get; set; }
     public Permission Permission { get; set; } = null!;
+    /// <summary>
+    /// Access level 0-5. 0 = no access, 5 = full access.
+    /// Higher levels can override lower-level operations.
+    /// </summary>
+    public int AccessLevel { get; set; } = 5;
 }
 
 public class User : BaseEntity
