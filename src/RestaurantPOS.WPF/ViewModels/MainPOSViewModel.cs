@@ -1895,14 +1895,22 @@ public partial class MainPOSViewModel : BaseViewModel
     {
         if (OrderItems.Count == 0) return;
 
-        // Require admin/manager authorization first
+        // Only require admin/manager authorization if current user is Cashier
         if (_authService == null) return;
-        var authWindow = new Views.ManagerAuthWindow(_authService);
-        authWindow.Owner = System.Windows.Application.Current.MainWindow;
-        if (authWindow.ShowDialog() != true)
-            return;
-
-        var authorizedBy = authWindow.AuthorizedBy;
+        bool isCashier = !_authService.HasPermission("Void / cancel orders", minimumLevel: 5);
+        string authorizedBy;
+        if (isCashier)
+        {
+            var authWindow = new Views.ManagerAuthWindow(_authService);
+            authWindow.Owner = System.Windows.Application.Current.MainWindow;
+            if (authWindow.ShowDialog() != true)
+                return;
+            authorizedBy = authWindow.AuthorizedBy;
+        }
+        else
+        {
+            authorizedBy = _loggedInUser?.FullName ?? _loggedInUser?.Username ?? "Admin";
+        }
 
         // Open the UnPaid Bill reason window
         var reasonWindow = new Views.UnPaidBillWindow();
@@ -1986,6 +1994,15 @@ public partial class MainPOSViewModel : BaseViewModel
     [RelayCommand]
     private async Task AddQuickTableAsync()
     {
+        // Cashier needs admin/manager authorization to add tables
+        if (_authService != null && !_authService.HasPermission("Manage tables & sessions", minimumLevel: 5))
+        {
+            var authWindow = new Views.ManagerAuthWindow(_authService);
+            authWindow.Owner = System.Windows.Application.Current.MainWindow;
+            if (authWindow.ShowDialog() != true)
+                return;
+        }
+
         var floors = await _db.FloorPlans.Where(f => f.IsActive).OrderBy(f => f.DisplayOrder).ToListAsync();
         var dlg = new AddTableWindow(floors) { Owner = System.Windows.Application.Current.MainWindow };
         if (dlg.ShowDialog() == true)

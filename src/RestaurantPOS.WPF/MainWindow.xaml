@@ -166,9 +166,10 @@
                                        Foreground="#555" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Button>
-                    <!-- Shift -->
+                    <!-- Shift (hidden from Cashier) -->
                     <Button Style="{StaticResource ToolbarButton}"
-                            Command="{Binding NavigateToShiftCommand}" ToolTip="Shift Management">
+                            Command="{Binding NavigateToShiftCommand}" ToolTip="Shift Management"
+                            Visibility="{Binding CanAccessShift, Converter={StaticResource BoolToVis}}">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="&#xE823;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#333"/>

@@ -108,7 +108,8 @@
                         </StackPanel>
                     </Button>
                     <Button Style="{StaticResource Btn}" Content="+ Add Customer" Background="#4CAF50"
-                            Command="{Binding AddCustomerCommand}"/>
+                            Command="{Binding AddCustomerCommand}"
+                            Visibility="{Binding CanManageCustomers, Converter={StaticResource BoolToVis}}"/>
                 </StackPanel>
             </Grid>
         </Border>
@@ -271,9 +272,11 @@
                                                     CommandParameter="{Binding}"/>
                                             <Button Style="{StaticResource SmallBtn}" Content="Edit" Background="#FF8F00"
                                                     Margin="0,0,4,0"
-                                                    Command="{Binding DataContext.EditCustomerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                    Command="{Binding DataContext.EditCustomerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    Visibility="{Binding DataContext.CanManageCustomers, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"/>
                                             <Button Style="{StaticResource SmallBtn}" Content="Delete" Background="#E53935"
-                                                    Command="{Binding DataContext.DeleteCustomerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"/>
+                                                    Command="{Binding DataContext.DeleteCustomerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    Visibility="{Binding DataContext.CanManageCustomers, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>

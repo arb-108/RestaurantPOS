@@ -46,6 +46,7 @@ public partial class MainWindowViewModel : BaseViewModel
     [ObservableProperty] private bool _canAccessReturns = true;
     [ObservableProperty] private bool _canAccessEmployees = true;
     [ObservableProperty] private bool _canAccessSettings = true;
+    [ObservableProperty] private bool _canAccessShift = true;
 
     /// <summary>The currently logged-in user object (for role-based features).</summary>
     public Domain.Entities.User? LoggedInUser { get; private set; }
@@ -215,6 +216,9 @@ public partial class MainWindowViewModel : BaseViewModel
 
         // Employees — requires Manage employees
         CanAccessEmployees = _authService.HasPermission("Manage employees");
+
+        // Shift — requires Open / close shift at manager level
+        CanAccessShift = _authService.HasPermission("Open / close shift", minimumLevel: 5);
 
         // Settings — requires at least one config/admin permission
         CanAccessSettings = _authService.HasPermission("System app settings")
