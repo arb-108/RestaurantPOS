@@ -20,6 +20,7 @@ public static class DatabaseConfig
             DataSource = DbFilePath,
             Mode = SqliteOpenMode.ReadWriteCreate
         }.ToString();
+      
     }
 
     private static void EnsureDirectoryExists()
