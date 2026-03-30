@@ -148,6 +148,7 @@
             <TabItem Header="Expenses" Style="{StaticResource FolderTab}"/>
             <TabItem Header="Profit &amp; Loss" Style="{StaticResource FolderTab}"/>
             <TabItem Header="Sales Report" Style="{StaticResource FolderTab}"/>
+            <TabItem Header="Cashier Sales" Style="{StaticResource FolderTab}"/>
         </TabControl>
 
         <!-- ============================================================ -->
@@ -245,6 +246,14 @@
                         <ComboBox Style="{StaticResource FilterCombo}" ItemsSource="{Binding SalesReportCategories}"
                                   SelectedItem="{Binding SalesReportCategory}" MinWidth="140"/>
                     </StackPanel>
+
+                    <!-- Tab 8: Cashier Sales filters -->
+                    <StackPanel x:Name="FilterCashierSales" Orientation="Horizontal" Visibility="Collapsed">
+                        <TextBlock Text="From:" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <DatePicker SelectedDate="{Binding CashierSalesFrom}" FontSize="12" Height="30" Width="130" Margin="0,0,12,0"/>
+                        <TextBlock Text="To:" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                        <DatePicker SelectedDate="{Binding CashierSalesTo}" FontSize="12" Height="30" Width="130" Margin="0,0,12,0"/>
+                    </StackPanel>
                 </Grid>
 
                 <!-- ACTION BUTTON PANELS -->
@@ -319,6 +328,16 @@
                             <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Load"/></StackPanel>
                         </Button>
                         <Button Style="{StaticResource Btn}" Background="#6366F1" Command="{Binding PrintSalesReportCommand}">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE749;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Print Report"/></StackPanel>
+                        </Button>
+                    </StackPanel>
+
+                    <!-- Tab 8: Cashier Sales buttons -->
+                    <StackPanel x:Name="BtnCashierSales" Orientation="Horizontal" Visibility="Collapsed">
+                        <Button Style="{StaticResource Btn}" Background="#7C3AED" Command="{Binding LoadCashierSalesCommand}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Load"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Btn}" Background="#6366F1" Command="{Binding PrintCashierSalesReportCommand}">
                             <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE749;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Print Report"/></StackPanel>
                         </Button>
                     </StackPanel>
@@ -1099,6 +1118,73 @@
                     </Border>
                 </Grid>
 
+                <!-- ======================================================== -->
+                <!-- TAB 8: CASHIER SALES -->
+                <!-- ======================================================== -->
+                <DataGrid x:Name="PanelCashierSales" Visibility="Collapsed"
+                          ItemsSource="{Binding CashierSalesItems}" AutoGenerateColumns="False"
+                          IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False"
+                          SelectionMode="Single" GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="#F3F4F6" HeadersVisibility="Column"
+                          AlternationCount="2" RowHeight="44" BorderThickness="0"
+                          ColumnHeaderStyle="{StaticResource DgHeader}"
+                          RowStyle="{StaticResource DgRow}"
+                          CellStyle="{StaticResource DgCell}">
+                    <DataGrid.Columns>
+                        <DataGridTemplateColumn Header="CASHIER" Width="*">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding CashierName}" FontWeight="Bold" Foreground="#1E293B"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="ORDERS" Binding="{Binding OrderCount}" Width="90">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                    <Setter Property="FontWeight" Value="SemiBold"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTemplateColumn Header="TOTAL SALES" Width="140">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding TotalSales}" FontWeight="Bold" Foreground="#059669" HorizontalAlignment="Right"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="CASH" Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding CashAmount}" HorizontalAlignment="Right" Foreground="#2E7D32"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="CARD/DIGITAL" Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding CardAmount}" HorizontalAlignment="Right" Foreground="#1565C0"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="VOIDS" Binding="{Binding VoidCount}" Width="80">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="HorizontalAlignment" Value="Center"/>
+                                    <Setter Property="Foreground" Value="#DC2626"/>
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                        <DataGridTemplateColumn Header="AVG ORDER" Width="120">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding AvgOrderValue}" HorizontalAlignment="Right" Foreground="#7C3AED"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+
             </Grid>
         </Border>
 
@@ -1205,6 +1291,19 @@
                     <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
                         <Run Text="Cash In Hand:"/>
                         <Run Text="{Binding SaleCashInHand, Mode=OneWay}" FontWeight="SemiBold" Foreground="#047857"/>
+                    </TextBlock>
+                </StackPanel>
+
+                <!-- Cashier Sales status (Tab 8) -->
+                <StackPanel x:Name="StatusCashierSales" Orientation="Horizontal" Visibility="Collapsed">
+                    <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
+                        <Run Text="Cashiers:"/>
+                        <Run Text="{Binding CashierSalesCount, Mode=OneWay}" FontWeight="SemiBold"/>
+                    </TextBlock>
+                    <Border Width="1" Background="#D1D5DB" Margin="16,2"/>
+                    <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
+                        <Run Text="Total Sales:"/>
+                        <Run Text="{Binding CashierSalesTotal, Mode=OneWay}" FontWeight="SemiBold" Foreground="#059669"/>
                     </TextBlock>
                 </StackPanel>
             </Grid>

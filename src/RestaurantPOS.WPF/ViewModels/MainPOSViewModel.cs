@@ -191,6 +191,9 @@ public partial class MainPOSViewModel : BaseViewModel
     public bool IsAdmin => _loggedInUser?.Role?.Name?.Equals("Admin", StringComparison.OrdinalIgnoreCase) == true
                         || _loggedInUser?.RoleId == 1;
 
+    /// <summary>True if logged-in user is Admin or Manager (both see all billing history).</summary>
+    public bool IsAdminOrManager => _loggedInUser?.RoleId == 1 || _loggedInUser?.RoleId == 2;
+
     // Categories
     public ObservableCollection<Category> Categories { get; } = [];
 
@@ -1884,13 +1887,22 @@ public partial class MainPOSViewModel : BaseViewModel
     }
 
     /// <summary>
-    /// Un-Paid Bill: opens a reason window, then clears the order.
+    /// Un-Paid Bill: requires admin/manager authorization, opens a reason window, then clears the order.
     /// Used when K-slip is already printed but customer doesn't pay.
     /// </summary>
     [RelayCommand]
     private async Task UnPaidBillAsync()
     {
         if (OrderItems.Count == 0) return;
+
+        // Require admin/manager authorization first
+        if (_authService == null) return;
+        var authWindow = new Views.ManagerAuthWindow(_authService);
+        authWindow.Owner = System.Windows.Application.Current.MainWindow;
+        if (authWindow.ShowDialog() != true)
+            return;
+
+        var authorizedBy = authWindow.AuthorizedBy;
 
         // Open the UnPaid Bill reason window
         var reasonWindow = new Views.UnPaidBillWindow();
@@ -1900,7 +1912,7 @@ public partial class MainPOSViewModel : BaseViewModel
         if (result != true || string.IsNullOrWhiteSpace(reasonWindow.Reason))
             return;
 
-        var reason = reasonWindow.Reason;
+        var reason = $"{reasonWindow.Reason} [Authorized by: {authorizedBy}]";
 
         // Mark as Void in database with reason
         if (_currentOrder != null)
@@ -2527,8 +2539,8 @@ public partial class MainPOSViewModel : BaseViewModel
     {
         try
         {
-            // Role-based: Admin sees all, Cashier sees only own orders
-            int? cashierFilter = IsAdmin ? null : _loggedInUser?.Id;
+            // Role-based: Admin/Manager see all, Cashier sees only own orders
+            int? cashierFilter = IsAdminOrManager ? null : _loggedInUser?.Id;
 
             var orders = await _orderService.GetBillingHistoryAsync(
                 BillingFromDate, BillingToDate, cashierFilter);

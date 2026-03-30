@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.EntityFrameworkCore;
+using RestaurantPOS.Application.Interfaces;
 using RestaurantPOS.Domain.Entities;
 using RestaurantPOS.Infrastructure.Data;
 using RestaurantPOS.WPF.Views;
@@ -11,6 +12,10 @@ namespace RestaurantPOS.WPF.ViewModels;
 public partial class ExpenseManagementViewModel : BaseViewModel
 {
     private readonly PosDbContext _db;
+    private readonly IAuthService _authService;
+
+    /// <summary>True if user has full control (admin). Manager (level 4) cannot see salary/employee expenses.</summary>
+    private bool _hasFullExpenseAccess;
 
     [ObservableProperty] private int _selectedTab;
     [ObservableProperty] private string _statusMessage = string.Empty;
@@ -30,10 +35,14 @@ public partial class ExpenseManagementViewModel : BaseViewModel
     [ObservableProperty] private string _expenseCountText = "0 expenses";
     [ObservableProperty] private string _totalExpenseText = "Rs. 0";
 
-    public ExpenseManagementViewModel(PosDbContext db)
+    public ExpenseManagementViewModel(PosDbContext db, IAuthService authService)
     {
         _db = db;
+        _authService = authService;
         Title = "Expense Management";
+
+        // Admin (level 5) sees everything; Manager (level 4) cannot see Salary/employee expenses
+        _hasFullExpenseAccess = _authService.GetAccessLevel("Manage expenses") >= 5;
     }
 
     [RelayCommand]
@@ -79,6 +88,11 @@ public partial class ExpenseManagementViewModel : BaseViewModel
     private void ApplyExpenseFilter()
     {
         IEnumerable<SupplierExpense> query = _allExpenses;
+
+        // Manager cannot see Salary (employee payroll) expenses — admin only
+        if (!_hasFullExpenseAccess)
+            query = query.Where(e => !string.Equals(e.Category, "Salary", StringComparison.OrdinalIgnoreCase));
+
         if (ExpenseFilterSupplier != null && ExpenseFilterSupplier.Id != 0)
             query = query.Where(e => e.SupplierId == ExpenseFilterSupplier.Id);
         var search = ExpenseSearch?.Trim();

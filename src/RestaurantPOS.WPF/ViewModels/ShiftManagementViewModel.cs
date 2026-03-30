@@ -45,6 +45,14 @@ public partial class ShiftManagementViewModel : BaseViewModel
     // ── Selected Tab ──
     [ObservableProperty] private int _selectedTab; // 0=Current, 1=History
 
+    // ── Role-based permissions ──
+    [ObservableProperty] private bool _canOpenCloseShift;
+    [ObservableProperty] private bool _canPayInOut;
+    [ObservableProperty] private bool _canOpenShift;
+    [ObservableProperty] private bool _canCloseShift;
+    [ObservableProperty] private bool _canDoPayIn;
+    [ObservableProperty] private bool _canDoPayOut;
+
     private System.Windows.Threading.DispatcherTimer? _refreshTimer;
 
     public ShiftManagementViewModel(PosDbContext db, MainWindowViewModel mainVm)
@@ -57,9 +65,32 @@ public partial class ShiftManagementViewModel : BaseViewModel
     [RelayCommand]
     private async Task LoadDataAsync()
     {
+        ApplyShiftPermissions();
         await RefreshActiveShiftAsync();
         await LoadHistoryAsync();
         StartAutoRefresh();
+    }
+
+    private void ApplyShiftPermissions()
+    {
+        var roleId = _mainVm.LoggedInUser?.RoleId;
+        // Admin (1) and Manager (2) have full shift control; Cashier (3) can only view
+        CanOpenCloseShift = roleId == 1 || roleId == 2;
+        CanPayInOut = roleId == 1 || roleId == 2;
+        UpdateShiftActionProperties();
+    }
+
+    partial void OnHasActiveShiftChanged(bool value)
+    {
+        UpdateShiftActionProperties();
+    }
+
+    private void UpdateShiftActionProperties()
+    {
+        CanOpenShift = !HasActiveShift && CanOpenCloseShift;
+        CanCloseShift = HasActiveShift && CanOpenCloseShift;
+        CanDoPayIn = HasActiveShift && CanPayInOut;
+        CanDoPayOut = HasActiveShift && CanPayInOut;
     }
 
     private void StartAutoRefresh()

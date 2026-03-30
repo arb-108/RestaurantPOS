@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.EntityFrameworkCore;
+using RestaurantPOS.Application.Interfaces;
 using RestaurantPOS.Domain.Entities;
 using RestaurantPOS.Domain.Enums;
 using RestaurantPOS.Infrastructure.Data;
@@ -12,9 +13,16 @@ namespace RestaurantPOS.WPF.ViewModels;
 public partial class EmployeeManagementViewModel : BaseViewModel
 {
     private readonly PosDbContext _db;
+    private readonly IAuthService _authService;
 
     // ── Tab control ──
     [ObservableProperty] private int _selectedTab;
+
+    // ── Role-based visibility ──
+    /// <summary>True if user can see payroll tab and salary info (admin only, not manager).</summary>
+    [ObservableProperty] private bool _canSeePayroll;
+    /// <summary>True if user can add/edit/delete employees (admin=level5, manager=level4 can view only).</summary>
+    [ObservableProperty] private bool _canManageEmployees;
 
     // ── Employee list ──
     private List<Employee> _allEmployees = [];
@@ -46,11 +54,17 @@ public partial class EmployeeManagementViewModel : BaseViewModel
     [ObservableProperty] private string _detailJoiningDate = "";
     [ObservableProperty] private string _detailEmploymentType = "";
 
-    public EmployeeManagementViewModel(PosDbContext db)
+    public EmployeeManagementViewModel(PosDbContext db, IAuthService authService)
     {
         _db = db;
+        _authService = authService;
         Title = "Employee Management";
         BuildMonthOptions();
+
+        // Admin (level 5) sees payroll & can manage; Manager (level 4) can only view employees
+        int empLevel = _authService.GetAccessLevel("Manage employees");
+        CanSeePayroll = _authService.HasPermission("Generate payroll"); // admin only
+        CanManageEmployees = empLevel >= 5; // admin only
     }
 
     private void BuildMonthOptions()

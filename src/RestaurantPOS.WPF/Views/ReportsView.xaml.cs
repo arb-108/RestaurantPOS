@@ -31,6 +31,7 @@ public partial class ReportsView : UserControl
         FilterExpenses.Visibility = idx == 5 ? Visibility.Visible : Visibility.Collapsed;
         FilterProfit.Visibility = idx == 6 ? Visibility.Visible : Visibility.Collapsed;
         FilterSalesReport.Visibility = idx == 7 ? Visibility.Visible : Visibility.Collapsed;
+        FilterCashierSales.Visibility = idx == 8 ? Visibility.Visible : Visibility.Collapsed;
 
         // Toggle action buttons
         BtnSales.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -41,6 +42,7 @@ public partial class ReportsView : UserControl
         BtnExpenses.Visibility = idx == 5 ? Visibility.Visible : Visibility.Collapsed;
         BtnProfit.Visibility = idx == 6 ? Visibility.Visible : Visibility.Collapsed;
         BtnSalesReport.Visibility = idx == 7 ? Visibility.Visible : Visibility.Collapsed;
+        BtnCashierSales.Visibility = idx == 8 ? Visibility.Visible : Visibility.Collapsed;
 
         // Toggle content panels
         PanelSales.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -51,6 +53,7 @@ public partial class ReportsView : UserControl
         PanelExpenses.Visibility = idx == 5 ? Visibility.Visible : Visibility.Collapsed;
         PanelProfit.Visibility = idx == 6 ? Visibility.Visible : Visibility.Collapsed;
         PanelSalesReport.Visibility = idx == 7 ? Visibility.Visible : Visibility.Collapsed;
+        PanelCashierSales.Visibility = idx == 8 ? Visibility.Visible : Visibility.Collapsed;
 
         // Toggle status bar items
         StatusSales.Visibility = idx == 0 ? Visibility.Visible : Visibility.Collapsed;
@@ -61,6 +64,7 @@ public partial class ReportsView : UserControl
         StatusExpenses.Visibility = idx == 5 ? Visibility.Visible : Visibility.Collapsed;
         StatusProfit.Visibility = idx == 6 ? Visibility.Visible : Visibility.Collapsed;
         StatusSalesReport.Visibility = idx == 7 ? Visibility.Visible : Visibility.Collapsed;
+        StatusCashierSales.Visibility = idx == 8 ? Visibility.Visible : Visibility.Collapsed;
 
         if (DataContext is ReportsViewModel vm)
             vm.SelectedTab = idx;

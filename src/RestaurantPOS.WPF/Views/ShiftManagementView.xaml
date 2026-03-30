@@ -307,22 +307,22 @@
                 <Button Style="{StaticResource ShiftActionBtn}"
                         Background="#059669" Foreground="White" Content="Open Shift"
                         Command="{Binding OpenShiftCommand}"
-                        IsEnabled="{Binding HasActiveShift, Converter={StaticResource BoolInvert}}"
+                        IsEnabled="{Binding CanOpenShift}"
                         Margin="0,0,6,0"/>
                 <Button Style="{StaticResource ShiftActionBtn}"
                         Background="#DC2626" Foreground="White" Content="Close Shift"
                         Command="{Binding CloseShiftCommand}"
-                        IsEnabled="{Binding HasActiveShift}"
+                        IsEnabled="{Binding CanCloseShift}"
                         Margin="0,0,6,0"/>
                 <Button Style="{StaticResource ShiftActionBtn}"
                         Background="#2196F3" Foreground="White" Content="+ Pay In"
                         Command="{Binding PayInCommand}"
-                        IsEnabled="{Binding HasActiveShift}"
+                        IsEnabled="{Binding CanDoPayIn}"
                         Margin="0,0,6,0"/>
                 <Button Style="{StaticResource ShiftActionBtn}"
                         Background="#D97706" Foreground="White" Content="- Pay Out"
                         Command="{Binding PayOutCommand}"
-                        IsEnabled="{Binding HasActiveShift}"/>
+                        IsEnabled="{Binding CanDoPayOut}"/>
             </StackPanel>
         </Border>
 
@@ -410,7 +410,7 @@
                     <Button Style="{StaticResource ShiftActionBtn}" Background="#059669" Foreground="White"
                 Content="Open shift" Height="38" Padding="24,0" FontSize="13"
                 Command="{Binding OpenShiftCommand}"
-                IsEnabled="{Binding HasActiveShift, Converter={StaticResource BoolInvert}}"
+                IsEnabled="{Binding CanOpenShift}"
                 HorizontalAlignment="Center"/>
                 </StackPanel>
             </Border>

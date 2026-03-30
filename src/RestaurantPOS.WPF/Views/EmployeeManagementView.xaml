@@ -146,7 +146,8 @@
                         BorderThickness="0" Padding="0" Margin="0,0,0,0"
                         SelectionChanged="TabChanged">
                 <TabItem Header="Employees" Style="{StaticResource FolderTab}"/>
-                <TabItem Header="Payroll" Style="{StaticResource FolderTab}"/>
+                <TabItem Header="Payroll" Style="{StaticResource FolderTab}"
+                         Visibility="{Binding CanSeePayroll, Converter={StaticResource BoolToVis}}"/>
             </TabControl>
 
             <!-- FILTER + ACTION BAR -->
@@ -181,8 +182,9 @@
                         <ComboBox Style="{StaticResource FilterCombo}" MinWidth="140" ItemsSource="{Binding MonthOptions}" SelectedItem="{Binding PayrollMonthFilter}"/>
                     </StackPanel>
 
-                    <!-- Employee Action Buttons -->
-                    <StackPanel x:Name="BtnEmployees" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0">
+                    <!-- Employee Action Buttons (admin only) -->
+                    <StackPanel x:Name="BtnEmployees" Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center" Margin="12,0,0,0"
+                                Visibility="{Binding CanManageEmployees, Converter={StaticResource BoolToVis}}">
                         <Button Background="#059669" Style="{StaticResource Btn}" Command="{Binding AddEmployeeCommand}" Margin="0,0,6,0">
                             <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Add"/></StackPanel>
                         </Button>

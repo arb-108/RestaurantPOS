@@ -17,6 +17,7 @@ public partial class CustomerManagementViewModel : BaseViewModel
     private readonly ICustomerService _customerService;
     private readonly PosDbContext _db;
     private readonly IPrintService _printService;
+    private readonly IAuthService _authService;
 
     // ── All customers loaded from DB ──
     private List<Customer> _allCustomers = [];
@@ -40,6 +41,10 @@ public partial class CustomerManagementViewModel : BaseViewModel
     [ObservableProperty] private int _totalOrders;
     [ObservableProperty] private int _goldPlatinumCount;
 
+    // ── Role-based visibility ──
+    [ObservableProperty] private bool _canSeeStats;        // admin/manager only
+    [ObservableProperty] private bool _canManageCustomers;  // admin/manager only (level >= 5)
+
     // ── Selected customer detail ──
     [ObservableProperty] private CustomerRowViewModel? _selectedCustomer;
     [ObservableProperty] private bool _isDetailVisible;
@@ -53,12 +58,18 @@ public partial class CustomerManagementViewModel : BaseViewModel
     [ObservableProperty] private string _detailNotes = "";
     [ObservableProperty] private int _detailOrderCount;
 
-    public CustomerManagementViewModel(ICustomerService customerService, PosDbContext db, IPrintService printService)
+    public CustomerManagementViewModel(ICustomerService customerService, PosDbContext db, IPrintService printService, IAuthService authService)
     {
         _customerService = customerService;
         _db = db;
         _printService = printService;
+        _authService = authService;
         Title = "Customer Management";
+
+        // Role-based: level >= 5 = admin/manager full control, level 2 = cashier read-only
+        var level = _authService.GetAccessLevel("Manage customers & loyalty");
+        CanSeeStats = level >= 5;
+        CanManageCustomers = level >= 5;
     }
 
     [RelayCommand]

@@ -242,6 +242,24 @@ public partial class ReportsViewModel : BaseViewModel
     }
 
     // ══════════════════════════════════════════════
+    //  TAB 8: CASHIER SALES
+    // ══════════════════════════════════════════════
+
+    [ObservableProperty]
+    private DateTime _cashierSalesFrom = DateTime.Today;
+
+    [ObservableProperty]
+    private DateTime _cashierSalesTo = DateTime.Today;
+
+    public ObservableCollection<CashierPerformanceRow> CashierSalesItems { get; } = [];
+
+    [ObservableProperty]
+    private string _cashierSalesCount = "0 cashiers";
+
+    [ObservableProperty]
+    private string _cashierSalesTotal = "Rs. 0";
+
+    // ══════════════════════════════════════════════
     //  CONSTRUCTOR
     // ══════════════════════════════════════════════
 
@@ -276,6 +294,7 @@ public partial class ReportsViewModel : BaseViewModel
             await LoadProfitLossAsync();
             await LoadSalesReportCategoriesAsync();
             await LoadSalesReportAsync();
+            await LoadCashierSalesAsync();
         }
         catch (Exception ex)
         {
@@ -303,6 +322,7 @@ public partial class ReportsViewModel : BaseViewModel
                 case 5: await LoadExpensesAsync(); break;
                 case 6: await LoadProfitLossAsync(); break;
                 case 7: await LoadSalesReportAsync(); break;
+                case 8: await LoadCashierSalesAsync(); break;
             }
         }
         catch (Exception ex)
@@ -1238,6 +1258,101 @@ public partial class ReportsViewModel : BaseViewModel
     }
 
     // ══════════════════════════════════════════════
+    //  TAB 8: CASHIER SALES
+    // ══════════════════════════════════════════════
+
+    [RelayCommand]
+    private async Task LoadCashierSalesAsync()
+    {
+        try
+        {
+            var fromUtc = CashierSalesFrom.Date.ToUniversalTime();
+            var toUtc = CashierSalesTo.Date.AddDays(1).ToUniversalTime();
+
+            var orders = await _db.Orders
+                .Include(o => o.Cashier)
+                .Include(o => o.Payments).ThenInclude(p => p.PaymentMethod)
+                .Where(o => o.CreatedAt >= fromUtc && o.CreatedAt < toUtc && o.Status == OrderStatus.Closed)
+                .ToListAsync();
+
+            var grouped = orders
+                .GroupBy(o => new { CashierId = o.CashierId ?? 0, CashierName = o.Cashier?.FullName ?? "Unknown" })
+                .Select(g =>
+                {
+                    var cashPayments = g.SelectMany(o => o.Payments)
+                        .Where(p => p.PaymentMethod != null &&
+                            p.PaymentMethod.Name.Contains("Cash", StringComparison.OrdinalIgnoreCase))
+                        .Sum(p => p.Amount);
+                    var cardPayments = g.SelectMany(o => o.Payments)
+                        .Where(p => p.PaymentMethod != null &&
+                            !p.PaymentMethod.Name.Contains("Cash", StringComparison.OrdinalIgnoreCase))
+                        .Sum(p => p.Amount);
+                    var voidCount = orders.Count(o => o.Status == OrderStatus.Void && (o.CashierId ?? 0) == g.Key.CashierId);
+                    var totalSales = g.Sum(o => o.GrandTotal);
+
+                    return new CashierPerformanceRow
+                    {
+                        CashierId = g.Key.CashierId,
+                        CashierName = g.Key.CashierName,
+                        OrderCount = g.Count(),
+                        TotalSales = $"Rs. {totalSales / 100m:N0}",
+                        RawTotalSales = totalSales,
+                        CashAmount = $"Rs. {cashPayments / 100m:N0}",
+                        CardAmount = $"Rs. {cardPayments / 100m:N0}",
+                        VoidCount = voidCount,
+                        AvgOrderValue = g.Count() > 0
+                            ? $"Rs. {totalSales / g.Count() / 100m:N0}"
+                            : "Rs. 0"
+                    };
+                })
+                .OrderByDescending(r => r.RawTotalSales)
+                .ToList();
+
+            CashierSalesItems.Clear();
+            long totalAll = 0;
+            foreach (var row in grouped)
+            {
+                CashierSalesItems.Add(row);
+                totalAll += row.RawTotalSales;
+            }
+
+            CashierSalesCount = $"{grouped.Count} cashier{(grouped.Count != 1 ? "s" : "")}";
+            CashierSalesTotal = $"Rs. {totalAll / 100m:N0}";
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Reports] CashierSales error: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void PrintCashierSalesReport()
+    {
+        try
+        {
+            var lines = new List<(string label, string value)>
+            {
+                ("Period", $"{CashierSalesFrom:dd/MM/yy} - {CashierSalesTo:dd/MM/yy}"),
+                ("Total Cashiers", CashierSalesCount),
+                ("Total Sales", CashierSalesTotal),
+                ("", ""),
+                ("--- Cashier Details ---", "")
+            };
+
+            foreach (var c in CashierSalesItems)
+            {
+                lines.Add(($"{c.CashierName}: {c.OrderCount} orders", $"{c.TotalSales} (Avg: {c.AvgOrderValue})"));
+            }
+
+            OpenReportPreview("Cashier Sales Report", lines);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Reports] PrintCashierSales error: {ex.Message}");
+        }
+    }
+
+    // ══════════════════════════════════════════════
     //  HELPER: Build report receipt and open preview
     // ══════════════════════════════════════════════
 
@@ -1354,4 +1469,17 @@ public class SalesReportRow
     public int Qty { get; set; }
     public string Total { get; set; } = string.Empty;
     public long RawTotal { get; set; }
+}
+
+public class CashierPerformanceRow
+{
+    public int CashierId { get; set; }
+    public string CashierName { get; set; } = string.Empty;
+    public int OrderCount { get; set; }
+    public string TotalSales { get; set; } = string.Empty;
+    public long RawTotalSales { get; set; }
+    public string CashAmount { get; set; } = string.Empty;
+    public string CardAmount { get; set; } = string.Empty;
+    public int VoidCount { get; set; }
+    public string AvgOrderValue { get; set; } = string.Empty;
 }
