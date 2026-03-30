@@ -2056,8 +2056,7 @@
                     <Button Grid.Row="4" Grid.Column="0"
                             Content="Un-Paid Bill" Style="{StaticResource UnPaidBillButton}"
                             Height="38" FontSize="12" Margin="0,0,0,0"
-                            Command="{Binding UnPaidBillCommand}"
-                            IsEnabled="{Binding CanVoidOrder}"/>
+                            Command="{Binding UnPaidBillCommand}"/>
 
                     <Button x:Name="CheckoutBtn" Grid.Row="4" Grid.Column="2"
                             Content="Checkout" Style="{StaticResource CheckoutButton}"

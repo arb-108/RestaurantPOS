@@ -217,8 +217,9 @@ public partial class MainWindowViewModel : BaseViewModel
         // Employees — requires Manage employees
         CanAccessEmployees = _authService.HasPermission("Manage employees");
 
-        // Shift — requires Open / close shift at manager level
-        CanAccessShift = _authService.HasPermission("Open / close shift", minimumLevel: 5);
+        // Shift — only Admin/Manager (Cashier has no Manage employees = proxy for management role)
+        CanAccessShift = _authService.HasPermission("Manage employees")
+            || _authService.HasPermission("System app settings");
 
         // Settings — requires at least one config/admin permission
         CanAccessSettings = _authService.HasPermission("System app settings")

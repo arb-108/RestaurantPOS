@@ -269,7 +269,8 @@
                                             <Button Style="{StaticResource SmallBtn}" Content="View" Background="#1565C0"
                                                     Margin="0,0,4,0"
                                                     Command="{Binding DataContext.SelectCustomerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    CommandParameter="{Binding}"/>
+                                                    CommandParameter="{Binding}"
+                                                    Visibility="{Binding DataContext.CanManageCustomers, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"/>
                                             <Button Style="{StaticResource SmallBtn}" Content="Edit" Background="#FF8F00"
                                                     Margin="0,0,4,0"
                                                     Command="{Binding DataContext.EditCustomerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
