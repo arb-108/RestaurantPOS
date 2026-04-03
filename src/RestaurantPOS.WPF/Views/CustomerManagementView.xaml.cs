@@ -15,6 +15,9 @@ public partial class CustomerManagementView : UserControl
     {
         if (DataContext is CustomerManagementViewModel vm)
         {
+            // Hide "Total Spent" column for cashier
+            TotalSpentColumn.Visibility = vm.CanSeeStats ? Visibility.Visible : Visibility.Collapsed;
+
             await vm.LoadDataCommand.ExecuteAsync(null);
         }
     }

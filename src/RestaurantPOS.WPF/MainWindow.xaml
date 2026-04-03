@@ -52,6 +52,9 @@
         <DataTemplate DataType="{x:Type vm:EmployeeManagementViewModel}">
             <views:EmployeeManagementView/>
         </DataTemplate>
+        <DataTemplate DataType="{x:Type vm:CashierOrderSearchViewModel}">
+            <views:CashierOrderSearchView/>
+        </DataTemplate>
     </Window.Resources>
 
     <Window.InputBindings>
@@ -152,6 +155,17 @@
                             <TextBlock Text="&#xE7A7;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#333"/>
                             <TextBlock Text="Returns" FontSize="9" HorizontalAlignment="Center"
+                                       Foreground="#555" Margin="0,2,0,0"/>
+                        </StackPanel>
+                    </Button>
+                    <!-- Orders History (Cashier only) -->
+                    <Button Style="{StaticResource ToolbarButton}"
+                            Command="{Binding NavigateToCashierOrderSearchCommand}" ToolTip="Orders History"
+                            Visibility="{Binding IsCashierRole, Converter={StaticResource BoolToVis}}">
+                        <StackPanel HorizontalAlignment="Center">
+                            <TextBlock Text="&#xE81C;" FontFamily="Segoe MDL2 Assets" FontSize="22"
+                                       HorizontalAlignment="Center" Foreground="#333"/>
+                            <TextBlock Text="Orders History" FontSize="9" HorizontalAlignment="Center"
                                        Foreground="#555" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Button>

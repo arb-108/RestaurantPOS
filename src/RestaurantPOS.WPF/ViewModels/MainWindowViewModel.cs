@@ -47,6 +47,7 @@ public partial class MainWindowViewModel : BaseViewModel
     [ObservableProperty] private bool _canAccessEmployees = true;
     [ObservableProperty] private bool _canAccessSettings = true;
     [ObservableProperty] private bool _canAccessShift = true;
+    [ObservableProperty] private bool _isCashierRole;
 
     /// <summary>The currently logged-in user object (for role-based features).</summary>
     public Domain.Entities.User? LoggedInUser { get; private set; }
@@ -101,6 +102,12 @@ public partial class MainWindowViewModel : BaseViewModel
     private void NavigateToOrders()
     {
         NavigateTo<OrderHistoryViewModel>();
+    }
+
+    [RelayCommand]
+    private void NavigateToCashierOrderSearch()
+    {
+        NavigateTo<CashierOrderSearchViewModel>();
     }
 
     [RelayCommand]
@@ -226,6 +233,9 @@ public partial class MainWindowViewModel : BaseViewModel
             || _authService.HasPermission("Manage printers & terminals")
             || _authService.HasPermission("Manage tax & discounts")
             || _authService.HasPermission("Manage users & roles");
+
+        // Cashier-specific: show "Orders History" button only for cashier role
+        IsCashierRole = LoggedInUser?.Role?.Name?.ToLowerInvariant() == "cashier";
     }
 
     private async void CheckActiveShiftAsync()
