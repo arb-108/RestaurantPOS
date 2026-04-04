@@ -289,7 +289,6 @@
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
                                                 <Setter Property="Width" Value="200"/>
-                                                <Setter Property="MinHeight" Value="95"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
@@ -370,8 +369,8 @@
                                                     <TextBlock Grid.Row="1"
                                                                Text="{Binding Description, Converter={StaticResource DealComponents}}"
                                                                Visibility="{Binding Category, Converter={StaticResource IsDealToVis}}"
-                                                               FontSize="11" Foreground="#555" Margin="0,2,0,0"
-                                                               TextWrapping="Wrap" LineHeight="16"/>
+                                                               FontSize="11" Foreground="#555" Margin="0,1,0,0"
+                                                               TextWrapping="Wrap" LineHeight="14"/>
 
                                                     <!-- Spacer -->
                                                     <Border Grid.Row="2"/>
