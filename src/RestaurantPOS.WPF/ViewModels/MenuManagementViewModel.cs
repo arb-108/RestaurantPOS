@@ -287,48 +287,55 @@ public partial class MenuManagementViewModel : BaseViewModel
     [RelayCommand]
     private async Task SetCategoryImageAsync()
     {
-        if (FilterCategory == null || FilterCategory.Id == 0)
+        try
         {
-            StatusMessage = "Select a category first (not 'All')";
-            return;
-        }
+            if (FilterCategory == null || FilterCategory.Id == 0)
+            {
+                System.Windows.MessageBox.Show(
+                    "Please select a specific category from the filter dropdown first (not '-- None --').",
+                    "Select Category", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                return;
+            }
 
-        var ofd = new Microsoft.Win32.OpenFileDialog
-        {
-            Title = $"Select image for '{FilterCategory.Name}'",
-            Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.webp|All files|*.*"
-        };
-        if (ofd.ShowDialog() != true) return;
+            var ofd = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = $"Select image for '{FilterCategory.Name}'",
+                Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.webp|All files|*.*"
+            };
+            if (ofd.ShowDialog() != true) return;
 
-        // Copy to Assets\Images folder with category-friendly name
-        var imagesDir = System.IO.Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory, "Assets", "Images");
-        System.IO.Directory.CreateDirectory(imagesDir);
+            // Copy to Assets\Images folder with category-friendly name
+            var imagesDir = System.IO.Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory, "Assets", "Images");
+            System.IO.Directory.CreateDirectory(imagesDir);
 
-        var ext = System.IO.Path.GetExtension(ofd.FileName);
-        var fileName = FilterCategory.Name.ToLowerInvariant()
-            .Replace(" & ", "-").Replace(" ", "-").Replace("/", "-") + ext;
-        var destPath = System.IO.Path.Combine(imagesDir, fileName);
+            var ext = System.IO.Path.GetExtension(ofd.FileName);
+            var fileName = FilterCategory.Name.ToLowerInvariant()
+                .Replace(" & ", "-").Replace(" ", "-").Replace("/", "-") + ext;
+            var destPath = System.IO.Path.Combine(imagesDir, fileName);
 
-        System.IO.File.Copy(ofd.FileName, destPath, overwrite: true);
+            System.IO.File.Copy(ofd.FileName, destPath, overwrite: true);
 
-        // Also copy to source Assets\Images so it persists across builds
-        var srcImagesDir = System.IO.Path.Combine(
-            AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..",
-            "src", "RestaurantPOS.WPF", "Assets", "Images");
-        if (System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(srcImagesDir)!))
-        {
+            // Also copy to source Assets\Images so it persists across builds
+            var srcImagesDir = @"D:\Software\KFC\src\RestaurantPOS.WPF\Assets\Images";
             System.IO.Directory.CreateDirectory(srcImagesDir);
             System.IO.File.Copy(ofd.FileName,
                 System.IO.Path.Combine(srcImagesDir, fileName), overwrite: true);
+
+            // Update DB — entity is already tracked, just set property and save
+            FilterCategory.ImagePath = fileName;
+            await _db.SaveChangesAsync();
+
+            System.Windows.MessageBox.Show(
+                $"Image set for {FilterCategory.Name}!\nFile: {fileName}\n\nRestart the app to see changes on POS cards.",
+                "Image Uploaded", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+            StatusMessage = $"Image set for {FilterCategory.Name}: {fileName}";
         }
-
-        // Update DB
-        FilterCategory.ImagePath = fileName;
-        _db.Categories.Update(FilterCategory);
-        await _db.SaveChangesAsync();
-
-        StatusMessage = $"Image set for {FilterCategory.Name}: {fileName}";
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show($"Error: {ex.Message}", "Upload Failed",
+                System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+        }
     }
 
     // ═══ CRUD: Deals ═══
