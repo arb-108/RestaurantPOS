@@ -325,8 +325,10 @@
                                                     <Grid>
                                                         <Image x:Name="CatImg"
                                                                Source="{Binding Category, Converter={StaticResource CatImage}}"
-                                                               Stretch="UniformToFill"
-                                                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                               Stretch="Uniform"
+                                                               RenderOptions.BitmapScalingMode="HighQuality"
+                                                               VerticalAlignment="Center" HorizontalAlignment="Center"
+                                                               Margin="4"/>
                                                         <!-- Fallback icon when no image -->
                                                         <TextBlock x:Name="FallbackIcon"
                                                                    FontFamily="Segoe MDL2 Assets" FontSize="26"
@@ -349,9 +351,7 @@
                                                     <TextBlock Grid.Row="0"
                                                                Text="{Binding Name}"
                                                                FontWeight="Bold"
-                                                               TextWrapping="NoWrap"
-                                                               TextTrimming="CharacterEllipsis"
-                                                               MaxWidth="200">
+                                                               TextWrapping="Wrap">
                                                         <TextBlock.Style>
                                                             <Style TargetType="TextBlock">
                                                                 <Setter Property="Foreground" Value="#222"/>
