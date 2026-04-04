@@ -314,13 +314,20 @@ public partial class MenuManagementViewModel : BaseViewModel
                 .Replace(" & ", "-").Replace(" ", "-").Replace("/", "-") + ext;
             var destPath = System.IO.Path.Combine(imagesDir, fileName);
 
-            System.IO.File.Copy(ofd.FileName, destPath, overwrite: true);
+            // Read source bytes first, then write with FileShare to avoid lock conflicts
+            var srcBytes = await System.IO.File.ReadAllBytesAsync(ofd.FileName);
+
+            using (var fs = new System.IO.FileStream(destPath, System.IO.FileMode.Create,
+                       System.IO.FileAccess.Write, System.IO.FileShare.ReadWrite))
+                await fs.WriteAsync(srcBytes);
 
             // Also copy to source Assets\Images so it persists across builds
             var srcImagesDir = @"D:\Software\KFC\src\RestaurantPOS.WPF\Assets\Images";
             System.IO.Directory.CreateDirectory(srcImagesDir);
-            System.IO.File.Copy(ofd.FileName,
-                System.IO.Path.Combine(srcImagesDir, fileName), overwrite: true);
+            var srcDestPath = System.IO.Path.Combine(srcImagesDir, fileName);
+            using (var fs = new System.IO.FileStream(srcDestPath, System.IO.FileMode.Create,
+                       System.IO.FileAccess.Write, System.IO.FileShare.ReadWrite))
+                await fs.WriteAsync(srcBytes);
 
             // Update DB — entity is already tracked, just set property and save
             FilterCategory.ImagePath = fileName;

@@ -497,9 +497,12 @@ public class CategoryImageConverter : IValueConverter
 
         try
         {
+            // Use StreamSource with FileShare.Read to avoid locking the file
+            using var fs = new System.IO.FileStream(imagePath, System.IO.FileMode.Open,
+                System.IO.FileAccess.Read, System.IO.FileShare.ReadWrite);
             var bmp = new System.Windows.Media.Imaging.BitmapImage();
             bmp.BeginInit();
-            bmp.UriSource = new Uri(imagePath, UriKind.Absolute);
+            bmp.StreamSource = fs;
             bmp.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
             bmp.DecodePixelWidth = 60;
             bmp.EndInit();
