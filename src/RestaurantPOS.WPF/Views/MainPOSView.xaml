@@ -283,40 +283,33 @@
                                 <!-- Size: regular 145x70, deals 190xAuto -->
                                 <Button.Style>
                                     <Style TargetType="Button">
-                                        <Setter Property="Width" Value="175"/>
-                                        <Setter Property="Height" Value="Auto"/>
-                                        <Setter Property="MinHeight" Value="75"/>
+                                        <Setter Property="Width" Value="185"/>
+                                        <Setter Property="Height" Value="80"/>
                                         <Style.Triggers>
                                             <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
-                                                <Setter Property="Width" Value="190"/>
+                                                <Setter Property="Width" Value="200"/>
                                                 <Setter Property="Height" Value="Auto"/>
-                                                <Setter Property="MinHeight" Value="90"/>
+                                                <Setter Property="MinHeight" Value="95"/>
                                             </DataTrigger>
                                         </Style.Triggers>
                                     </Style>
                                 </Button.Style>
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
-                                        <Border x:Name="Bd" CornerRadius="4" Padding="4,3" BorderThickness="1"
-                                                BorderBrush="{StaticResource MenuCardBorderBrush}"
+                                        <Border x:Name="Bd" CornerRadius="8" Padding="0" BorderThickness="0"
                                                 Background="{Binding Category, Converter={StaticResource MenuCardBg}}">
                                             <Grid>
                                                 <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="80"/>
                                                     <ColumnDefinition Width="*"/>
                                                 </Grid.ColumnDefinitions>
-                                                <Grid.RowDefinitions>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                    <RowDefinition Height="*"/>
-                                                    <RowDefinition Height="Auto"/>
-                                                </Grid.RowDefinitions>
 
                                                 <!-- Left label: "Deal" rotated vertically (deals only) -->
-                                                <Border Grid.Column="0" Grid.Row="0" Grid.RowSpan="4"
+                                                <Border x:Name="DealLabel" Grid.Column="0"
                                                         Visibility="{Binding Category, Converter={StaticResource IsDealToVis}}"
                                                         Background="#D9D9D9" CornerRadius="3" Width="22"
-                                                        Margin="0,0,8,0" VerticalAlignment="Stretch">
+                                                        Margin="2,4,0,4" VerticalAlignment="Stretch"
+                                                        HorizontalAlignment="Left" Panel.ZIndex="2">
                                                     <TextBlock Text="Deal" FontSize="11" FontWeight="Bold" Foreground="#333"
                                                                RenderTransformOrigin="0.5,0.5"
                                                                HorizontalAlignment="Center" VerticalAlignment="Center">
@@ -326,84 +319,96 @@
                                                     </TextBlock>
                                                 </Border>
 
-                                                <!-- Category image (or fallback cart icon) -->
-                                                <Grid x:Name="RegIcon" Grid.Column="0" Grid.Row="0" Grid.RowSpan="4"
-                                                      VerticalAlignment="Center" Margin="0,0,5,0"
-                                                      Width="52" Height="52">
-                                                    <Image x:Name="CatImg"
-                                                           Source="{Binding Category, Converter={StaticResource CatImage}}"
-                                                           Stretch="UniformToFill"
-                                                           RenderOptions.BitmapScalingMode="HighQuality">
-                                                        <Image.Clip>
-                                                            <EllipseGeometry Center="26,26" RadiusX="26" RadiusY="26"/>
-                                                        </Image.Clip>
-                                                    </Image>
-                                                    <!-- Fallback icon when no image -->
-                                                    <TextBlock x:Name="FallbackIcon"
-                                                               FontFamily="Segoe MDL2 Assets" FontSize="18"
-                                                               Text="&#xE7BF;" Foreground="#1565C0"
-                                                               HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                               Visibility="Collapsed"/>
+                                                <!-- Category image (left side, rounded corners) -->
+                                                <Border x:Name="RegIcon" Grid.Column="0"
+                                                        CornerRadius="8,0,0,8" ClipToBounds="True">
+                                                    <Grid>
+                                                        <Image x:Name="CatImg"
+                                                               Source="{Binding Category, Converter={StaticResource CatImage}}"
+                                                               Stretch="UniformToFill"
+                                                               RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                        <!-- Fallback icon when no image -->
+                                                        <TextBlock x:Name="FallbackIcon"
+                                                                   FontFamily="Segoe MDL2 Assets" FontSize="26"
+                                                                   Text="&#xE7BF;" Foreground="#1565C0"
+                                                                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                   Visibility="Collapsed"/>
+                                                    </Grid>
+                                                </Border>
+
+                                                <!-- Right side: Name + Price -->
+                                                <Grid Grid.Column="1" Margin="10,8,8,8">
+                                                    <Grid.RowDefinitions>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                        <RowDefinition Height="*"/>
+                                                        <RowDefinition Height="Auto"/>
+                                                    </Grid.RowDefinitions>
+
+                                                    <!-- Item name -->
+                                                    <TextBlock Grid.Row="0"
+                                                               Text="{Binding Name}"
+                                                               FontWeight="Bold"
+                                                               TextWrapping="NoWrap"
+                                                               TextTrimming="CharacterEllipsis"
+                                                               MaxWidth="200">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="#222"/>
+                                                                <Setter Property="FontSize" Value="13"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
+                                                                        <Setter Property="Foreground" Value="Black"/>
+                                                                        <Setter Property="FontSize" Value="14"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
+
+                                                    <!-- Deal components (deals only) -->
+                                                    <TextBlock Grid.Row="1"
+                                                               Text="{Binding Description, Converter={StaticResource DealComponents}}"
+                                                               Visibility="{Binding Category, Converter={StaticResource IsDealToVis}}"
+                                                               FontSize="11" Foreground="#555" Margin="0,2,0,0"
+                                                               TextWrapping="Wrap" LineHeight="16"/>
+
+                                                    <!-- Spacer -->
+                                                    <Border Grid.Row="2"/>
+
+                                                    <!-- Price -->
+                                                    <TextBlock Grid.Row="3"
+                                                               Text="{Binding BasePrice, Converter={StaticResource PaisaToCurrency}}"
+                                                               FontWeight="Bold">
+                                                        <TextBlock.Style>
+                                                            <Style TargetType="TextBlock">
+                                                                <Setter Property="Foreground" Value="#D32F2F"/>
+                                                                <Setter Property="FontSize" Value="14"/>
+                                                                <Style.Triggers>
+                                                                    <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
+                                                                        <Setter Property="Foreground" Value="#D32F2F"/>
+                                                                        <Setter Property="FontSize" Value="15"/>
+                                                                    </DataTrigger>
+                                                                </Style.Triggers>
+                                                            </Style>
+                                                        </TextBlock.Style>
+                                                    </TextBlock>
                                                 </Grid>
-
-                                                <!-- Item name -->
-                                                <TextBlock Grid.Column="1" Grid.Row="0"
-                                                           Text="{Binding Name}"
-                                                           FontWeight="Bold"
-                                                           TextWrapping="Wrap">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="Foreground" Value="#333333"/>
-                                                            <Setter Property="FontSize" Value="11"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
-                                                                    <Setter Property="Foreground" Value="Black"/>
-                                                                    <Setter Property="FontSize" Value="14"/>
-                                                                    <Setter Property="MaxHeight" Value="40"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
-
-                                                <!-- Deal components (deals only) -->
-                                                <TextBlock Grid.Column="1" Grid.Row="1"
-                                                           Text="{Binding Description, Converter={StaticResource DealComponents}}"
-                                                           Visibility="{Binding Category, Converter={StaticResource IsDealToVis}}"
-                                                           FontSize="12" Foreground="#333" Margin="8,3,0,2"
-                                                           TextWrapping="Wrap" LineHeight="18"/>
-
-                                                <!-- Spacer -->
-                                                <Border Grid.Column="1" Grid.Row="2"/>
-
-                                                <!-- Price -->
-                                                <TextBlock Grid.Column="1" Grid.Row="3"
-                                                           Text="{Binding BasePrice, Converter={StaticResource PaisaToCurrency}}"
-                                                           FontWeight="Bold" HorizontalAlignment="Right">
-                                                    <TextBlock.Style>
-                                                        <Style TargetType="TextBlock">
-                                                            <Setter Property="Foreground" Value="#D32F2F"/>
-                                                            <Setter Property="FontSize" Value="11"/>
-                                                            <Style.Triggers>
-                                                                <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
-                                                                    <Setter Property="Foreground" Value="#D32F2F"/>
-                                                                    <Setter Property="FontSize" Value="14"/>
-                                                                </DataTrigger>
-                                                            </Style.Triggers>
-                                                        </Style>
-                                                    </TextBlock.Style>
-                                                </TextBlock>
                                             </Grid>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Bd" Property="BorderBrush" Value="#E65100"/>
-                                                <Setter TargetName="Bd" Property="BorderThickness" Value="2"/>
+                                                <Setter TargetName="Bd" Property="Opacity" Value="0.88"/>
+                                                <Setter TargetName="Bd" Property="Effect">
+                                                    <Setter.Value>
+                                                        <DropShadowEffect BlurRadius="8" ShadowDepth="2" Opacity="0.25"/>
+                                                    </Setter.Value>
+                                                </Setter>
                                             </Trigger>
                                             <Trigger Property="IsPressed" Value="True">
-                                                <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
+                                                <Setter TargetName="Bd" Property="Opacity" Value="0.75"/>
                                             </Trigger>
-                                            <!-- Hide category image for deals -->
+                                            <!-- Hide category image for deals, show full width -->
                                             <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
                                                 <Setter TargetName="RegIcon" Property="Visibility" Value="Collapsed"/>
                                             </DataTrigger>
