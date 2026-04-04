@@ -297,7 +297,7 @@
                                 </Button.Style>
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
-                                        <Border x:Name="Bd" CornerRadius="4" Padding="8,6" BorderThickness="1"
+                                        <Border x:Name="Bd" CornerRadius="4" Padding="4,3" BorderThickness="1"
                                                 BorderBrush="{StaticResource MenuCardBorderBrush}"
                                                 Background="{Binding Category, Converter={StaticResource MenuCardBg}}">
                                             <Grid>
@@ -328,14 +328,14 @@
 
                                                 <!-- Category image (or fallback cart icon) -->
                                                 <Grid x:Name="RegIcon" Grid.Column="0" Grid.Row="0" Grid.RowSpan="4"
-                                                      VerticalAlignment="Center" Margin="0,0,6,0"
-                                                      Width="42" Height="42">
+                                                      VerticalAlignment="Center" Margin="0,0,5,0"
+                                                      Width="52" Height="52">
                                                     <Image x:Name="CatImg"
                                                            Source="{Binding Category, Converter={StaticResource CatImage}}"
                                                            Stretch="UniformToFill"
                                                            RenderOptions.BitmapScalingMode="HighQuality">
                                                         <Image.Clip>
-                                                            <EllipseGeometry Center="21,21" RadiusX="21" RadiusY="21"/>
+                                                            <EllipseGeometry Center="26,26" RadiusX="26" RadiusY="26"/>
                                                         </Image.Clip>
                                                     </Image>
                                                     <!-- Fallback icon when no image -->
