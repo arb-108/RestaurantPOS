@@ -48,7 +48,7 @@ public partial class CashierOrderSearchViewModel : BaseViewModel
             .Include(o => o.TableSession)
                 .ThenInclude(ts => ts!.Table)
             .Include(o => o.Payments)
-            .FirstOrDefaultAsync(o => o.OrderNumber.ToUpper() == query);
+            .FirstOrDefaultAsync(o => o.OrderNumber.ToUpper() == query); 
 
         if (order != null)
         {
