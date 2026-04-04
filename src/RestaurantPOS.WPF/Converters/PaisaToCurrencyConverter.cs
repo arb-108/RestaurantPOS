@@ -460,3 +460,59 @@ public class DealComponentsConverter : IValueConverter
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
         => throw new NotImplementedException();
 }
+
+/// <summary>
+/// Converts a Category's ImagePath to a BitmapImage.
+/// Falls back to null if path is missing (XAML handles fallback icon).
+/// ImagePath can be absolute or relative to Assets\Images\.
+/// </summary>
+public class CategoryImageConverter : IValueConverter
+{
+    private static readonly Dictionary<string, System.Windows.Media.Imaging.BitmapImage> _cache = new();
+
+    public object? Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        string? imagePath = null;
+
+        if (value is RestaurantPOS.Domain.Entities.Category cat)
+            imagePath = cat.ImagePath;
+        else if (value is string s)
+            imagePath = s;
+
+        if (string.IsNullOrWhiteSpace(imagePath))
+            return null;
+
+        if (!System.IO.Path.IsPathRooted(imagePath))
+        {
+            var baseDir = System.IO.Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory, "Assets", "Images");
+            imagePath = System.IO.Path.Combine(baseDir, imagePath);
+        }
+
+        if (!System.IO.File.Exists(imagePath))
+            return null;
+
+        if (_cache.TryGetValue(imagePath, out var cached))
+            return cached;
+
+        try
+        {
+            var bmp = new System.Windows.Media.Imaging.BitmapImage();
+            bmp.BeginInit();
+            bmp.UriSource = new Uri(imagePath, UriKind.Absolute);
+            bmp.CacheOption = System.Windows.Media.Imaging.BitmapCacheOption.OnLoad;
+            bmp.DecodePixelWidth = 60;
+            bmp.EndInit();
+            bmp.Freeze();
+            _cache[imagePath] = bmp;
+            return bmp;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+        => throw new NotImplementedException();
+}

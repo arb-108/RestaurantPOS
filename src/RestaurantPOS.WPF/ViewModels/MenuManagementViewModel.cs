@@ -284,6 +284,53 @@ public partial class MenuManagementViewModel : BaseViewModel
         StatusMessage = $"Category added: {dlg.InputText.Trim()}";
     }
 
+    [RelayCommand]
+    private async Task SetCategoryImageAsync()
+    {
+        if (FilterCategory == null || FilterCategory.Id == 0)
+        {
+            StatusMessage = "Select a category first (not 'All')";
+            return;
+        }
+
+        var ofd = new Microsoft.Win32.OpenFileDialog
+        {
+            Title = $"Select image for '{FilterCategory.Name}'",
+            Filter = "Images|*.png;*.jpg;*.jpeg;*.bmp;*.webp|All files|*.*"
+        };
+        if (ofd.ShowDialog() != true) return;
+
+        // Copy to Assets\Images folder with category-friendly name
+        var imagesDir = System.IO.Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory, "Assets", "Images");
+        System.IO.Directory.CreateDirectory(imagesDir);
+
+        var ext = System.IO.Path.GetExtension(ofd.FileName);
+        var fileName = FilterCategory.Name.ToLowerInvariant()
+            .Replace(" & ", "-").Replace(" ", "-").Replace("/", "-") + ext;
+        var destPath = System.IO.Path.Combine(imagesDir, fileName);
+
+        System.IO.File.Copy(ofd.FileName, destPath, overwrite: true);
+
+        // Also copy to source Assets\Images so it persists across builds
+        var srcImagesDir = System.IO.Path.Combine(
+            AppDomain.CurrentDomain.BaseDirectory, "..", "..", "..", "..", "..",
+            "src", "RestaurantPOS.WPF", "Assets", "Images");
+        if (System.IO.Directory.Exists(System.IO.Path.GetDirectoryName(srcImagesDir)!))
+        {
+            System.IO.Directory.CreateDirectory(srcImagesDir);
+            System.IO.File.Copy(ofd.FileName,
+                System.IO.Path.Combine(srcImagesDir, fileName), overwrite: true);
+        }
+
+        // Update DB
+        FilterCategory.ImagePath = fileName;
+        _db.Categories.Update(FilterCategory);
+        await _db.SaveChangesAsync();
+
+        StatusMessage = $"Image set for {FilterCategory.Name}: {fileName}";
+    }
+
     // ═══ CRUD: Deals ═══
     [RelayCommand]
     private async Task CreateDealAsync()

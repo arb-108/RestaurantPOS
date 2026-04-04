@@ -31,4 +31,10 @@
     <Resource Include="Assets\Icons\Takeaway.png" />
   </ItemGroup>
 
+  <!-- Category images copied to output so they can be loaded at runtime -->
+  <ItemGroup>
+    <None Remove="Assets\Images\**" />
+    <Content Include="Assets\Images\**" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

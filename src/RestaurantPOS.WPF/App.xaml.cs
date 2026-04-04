@@ -120,6 +120,37 @@ public partial class App : System.Windows.Application
                 Log.Warning(ex, "Permission migration warning (non-fatal)");
             }
 
+            // Ensure ImagePath column exists on Categories and seed defaults
+            try
+            {
+                await db.Database.ExecuteSqlRawAsync("SELECT ImagePath FROM Categories LIMIT 0");
+                // Column exists — set defaults for any categories missing an image
+                var imageMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+                {
+                    ["Burgers"] = "burgers.png", ["Wraps"] = "wraps.png",
+                    ["Wings"] = "wings.png", ["Fish"] = "fish.png",
+                    ["Sandwiches"] = "sandwiches.png", ["Fries & Sides"] = "fries.png",
+                    ["Naan & Bread"] = "naan.png", ["Deals"] = "deals.png",
+                    ["Beverages"] = "beverages.png", ["Desserts"] = "desserts.png"
+                };
+                foreach (var (name, img) in imageMap)
+                {
+#pragma warning disable EF1002 // Hardcoded seed values, no user input
+                    await db.Database.ExecuteSqlRawAsync(
+                        $"UPDATE Categories SET ImagePath = '{img}' WHERE Name = '{name}' AND (ImagePath IS NULL OR ImagePath = '')");
+#pragma warning restore EF1002
+                }
+            }
+            catch
+            {
+                try
+                {
+                    await db.Database.ExecuteSqlRawAsync("ALTER TABLE Categories ADD COLUMN ImagePath TEXT");
+                    Log.Information("Added ImagePath column to Categories");
+                }
+                catch { /* column may already exist */ }
+            }
+
             // Validate schema: check a column from a recent change
             try
             {

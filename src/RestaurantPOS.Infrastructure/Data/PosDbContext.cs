@@ -358,16 +358,16 @@ public class PosDbContext : DbContext
 
         // Sample Categories
         mb.Entity<Category>().HasData(
-            new Category { Id = 1, Name = "Burgers", DisplayOrder = 1, CreatedAt = now, UpdatedAt = now },
-            new Category { Id = 2, Name = "Wraps", DisplayOrder = 2, CreatedAt = now, UpdatedAt = now },
-            new Category { Id = 3, Name = "Wings", DisplayOrder = 3, CreatedAt = now, UpdatedAt = now },
-            new Category { Id = 4, Name = "Fish", DisplayOrder = 4, CreatedAt = now, UpdatedAt = now },
-            new Category { Id = 5, Name = "Sandwiches", DisplayOrder = 5, CreatedAt = now, UpdatedAt = now },
-            new Category { Id = 6, Name = "Fries & Sides", DisplayOrder = 6, CreatedAt = now, UpdatedAt = now },
-            new Category { Id = 7, Name = "Naan & Bread", DisplayOrder = 7, CreatedAt = now, UpdatedAt = now },
-            new Category { Id = 8, Name = "Deals", DisplayOrder = 8, CreatedAt = now, UpdatedAt = now },
-            new Category { Id = 9, Name = "Beverages", DisplayOrder = 9, CreatedAt = now, UpdatedAt = now },
-            new Category { Id = 10, Name = "Desserts", DisplayOrder = 10, CreatedAt = now, UpdatedAt = now }
+            new Category { Id = 1, Name = "Burgers", DisplayOrder = 1, ImagePath = "burgers.png", CreatedAt = now, UpdatedAt = now },
+            new Category { Id = 2, Name = "Wraps", DisplayOrder = 2, ImagePath = "wraps.png", CreatedAt = now, UpdatedAt = now },
+            new Category { Id = 3, Name = "Wings", DisplayOrder = 3, ImagePath = "wings.png", CreatedAt = now, UpdatedAt = now },
+            new Category { Id = 4, Name = "Fish", DisplayOrder = 4, ImagePath = "fish.png", CreatedAt = now, UpdatedAt = now },
+            new Category { Id = 5, Name = "Sandwiches", DisplayOrder = 5, ImagePath = "sandwiches.png", CreatedAt = now, UpdatedAt = now },
+            new Category { Id = 6, Name = "Fries & Sides", DisplayOrder = 6, ImagePath = "fries.png", CreatedAt = now, UpdatedAt = now },
+            new Category { Id = 7, Name = "Naan & Bread", DisplayOrder = 7, ImagePath = "naan.png", CreatedAt = now, UpdatedAt = now },
+            new Category { Id = 8, Name = "Deals", DisplayOrder = 8, ImagePath = "deals.png", CreatedAt = now, UpdatedAt = now },
+            new Category { Id = 9, Name = "Beverages", DisplayOrder = 9, ImagePath = "beverages.png", CreatedAt = now, UpdatedAt = now },
+            new Category { Id = 10, Name = "Desserts", DisplayOrder = 10, ImagePath = "desserts.png", CreatedAt = now, UpdatedAt = now }
         );
 
         // Suppliers (from stock sheet)

@@ -21,6 +21,7 @@
         <conv:MenuCardBgConverter x:Key="MenuCardBg"/>
         <conv:IsDealToVisibilityConverter x:Key="IsDealToVis"/>
         <conv:DealComponentsConverter x:Key="DealComponents"/>
+        <conv:CategoryImageConverter x:Key="CatImage"/>
 
         <!-- ── Focus styles for billing TextBoxes ── -->
         <Style x:Key="BillingTextBoxFocus" TargetType="TextBox">
@@ -324,11 +325,25 @@
                                                     </TextBlock>
                                                 </Border>
 
-                                                <!-- Icon Cart for regular items only -->
-                                                <TextBlock x:Name="RegIcon" Grid.Column="0" Grid.Row="0" Grid.RowSpan="4"
-                                                           FontFamily="Segoe MDL2 Assets" FontSize="18"
-                                                           Text="&#xE7BF;" Foreground="#1565C0"
-                                                           VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                <!-- Category image (or fallback cart icon) -->
+                                                <Grid x:Name="RegIcon" Grid.Column="0" Grid.Row="0" Grid.RowSpan="4"
+                                                      VerticalAlignment="Center" Margin="0,0,6,0"
+                                                      Width="42" Height="42">
+                                                    <Image x:Name="CatImg"
+                                                           Source="{Binding Category, Converter={StaticResource CatImage}}"
+                                                           Stretch="UniformToFill"
+                                                           RenderOptions.BitmapScalingMode="HighQuality">
+                                                        <Image.Clip>
+                                                            <EllipseGeometry Center="21,21" RadiusX="21" RadiusY="21"/>
+                                                        </Image.Clip>
+                                                    </Image>
+                                                    <!-- Fallback icon when no image -->
+                                                    <TextBlock x:Name="FallbackIcon"
+                                                               FontFamily="Segoe MDL2 Assets" FontSize="18"
+                                                               Text="&#xE7BF;" Foreground="#1565C0"
+                                                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                               Visibility="Collapsed"/>
+                                                </Grid>
 
                                                 <!-- Item name -->
                                                 <TextBlock Grid.Column="1" Grid.Row="0"
@@ -388,9 +403,13 @@
                                             <Trigger Property="IsPressed" Value="True">
                                                 <Setter TargetName="Bd" Property="Opacity" Value="0.85"/>
                                             </Trigger>
-                                            <!-- Hide cart icon for deals -->
+                                            <!-- Hide category image for deals -->
                                             <DataTrigger Binding="{Binding Category.Name}" Value="Deals">
                                                 <Setter TargetName="RegIcon" Property="Visibility" Value="Collapsed"/>
+                                            </DataTrigger>
+                                            <!-- Show fallback icon when no category image -->
+                                            <DataTrigger Binding="{Binding Category, Converter={StaticResource CatImage}}" Value="{x:Null}">
+                                                <Setter TargetName="FallbackIcon" Property="Visibility" Value="Visible"/>
                                             </DataTrigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
