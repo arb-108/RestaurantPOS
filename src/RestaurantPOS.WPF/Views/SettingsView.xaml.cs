@@ -76,6 +76,15 @@ public partial class SettingsView : UserControl
             vm.UserPin = PinBox.Password;
     }
 
+    private async void StationPrinterChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (sender is ComboBox cb && cb.DataContext is StationPrinterAssignment assignment
+            && DataContext is SettingsViewModel vm && cb.SelectedItem is string printerName)
+        {
+            await vm.UpdateStationPrinterAsync(assignment, printerName);
+        }
+    }
+
     // Access level +/- buttons for role permissions
     private void IncrementLevel(object sender, RoutedEventArgs e)
     {

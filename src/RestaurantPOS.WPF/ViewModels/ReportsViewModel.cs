@@ -25,6 +25,9 @@ public partial class ReportsViewModel : BaseViewModel
     private readonly IReportService _reportService;
     private readonly PosDbContext _db;
     private readonly IPrintService _printService;
+    private readonly ISettingsService _settingsService;
+    private string _restaurantName = "KFC Restaurant";
+    private string? _configuredPrinter;
 
     // ══════════════════════════════════════════════
     //  SHARED
@@ -263,12 +266,35 @@ public partial class ReportsViewModel : BaseViewModel
     //  CONSTRUCTOR
     // ══════════════════════════════════════════════
 
-    public ReportsViewModel(IReportService reportService, PosDbContext db, IPrintService printService)
+    public ReportsViewModel(IReportService reportService, PosDbContext db, IPrintService printService, ISettingsService settingsService)
     {
         _reportService = reportService;
         _db = db;
         _printService = printService;
+        _settingsService = settingsService;
         Title = "Reports";
+        _ = LoadPrintSettingsAsync();
+    }
+
+    private async Task LoadPrintSettingsAsync()
+    {
+        try
+        {
+            _restaurantName = await _settingsService.GetSettingAsync("ReceiptRestaurantName")
+                              ?? await _settingsService.GetSettingAsync("RestaurantName")
+                              ?? "KFC Restaurant";
+            var printer = await _db.Printers
+                .Where(p => p.IsActive && p.Type == Domain.Enums.PrinterType.Report && p.SystemPrinterName != null)
+                .FirstOrDefaultAsync()
+                ?? await _db.Printers
+                    .Where(p => p.IsActive && p.Type == Domain.Enums.PrinterType.Receipt && p.SystemPrinterName != null)
+                    .FirstOrDefaultAsync()
+                ?? await _db.Printers
+                    .Where(p => p.IsActive && p.SystemPrinterName != null)
+                    .FirstOrDefaultAsync();
+            _configuredPrinter = printer?.SystemPrinterName;
+        }
+        catch { }
     }
 
     // ══════════════════════════════════════════════
@@ -525,7 +551,7 @@ public partial class ReportsViewModel : BaseViewModel
 
             var receiptData = new ReceiptData
             {
-                RestaurantName = "KFC Restaurant",
+                RestaurantName = _restaurantName,
                 OrderNumber = order.OrderNumber,
                 DateTime = order.CreatedAt.ToLocalTime(),
                 OrderType = order.OrderType.ToString(),
@@ -551,7 +577,8 @@ public partial class ReportsViewModel : BaseViewModel
                 }).ToList()
             };
 
-            var preview = new Views.PrintPreviewWindow(receiptData, _printService);
+            var preview = new Views.PrintPreviewWindow(receiptData, _printService)
+                { ConfiguredPrinterName = _configuredPrinter };
             preview.Owner = AppWindow.Current.MainWindow;
             preview.ShowDialog();
         }
@@ -1211,7 +1238,7 @@ public partial class ReportsViewModel : BaseViewModel
         {
             var data = new ReceiptData
             {
-                RestaurantName = "KFC Restaurant",
+                RestaurantName = _restaurantName,
                 OrderNumber = "Sales Report",
                 OrderType = SalesReportMode == "Bill Wise" ? "Bill Wise Sales" : (SalesReportCategory != "All" ? $"Category: {SalesReportCategory}" : "All Items"),
                 DateTime = DateTime.Now,
@@ -1359,16 +1386,17 @@ public partial class ReportsViewModel : BaseViewModel
     private void OpenReportPreview(string title, List<(string label, string value)> lines)
     {
         var data = BuildReportReceipt(title, lines);
-        var preview = new Views.PrintPreviewWindow(data, _printService);
+        var preview = new Views.PrintPreviewWindow(data, _printService)
+            { ConfiguredPrinterName = _configuredPrinter };
         preview.Owner = AppWindow.Current.MainWindow;
         preview.ShowDialog();
     }
 
-    private static ReceiptData BuildReportReceipt(string title, List<(string label, string value)> lines)
+    private ReceiptData BuildReportReceipt(string title, List<(string label, string value)> lines)
     {
         var data = new ReceiptData
         {
-            RestaurantName = "KFC Restaurant",
+            RestaurantName = _restaurantName,
             OrderNumber = "Report",
             OrderType = title,
             DateTime = DateTime.Now,

@@ -167,11 +167,14 @@
                     </Button>
                     <!-- Tab 1 -->
                     <StackPanel x:Name="BtnPrinters" Orientation="Horizontal" Visibility="Collapsed">
-                        <Button Style="{StaticResource Btn}" Background="#059669" Command="{Binding SavePrinterCommand}" Margin="0,0,6,0">
-                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Save Printer"/></StackPanel>
+                        <Button Style="{StaticResource Btn}" Background="#059669" Command="{Binding AddPrinterCommand}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Add Printer"/></StackPanel>
                         </Button>
-                        <Button Style="{StaticResource Btn}" Background="#2563EB" Command="{Binding NewPrinterCommand}">
-                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="New"/></StackPanel>
+                        <Button Style="{StaticResource Btn}" Background="#2563EB" Command="{Binding EditPrinterCommand}">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Edit"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Btn}" Background="#DC2626" Command="{Binding DeletePrinterCommand}" Margin="6,0,0,0">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Delete"/></StackPanel>
                         </Button>
                     </StackPanel>
                     <!-- Tab 2 -->
@@ -289,108 +292,75 @@
                 <!-- TAB 1: PRINTER MANAGEMENT -->
                 <!-- ══════════════════════════════════════════════ -->
                 <Grid x:Name="PanelPrinters" Visibility="Collapsed" Margin="16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="16"/>
-                        <ColumnDefinition Width="320"/>
-                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <!-- Printer list + station assignments -->
-                    <Grid Grid.Column="0">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
+                    <!-- Printer list (full width, no side form) -->
+                    <DataGrid Grid.Row="0" ItemsSource="{Binding Printers}" SelectedItem="{Binding SelectedPrinter}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                              GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F3F4F6"
+                              HeadersVisibility="Column" AlternationCount="2" RowHeight="40" BorderThickness="0"
+                              ColumnHeaderStyle="{StaticResource DgHeader}" RowStyle="{StaticResource DgRow}" CellStyle="{StaticResource DgCell}">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="NAME" Width="*">
+                                <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="#1E293B"/>
+                                </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="TYPE" Width="90">
+                                <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                    <Border Background="#E0E7FF" CornerRadius="10" Padding="8,3" HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding Type}" FontSize="10" FontWeight="Bold" Foreground="#3730A3"/>
+                                    </Border>
+                                </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="SYSTEM PRINTER" Binding="{Binding SystemPrinterName}" Width="200"/>
+                            <DataGridTextColumn Header="CONNECTION" Binding="{Binding ConnectionType}" Width="100"/>
+                            <DataGridTextColumn Header="ADDRESS" Binding="{Binding Address}" Width="120"/>
+                            <DataGridTextColumn Header="WIDTH" Binding="{Binding PaperWidth}" Width="60"/>
+                            <DataGridTemplateColumn Header="DEFAULT" Width="70">
+                                <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                    <TextBlock Text="{Binding IsDefault}" FontWeight="SemiBold">
+                                        <TextBlock.Style><Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#9CA3AF"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsDefault}" Value="True">
+                                                    <Setter Property="Foreground" Value="#059669"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style></TextBlock.Style>
+                                    </TextBlock>
+                                </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
 
-                        <DataGrid Grid.Row="0" ItemsSource="{Binding Printers}" SelectedItem="{Binding SelectedPrinter}"
-                                  AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
-                                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F3F4F6"
-                                  HeadersVisibility="Column" AlternationCount="2" RowHeight="40" BorderThickness="0"
-                                  ColumnHeaderStyle="{StaticResource DgHeader}" RowStyle="{StaticResource DgRow}" CellStyle="{StaticResource DgCell}">
-                            <DataGrid.Columns>
-                                <DataGridTemplateColumn Header="NAME" Width="*">
-                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                        <TextBlock Text="{Binding Name}" FontWeight="Bold" Foreground="#1E293B"/>
-                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Header="TYPE" Width="90">
-                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                        <Border Background="#E0E7FF" CornerRadius="10" Padding="8,3" HorizontalAlignment="Left">
-                                            <TextBlock Text="{Binding Type}" FontSize="10" FontWeight="Bold" Foreground="#3730A3"/>
-                                        </Border>
-                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="CONNECTION" Binding="{Binding ConnectionType}" Width="100"/>
-                                <DataGridTextColumn Header="ADDRESS" Binding="{Binding Address}" Width="150"/>
-                                <DataGridTextColumn Header="WIDTH" Binding="{Binding PaperWidth}" Width="60"/>
-                                <DataGridTemplateColumn Header="DEFAULT" Width="70">
-                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                        <TextBlock Text="{Binding IsDefault}" FontWeight="SemiBold">
-                                            <TextBlock.Style><Style TargetType="TextBlock">
-                                                <Setter Property="Foreground" Value="#9CA3AF"/>
-                                                <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsDefault}" Value="True">
-                                                        <Setter Property="Foreground" Value="#059669"/>
-                                                    </DataTrigger>
-                                                </Style.Triggers>
-                                            </Style></TextBlock.Style>
-                                        </TextBlock>
-                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
-
-                        <!-- Station Assignments -->
-                        <Border Grid.Row="1" Background="#FAFBFC" CornerRadius="8" Padding="12" Margin="0,12,0,0" BorderBrush="#E5E7EB" BorderThickness="1">
-                            <StackPanel>
-                                <TextBlock Text="Station → Printer Assignments" FontSize="13" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,8"/>
-                                <ItemsControl ItemsSource="{Binding StationAssignments}">
-                                    <ItemsControl.ItemTemplate>
-                                        <DataTemplate>
-                                            <Grid Margin="0,2">
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="Auto"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="{Binding StationName}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="1" Text="→" FontSize="14" Foreground="#9CA3AF" Margin="8,0" VerticalAlignment="Center"/>
-                                                <TextBlock Grid.Column="2" Text="{Binding PrinterName}" FontSize="12" Foreground="#6B7280" VerticalAlignment="Center"/>
-                                                <Button Grid.Column="3" Style="{StaticResource SmBtn}" Background="#4F46E5" Content="Assign" Margin="8,0,0,0"
-                                                        Command="{Binding DataContext.AssignPrinterToStationCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                        CommandParameter="{Binding}"/>
-                                            </Grid>
-                                        </DataTemplate>
-                                    </ItemsControl.ItemTemplate>
-                                </ItemsControl>
-                            </StackPanel>
-                        </Border>
-                    </Grid>
-
-                    <!-- Printer form -->
-                    <Border Grid.Column="2" Background="#FAFBFC" CornerRadius="8" Padding="16" BorderBrush="#E5E7EB" BorderThickness="1">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <StackPanel>
-                                <TextBlock Style="{StaticResource SectionHeader}" Text="Printer Details"/>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="Printer Name"/>
-                                <TextBox Style="{StaticResource FormInput}" Text="{Binding PrinterName, UpdateSourceTrigger=PropertyChanged}"/>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="Printer Type"/>
-                                <ComboBox Style="{StaticResource FormCombo}" ItemsSource="{Binding PrinterTypeOptions}" SelectedItem="{Binding SelectedPrinterType}"/>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="Connection Type"/>
-                                <ComboBox Style="{StaticResource FormCombo}" ItemsSource="{Binding ConnectionTypeOptions}" SelectedItem="{Binding SelectedConnectionType}"/>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="System Printer"/>
-                                <ComboBox Style="{StaticResource FormCombo}" ItemsSource="{Binding InstalledPrinters}" SelectedItem="{Binding SelectedInstalledPrinter}"/>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="Address / Port"/>
-                                <TextBox Style="{StaticResource FormInput}" Text="{Binding PrinterAddress, UpdateSourceTrigger=PropertyChanged}"/>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="Paper Width (mm)"/>
-                                <TextBox Style="{StaticResource FormInput}" Text="{Binding PrinterPaperWidth, UpdateSourceTrigger=PropertyChanged}"/>
-                                <CheckBox Content="Set as default for this type" IsChecked="{Binding PrinterIsDefault}" FontSize="12" Margin="0,0,0,12"/>
-                                <Button Style="{StaticResource Btn}" Background="#DC2626" Command="{Binding DeletePrinterCommand}" HorizontalAlignment="Stretch">
-                                    <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Delete Printer"/></StackPanel>
-                                </Button>
-                            </StackPanel>
-                        </ScrollViewer>
+                    <!-- Station → Printer Assignments (with dropdown) -->
+                    <Border Grid.Row="1" Background="#FAFBFC" CornerRadius="8" Padding="12" Margin="0,12,0,0" BorderBrush="#E5E7EB" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="Station → Printer Assignments" FontSize="13" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,8"/>
+                            <ItemsControl ItemsSource="{Binding StationAssignments}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Grid Margin="0,3">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="180"/>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="250"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock Grid.Column="0" Text="{Binding StationName}" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                            <TextBlock Grid.Column="1" Text="→" FontSize="14" Foreground="#9CA3AF" Margin="8,0" VerticalAlignment="Center"/>
+                                            <ComboBox Grid.Column="2" FontSize="12" Padding="6,4"
+                                                      ItemsSource="{Binding DataContext.PrinterNames, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                      SelectedItem="{Binding PrinterName}"
+                                                      SelectionChanged="StationPrinterChanged"/>
+                                        </Grid>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
                     </Border>
                 </Grid>
 

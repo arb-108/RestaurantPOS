@@ -55,32 +55,13 @@ public partial class SettingsViewModel : BaseViewModel
     // ══════════════════════════════════════════════
 
     public ObservableCollection<Printer> Printers { get; } = [];
-    public ObservableCollection<string> InstalledPrinters { get; } = [];
+    public ObservableCollection<string> PrinterNames { get; } = [];
     [ObservableProperty] private Printer? _selectedPrinter;
-    [ObservableProperty] private string _printerName = string.Empty;
-    [ObservableProperty] private string _printerAddress = string.Empty;
-    [ObservableProperty] private int _printerPaperWidth = 80;
-    [ObservableProperty] private bool _printerIsDefault;
-    [ObservableProperty] private string _selectedPrinterType = "Receipt";
-    [ObservableProperty] private string _selectedConnectionType = "USB";
-    [ObservableProperty] private string _selectedInstalledPrinter = string.Empty;
-    public ObservableCollection<string> PrinterTypeOptions { get; } = ["Receipt", "KOT", "Report"];
-    public ObservableCollection<string> ConnectionTypeOptions { get; } = ["USB", "Network", "Bluetooth", "Serial"];
 
     // Station → Printer assignment
     public ObservableCollection<StationPrinterAssignment> StationAssignments { get; } = [];
 
-    partial void OnSelectedPrinterChanged(Printer? value)
-    {
-        if (value == null) return;
-        PrinterName = value.Name;
-        PrinterAddress = value.Address ?? "";
-        PrinterPaperWidth = value.PaperWidth;
-        PrinterIsDefault = value.IsDefault;
-        SelectedPrinterType = value.Type.ToString();
-        SelectedConnectionType = value.ConnectionType.ToString();
-        SelectedInstalledPrinter = value.SystemPrinterName ?? string.Empty;
-    }
+    // OnSelectedPrinterChanged — no form to populate, editing via popup window
 
     // ══════════════════════════════════════════════
     //  TAB 2: BACKUP & RECOVERY
@@ -257,7 +238,6 @@ public partial class SettingsViewModel : BaseViewModel
         await LoadUsersAsync();
         await LoadRolesAsync();
         await LoadBackupsAsync();
-        LoadInstalledPrinters();
         LoadDatabaseInfo();
     }
 
@@ -267,7 +247,7 @@ public partial class SettingsViewModel : BaseViewModel
         switch (SelectedTab)
         {
             case 0: break; // General - already bound
-            case 1: await LoadPrintersAsync(); LoadInstalledPrinters(); await LoadStationAssignmentsAsync(); break;
+            case 1: await LoadPrintersAsync(); await LoadStationAssignmentsAsync(); break;
             case 2: await LoadBackupsAsync(); LoadDatabaseInfo(); break;
             case 3: break; // Receipt - already bound
             case 4: await LoadTaxRatesAsync(); break;
@@ -305,19 +285,13 @@ public partial class SettingsViewModel : BaseViewModel
     {
         var printers = await _db.Printers.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
         Printers.Clear();
-        foreach (var p in printers) Printers.Add(p);
-    }
-
-    private void LoadInstalledPrinters()
-    {
-        InstalledPrinters.Clear();
-        try
+        PrinterNames.Clear();
+        PrinterNames.Add("(None)");
+        foreach (var p in printers)
         {
-            var server = new LocalPrintServer();
-            foreach (var q in server.GetPrintQueues())
-                InstalledPrinters.Add(q.Name);
+            Printers.Add(p);
+            PrinterNames.Add(p.Name);
         }
-        catch { }
     }
 
     private async Task LoadStationAssignmentsAsync()
@@ -342,43 +316,64 @@ public partial class SettingsViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    private async Task SavePrinterAsync()
+    private async Task AddPrinterAsync()
     {
-        if (string.IsNullOrWhiteSpace(PrinterName)) return;
+        var win = new Views.PrinterFormWindow();
+        win.Owner = System.Windows.Application.Current.MainWindow;
+        if (win.ShowDialog() != true) return;
 
-        if (!Enum.TryParse<PrinterType>(SelectedPrinterType, out var pType)) return;
-        if (!Enum.TryParse<ConnectionType>(SelectedConnectionType, out var cType)) return;
+        if (!Enum.TryParse<PrinterType>(win.PrinterTypeName, out var pType)) return;
+        if (!Enum.TryParse<ConnectionType>(win.ConnectionTypeName, out var cType)) return;
 
-        if (SelectedPrinter != null)
+        var printer = new Printer
         {
-            // Update existing
-            SelectedPrinter.Name = PrinterName;
-            SelectedPrinter.Address = PrinterAddress;
-            SelectedPrinter.PaperWidth = PrinterPaperWidth;
-            SelectedPrinter.IsDefault = PrinterIsDefault;
-            SelectedPrinter.Type = pType;
-            SelectedPrinter.ConnectionType = cType;
-            SelectedPrinter.SystemPrinterName = string.IsNullOrWhiteSpace(SelectedInstalledPrinter) ? null : SelectedInstalledPrinter;
-        }
-        else
+            Name = win.PrinterDisplayName,
+            Address = win.PrinterAddress,
+            PaperWidth = win.PaperWidth,
+            IsDefault = win.IsDefaultPrinter,
+            Type = pType,
+            ConnectionType = cType,
+            SystemPrinterName = string.IsNullOrWhiteSpace(win.SystemPrinterName) ? null : win.SystemPrinterName
+        };
+        _db.Printers.Add(printer);
+
+        if (printer.IsDefault)
         {
-            // Add new
-            var printer = new Printer
-            {
-                Name = PrinterName,
-                Address = PrinterAddress,
-                PaperWidth = PrinterPaperWidth,
-                IsDefault = PrinterIsDefault,
-                Type = pType,
-                ConnectionType = cType,
-                SystemPrinterName = string.IsNullOrWhiteSpace(SelectedInstalledPrinter) ? null : SelectedInstalledPrinter
-            };
-            _db.Printers.Add(printer);
+            var others = await _db.Printers
+                .Where(p => p.IsActive && p.Type == pType && p.IsDefault)
+                .ToListAsync();
+            foreach (var o in others) o.IsDefault = false;
         }
 
-        if (PrinterIsDefault)
+        await _db.SaveChangesAsync();
+        await LoadPrintersAsync();
+        await LoadStationAssignmentsAsync();
+        StatusMessage = "Printer added!";
+    }
+
+    [RelayCommand]
+    private async Task EditPrinterAsync()
+    {
+        if (SelectedPrinter == null) { StatusMessage = "Select a printer first."; return; }
+
+        var win = new Views.PrinterFormWindow();
+        win.Owner = System.Windows.Application.Current.MainWindow;
+        win.LoadPrinter(SelectedPrinter);
+        if (win.ShowDialog() != true) return;
+
+        if (!Enum.TryParse<PrinterType>(win.PrinterTypeName, out var pType)) return;
+        if (!Enum.TryParse<ConnectionType>(win.ConnectionTypeName, out var cType)) return;
+
+        SelectedPrinter.Name = win.PrinterDisplayName;
+        SelectedPrinter.Address = win.PrinterAddress;
+        SelectedPrinter.PaperWidth = win.PaperWidth;
+        SelectedPrinter.IsDefault = win.IsDefaultPrinter;
+        SelectedPrinter.Type = pType;
+        SelectedPrinter.ConnectionType = cType;
+        SelectedPrinter.SystemPrinterName = string.IsNullOrWhiteSpace(win.SystemPrinterName) ? null : win.SystemPrinterName;
+
+        if (SelectedPrinter.IsDefault)
         {
-            // Unmark other defaults of same type
             var others = await _db.Printers
                 .Where(p => p.IsActive && p.Type == pType && p != SelectedPrinter && p.IsDefault)
                 .ToListAsync();
@@ -387,48 +382,40 @@ public partial class SettingsViewModel : BaseViewModel
 
         await _db.SaveChangesAsync();
         await LoadPrintersAsync();
-        ClearPrinterForm();
-        StatusMessage = "Printer saved!";
+        await LoadStationAssignmentsAsync();
+        StatusMessage = "Printer updated!";
     }
 
     [RelayCommand]
     private async Task DeletePrinterAsync()
     {
-        if (SelectedPrinter == null) return;
+        if (SelectedPrinter == null) { StatusMessage = "Select a printer first."; return; }
+        if (System.Windows.MessageBox.Show($"Delete printer '{SelectedPrinter.Name}'?", "Confirm",
+            System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Question) != System.Windows.MessageBoxResult.Yes) return;
         SelectedPrinter.IsActive = false;
         await _db.SaveChangesAsync();
         await LoadPrintersAsync();
-        ClearPrinterForm();
+        await LoadStationAssignmentsAsync();
+        StatusMessage = "Printer deleted.";
     }
 
-    [RelayCommand]
-    private void NewPrinter()
+    public async Task UpdateStationPrinterAsync(StationPrinterAssignment assignment, string printerName)
     {
-        SelectedPrinter = null;
-        ClearPrinterForm();
-    }
-
-    private void ClearPrinterForm()
-    {
-        PrinterName = "";
-        PrinterAddress = "";
-        PrinterPaperWidth = 80;
-        PrinterIsDefault = false;
-        SelectedPrinterType = "Receipt";
-        SelectedConnectionType = "USB";
-        SelectedInstalledPrinter = "";
-    }
-
-    [RelayCommand]
-    private async Task AssignPrinterToStationAsync(StationPrinterAssignment? assignment)
-    {
-        if (assignment == null || SelectedPrinter == null) return;
         var station = await _db.KitchenStations.FindAsync(assignment.StationId);
         if (station == null) return;
-        station.PrinterId = SelectedPrinter.Id;
+
+        if (printerName == "(None)")
+        {
+            station.PrinterId = null;
+        }
+        else
+        {
+            var printer = Printers.FirstOrDefault(p => p.Name == printerName);
+            if (printer != null) station.PrinterId = printer.Id;
+        }
+
         await _db.SaveChangesAsync();
-        await LoadStationAssignmentsAsync();
-        StatusMessage = $"Printer '{SelectedPrinter.Name}' assigned to '{station.Name}'";
+        StatusMessage = $"Station '{assignment.StationName}' → {printerName}";
     }
 
     // ══════════════════════════════════════════════

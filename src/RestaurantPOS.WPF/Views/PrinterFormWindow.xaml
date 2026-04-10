@@ -1,0 +1,101 @@
+<Window x:Class="RestaurantPOS.WPF.Views.PrinterFormWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Printer Configuration"
+        Height="480" Width="420"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        Background="#F0F2F5"
+        FontFamily="Segoe UI">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <TextBlock x:Name="HeaderText" Grid.Row="0" Text="Add New Printer" FontSize="18" FontWeight="Bold"
+                   Foreground="#1A237E" Margin="0,0,0,16"/>
+
+        <!-- Form -->
+        <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="16" Margin="0,0,0,16">
+            <StackPanel>
+                <TextBlock Text="Printer Name *" FontSize="11" Foreground="#555" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtName" FontSize="13" Padding="8,6" Margin="0,0,0,12"
+                         BorderBrush="#CCC" BorderThickness="1"/>
+
+                <TextBlock Text="Printer Type *" FontSize="11" Foreground="#555" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <ComboBox x:Name="CbType" FontSize="13" Padding="6,4" Margin="0,0,0,12">
+                    <ComboBoxItem Content="Receipt" IsSelected="True"/>
+                    <ComboBoxItem Content="KOT"/>
+                    <ComboBoxItem Content="Report"/>
+                </ComboBox>
+
+                <TextBlock Text="Connection Type" FontSize="11" Foreground="#555" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <ComboBox x:Name="CbConnection" FontSize="13" Padding="6,4" Margin="0,0,0,12">
+                    <ComboBoxItem Content="USB" IsSelected="True"/>
+                    <ComboBoxItem Content="Network"/>
+                    <ComboBoxItem Content="Bluetooth"/>
+                    <ComboBoxItem Content="Serial"/>
+                </ComboBox>
+
+                <TextBlock Text="System Printer (Windows) *" FontSize="11" Foreground="#555" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <ComboBox x:Name="CbSystemPrinter" FontSize="13" Padding="6,4" Margin="0,0,0,12"/>
+
+                <TextBlock Text="Address / Port" FontSize="11" Foreground="#555" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtAddress" FontSize="13" Padding="8,6" Margin="0,0,0,12"
+                         BorderBrush="#CCC" BorderThickness="1"/>
+
+                <Grid Margin="0,0,0,12">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0" Margin="0,0,8,0">
+                        <TextBlock Text="Paper Width (mm)" FontSize="11" Foreground="#555" FontWeight="SemiBold" Margin="0,0,0,4"/>
+                        <TextBox x:Name="TxtPaperWidth" Text="80" FontSize="13" Padding="8,6"
+                                 BorderBrush="#CCC" BorderThickness="1"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" VerticalAlignment="Bottom">
+                        <CheckBox x:Name="ChkDefault" Content="Set as default" FontSize="12" Margin="0,0,0,6"/>
+                    </StackPanel>
+                </Grid>
+            </StackPanel>
+        </Border>
+
+        <!-- Buttons -->
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <Button Grid.Column="1" Content="Cancel" Click="Cancel_Click"
+                    Width="100" Height="36" FontSize="13" Margin="0,0,8,0"
+                    Background="#E0E0E0" Foreground="#333" BorderThickness="0" Cursor="Hand">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="12,6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+
+            <Button Grid.Column="2" Content="Save Printer" Click="Save_Click"
+                    Width="120" Height="36" FontSize="13" FontWeight="SemiBold"
+                    Background="#1565C0" Foreground="White" BorderThickness="0" Cursor="Hand">
+                <Button.Template>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="4" Padding="12,6">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Button.Template>
+            </Button>
+        </Grid>
+    </Grid>
+</Window>
