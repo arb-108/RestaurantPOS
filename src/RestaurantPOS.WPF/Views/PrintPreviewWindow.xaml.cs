@@ -24,6 +24,9 @@ public partial class PrintPreviewWindow : Window
     private int _totalPages = 1;
     private int _currentPage = 1;
 
+    /// <summary>System printer name from DB config (if set, skip print dialog).</summary>
+    public string? ConfiguredPrinterName { get; set; }
+
     // ── Target panel pointer: switches between ReceiptPanel and KitchenPanel ──
     private StackPanel _activePanel = null!;
 
@@ -182,18 +185,26 @@ public partial class PrintPreviewWindow : Window
         var headerStack = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
         headerStack.Children.Add(new TextBlock
         {
-            Text = "KFC RESTAURANT",
+            Text = _receiptData.RestaurantName,
             FontSize = 16, FontWeight = FontWeights.ExtraBold,
             Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D32F2F")!),
             HorizontalAlignment = HorizontalAlignment.Center
         });
-        headerStack.Children.Add(new TextBlock
+        // Address & phone from DB settings
+        var addrParts = new List<string>();
+        if (!string.IsNullOrWhiteSpace(_receiptData.RestaurantAddress)) addrParts.Add(_receiptData.RestaurantAddress);
+        if (!string.IsNullOrWhiteSpace(_receiptData.RestaurantPhone)) addrParts.Add(_receiptData.RestaurantPhone);
+        if (addrParts.Count > 0)
         {
-            Text = "Stadium Road, Daska | 0300-1234567",
-            FontSize = 8, FontWeight = FontWeights.Normal,
-            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#555")!),
-            HorizontalAlignment = HorizontalAlignment.Center
-        });
+            headerStack.Children.Add(new TextBlock
+            {
+                Text = string.Join(" | ", addrParts),
+                FontSize = 8, FontWeight = FontWeights.Normal,
+                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#555")!),
+                HorizontalAlignment = HorizontalAlignment.Center,
+                TextWrapping = TextWrapping.Wrap
+            });
+        }
         headerBorder.Child = headerStack;
         p.Children.Add(headerBorder);
         AddSpacer(p, 2);
@@ -665,16 +676,71 @@ public partial class PrintPreviewWindow : Window
         }
     }
 
-    private void Print_Click(object sender, RoutedEventArgs e)
+    private async void Print_Click(object sender, RoutedEventArgs e)
     {
+        // If a system printer is configured, send ESC/POS raw data directly (no dialog)
+        if (!string.IsNullOrWhiteSpace(ConfiguredPrinterName))
+        {
+            try
+            {
+                if (_isKitchenSlip)
+                {
+                    var kotData = new RestaurantPOS.Printing.KOT.KotData
+                    {
+                        OrderNumber = _receiptData.OrderNumber,
+                        TableName = _receiptData.TableName,
+                        OrderType = _receiptData.OrderType,
+                        DateTime = _receiptData.DateTime,
+                        Items = _receiptData.Items.Select(i => new RestaurantPOS.Printing.KOT.KotItem
+                        {
+                            Name = i.Name,
+                            Quantity = i.Quantity,
+                            Notes = i.Notes
+                        }).ToList()
+                    };
+                    await _printService.PrintKotAsync(kotData, ConfiguredPrinterName);
+                }
+                else
+                {
+                    await _printService.PrintReceiptAsync(_receiptData, ConfiguredPrinterName);
+                }
+
+                // Combined mode: also print kitchen slip
+                if (_isCombined && _kitchenData != null)
+                {
+                    var kotData = new RestaurantPOS.Printing.KOT.KotData
+                    {
+                        OrderNumber = _kitchenData.OrderNumber,
+                        TableName = _kitchenData.TableName,
+                        OrderType = _kitchenData.OrderType,
+                        DateTime = _kitchenData.DateTime,
+                        Items = _kitchenData.Items.Select(i => new RestaurantPOS.Printing.KOT.KotItem
+                        {
+                            Name = i.Name,
+                            Quantity = i.Quantity,
+                            Notes = i.Notes
+                        }).ToList()
+                    };
+                    await _printService.PrintKotAsync(kotData, ConfiguredPrinterName);
+                }
+
+                Close();
+                return;
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Direct print failed: {ex.Message}\nFalling back to print dialog.",
+                    "Print Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+
+        // Fallback: Show Windows print dialog
         var printDialog = new PrintDialog();
         if (printDialog.ShowDialog() != true) return;
 
-        // Page 1: Always print the customer bill (or kitchen slip in standalone mode)
         printDialog.PrintVisual(ReceiptPanel,
             _isKitchenSlip ? "KFC - Kitchen Order" : "KFC - Customer Bill");
 
-        // Page 2: If combined mode, print kitchen slip as a SEPARATE print job
         if (_isCombined && KitchenPanel.Children.Count > 0)
         {
             printDialog.PrintVisual(KitchenPanel, "KFC - Kitchen Order");

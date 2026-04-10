@@ -125,6 +125,15 @@ public partial class MainPOSViewModel : BaseViewModel
     private User? _loggedInUser;
     private IAuthService? _authService;
 
+    // ── Cached receipt/print settings (loaded once at startup) ──
+    private string _receiptRestaurantName = "KFC RESTAURANT";
+    private string _receiptAddress = "";
+    private string _receiptPhone = "";
+    private string _receiptHeader = "";
+    private string _receiptFooter = "";
+    private string? _configuredReceiptPrinter;
+    private string? _configuredKotPrinter;
+
     public void SetCurrentUser(User user, IAuthService authService)
     {
         _loggedInUser = user;
@@ -438,12 +447,46 @@ public partial class MainPOSViewModel : BaseViewModel
             // ── Reload open orders from DB (persists across app restarts) ──
             await ReloadOpenOrdersFromDbAsync();
 
+            // ── Load receipt & printer settings from DB ──
+            await LoadPrintSettingsAsync();
+
             _dataLoaded = true;
         }
         finally
         {
             IsBusy = false;
         }
+    }
+
+    private async Task LoadPrintSettingsAsync()
+    {
+        try
+        {
+            _receiptRestaurantName = await _settingsService.GetSettingAsync("ReceiptRestaurantName")
+                                     ?? await _settingsService.GetSettingAsync("RestaurantName")
+                                     ?? "KFC RESTAURANT";
+            _receiptAddress = await _settingsService.GetSettingAsync("ReceiptAddress")
+                              ?? await _settingsService.GetSettingAsync("RestaurantAddress")
+                              ?? "";
+            _receiptPhone = await _settingsService.GetSettingAsync("ReceiptPhone")
+                            ?? await _settingsService.GetSettingAsync("RestaurantPhone")
+                            ?? "";
+            _receiptHeader = await _settingsService.GetSettingAsync("ReceiptHeader") ?? "";
+            _receiptFooter = await _settingsService.GetSettingAsync("ReceiptFooter") ?? "";
+
+            // Load default receipt printer
+            var receiptPrinter = await _db.Printers
+                .Where(p => p.IsActive && p.IsDefault && p.Type == Domain.Enums.PrinterType.Receipt)
+                .FirstOrDefaultAsync();
+            _configuredReceiptPrinter = receiptPrinter?.SystemPrinterName;
+
+            // Load default KOT printer
+            var kotPrinter = await _db.Printers
+                .Where(p => p.IsActive && p.IsDefault && p.Type == Domain.Enums.PrinterType.KOT)
+                .FirstOrDefaultAsync();
+            _configuredKotPrinter = kotPrinter?.SystemPrinterName;
+        }
+        catch { /* Non-fatal — use defaults */ }
     }
 
     /// <summary>
@@ -1284,7 +1327,8 @@ public partial class MainPOSViewModel : BaseViewModel
                 Notes = oi.Remarks
             });
         }
-        var previewWindow = new Views.PrintPreviewWindow(receiptData, _printService);
+        var previewWindow = new Views.PrintPreviewWindow(receiptData, _printService)
+            { ConfiguredPrinterName = _configuredReceiptPrinter };
         previewWindow.Owner = System.Windows.Application.Current.MainWindow;
         previewWindow.ShowDialog();
     }
@@ -2235,12 +2279,14 @@ public partial class MainPOSViewModel : BaseViewModel
 
         var data = new ReceiptData
         {
-            RestaurantName = "KFC RESTAURANT",
+            RestaurantName = _receiptRestaurantName,
+            RestaurantAddress = _receiptAddress,
+            RestaurantPhone = _receiptPhone,
             OrderNumber = OrderNumber,
             DateTime = DateTime.Now,
             TableName = SelectedTable?.Name,
             OrderType = OrderTypeDisplay,
-            CashierName = "Admin",
+            CashierName = _loggedInUser?.FullName ?? "Admin",
             SubTotal = SubTotal,
             TaxAmount = TaxAmount,
             DiscountAmount = DiscountAmount,
@@ -2249,7 +2295,9 @@ public partial class MainPOSViewModel : BaseViewModel
             PaymentMethod = paymentMethod,
             TenderedAmount = CashTendered > 0 ? CashTendered : GrandTotal,
             ChangeAmount = CashTendered > 0 ? ChangeAmount : 0,
-            FooterMessage = !string.IsNullOrWhiteSpace(CommentText) ? CommentText : null
+            HeaderMessage = !string.IsNullOrWhiteSpace(_receiptHeader) ? _receiptHeader : null,
+            FooterMessage = !string.IsNullOrWhiteSpace(CommentText) ? CommentText
+                          : !string.IsNullOrWhiteSpace(_receiptFooter) ? _receiptFooter : null
         };
 
         // Add delivery-specific info if this is a delivery order
@@ -2341,7 +2389,8 @@ public partial class MainPOSViewModel : BaseViewModel
             if (kotItems.Count > 0)
             {
                 var kitchenData = BuildKitchenReceiptData(kotItems, isFullReprint: false);
-                var combinedPreview = new Views.PrintPreviewWindow(receiptData, kitchenData, _printService);
+                var combinedPreview = new Views.PrintPreviewWindow(receiptData, kitchenData, _printService)
+                    { ConfiguredPrinterName = _configuredReceiptPrinter };
                 combinedPreview.ShowDialog();
                 MarkItemsAsKitchenPrinted();
                 // Table → Green (kitchen printed)
@@ -2387,7 +2436,8 @@ public partial class MainPOSViewModel : BaseViewModel
         }
 
         var kitchenData = BuildKitchenReceiptData(kotItems, isFullReprint: fullReprint);
-        var kitchenPreview = new Views.PrintPreviewWindow(kitchenData, _printService, isKitchenSlip: true);
+        var kitchenPreview = new Views.PrintPreviewWindow(kitchenData, _printService, isKitchenSlip: true)
+            { ConfiguredPrinterName = _configuredKotPrinter ?? _configuredReceiptPrinter };
         kitchenPreview.ShowDialog();
 
         // After print, mark items as kitchen-printed
@@ -2513,12 +2563,14 @@ public partial class MainPOSViewModel : BaseViewModel
     {
         var data = new ReceiptData
         {
-            RestaurantName = "KFC RESTAURANT",
+            RestaurantName = _receiptRestaurantName,
+            RestaurantAddress = _receiptAddress,
+            RestaurantPhone = _receiptPhone,
             OrderNumber = OrderNumber,
             DateTime = DateTime.Now,
             TableName = SelectedTable?.Name,
             OrderType = OrderTypeDisplay,
-            CashierName = "Admin",
+            CashierName = _loggedInUser?.FullName ?? "Admin",
             SubTotal = 0,
             TaxAmount = 0,
             DiscountAmount = 0,
@@ -2634,7 +2686,9 @@ public partial class MainPOSViewModel : BaseViewModel
 
         var receiptData = new ReceiptData
         {
-            RestaurantName = "KFC RESTAURANT",
+            RestaurantName = _receiptRestaurantName,
+            RestaurantAddress = _receiptAddress,
+            RestaurantPhone = _receiptPhone,
             OrderNumber = order.OrderNumber,
             DateTime = order.CreatedAt.ToLocalTime(),
             TableName = order.TableSession?.Table?.Name,
@@ -2683,7 +2737,8 @@ public partial class MainPOSViewModel : BaseViewModel
             });
         }
 
-        var previewWindow = new Views.PrintPreviewWindow(receiptData, _printService);
+        var previewWindow = new Views.PrintPreviewWindow(receiptData, _printService)
+            { ConfiguredPrinterName = _configuredReceiptPrinter };
         previewWindow.Owner = System.Windows.Application.Current.MainWindow;
         previewWindow.ShowDialog();
     }

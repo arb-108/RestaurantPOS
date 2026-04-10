@@ -39,6 +39,8 @@ public class Printer : BaseEntity
     public string? Address { get; set; }
     public int PaperWidth { get; set; } = 80;
     public bool IsDefault { get; set; }
+    /// <summary>Windows system printer name (from LocalPrintServer).</summary>
+    public string? SystemPrinterName { get; set; }
 }
 
 public class AppSetting : BaseEntity

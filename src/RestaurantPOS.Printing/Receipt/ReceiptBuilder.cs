@@ -22,6 +22,8 @@ public class ReceiptData
     public long ChangeAmount { get; set; }
     public string? HeaderMessage { get; set; }
     public string? FooterMessage { get; set; }
+    public string? RestaurantAddress { get; set; }
+    public string? RestaurantPhone { get; set; }
 
     // ── Delivery-specific fields ──
     public string? CustomerName { get; set; }
@@ -61,6 +63,11 @@ public class ReceiptBuilder
         Write(ms, EscPos.DoubleOn);
         WriteText(ms, data.RestaurantName);
         Write(ms, EscPos.NormalSize);
+
+        if (!string.IsNullOrWhiteSpace(data.RestaurantAddress))
+            WriteText(ms, data.RestaurantAddress);
+        if (!string.IsNullOrWhiteSpace(data.RestaurantPhone))
+            WriteText(ms, $"Tel: {data.RestaurantPhone}");
 
         if (!string.IsNullOrWhiteSpace(data.HeaderMessage))
             WriteText(ms, data.HeaderMessage);

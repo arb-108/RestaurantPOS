@@ -79,6 +79,7 @@ public partial class SettingsViewModel : BaseViewModel
         PrinterIsDefault = value.IsDefault;
         SelectedPrinterType = value.Type.ToString();
         SelectedConnectionType = value.ConnectionType.ToString();
+        SelectedInstalledPrinter = value.SystemPrinterName ?? string.Empty;
     }
 
     // ══════════════════════════════════════════════
@@ -357,6 +358,7 @@ public partial class SettingsViewModel : BaseViewModel
             SelectedPrinter.IsDefault = PrinterIsDefault;
             SelectedPrinter.Type = pType;
             SelectedPrinter.ConnectionType = cType;
+            SelectedPrinter.SystemPrinterName = string.IsNullOrWhiteSpace(SelectedInstalledPrinter) ? null : SelectedInstalledPrinter;
         }
         else
         {
@@ -368,7 +370,8 @@ public partial class SettingsViewModel : BaseViewModel
                 PaperWidth = PrinterPaperWidth,
                 IsDefault = PrinterIsDefault,
                 Type = pType,
-                ConnectionType = cType
+                ConnectionType = cType,
+                SystemPrinterName = string.IsNullOrWhiteSpace(SelectedInstalledPrinter) ? null : SelectedInstalledPrinter
             };
             _db.Printers.Add(printer);
         }
@@ -413,6 +416,7 @@ public partial class SettingsViewModel : BaseViewModel
         PrinterIsDefault = false;
         SelectedPrinterType = "Receipt";
         SelectedConnectionType = "USB";
+        SelectedInstalledPrinter = "";
     }
 
     [RelayCommand]
