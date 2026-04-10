@@ -1538,7 +1538,8 @@ public partial class MainPOSViewModel : BaseViewModel
                     Notes = oi.Remarks
                 });
             }
-            var previewWindow = new Views.PrintPreviewWindow(receiptData, _printService);
+            var previewWindow = new Views.PrintPreviewWindow(receiptData, _printService)
+                { ConfiguredPrinterName = _configuredReceiptPrinter };
             previewWindow.Owner = System.Windows.Application.Current.MainWindow;
             previewWindow.ShowDialog();
         }
@@ -2414,7 +2415,8 @@ public partial class MainPOSViewModel : BaseViewModel
             }
         }
 
-        var previewWindow = new Views.PrintPreviewWindow(receiptData, _printService);
+        var previewWindow = new Views.PrintPreviewWindow(receiptData, _printService)
+            { ConfiguredPrinterName = _configuredReceiptPrinter };
         previewWindow.ShowDialog();
     }
 

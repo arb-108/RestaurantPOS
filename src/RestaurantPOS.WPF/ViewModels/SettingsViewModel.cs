@@ -387,6 +387,14 @@ public partial class SettingsViewModel : BaseViewModel
     }
 
     [RelayCommand]
+    private async Task EditPrinterRowAsync(Printer? printer)
+    {
+        if (printer == null) return;
+        SelectedPrinter = printer;
+        await EditPrinterAsync();
+    }
+
+    [RelayCommand]
     private async Task DeletePrinterAsync()
     {
         if (SelectedPrinter == null) { StatusMessage = "Select a printer first."; return; }
