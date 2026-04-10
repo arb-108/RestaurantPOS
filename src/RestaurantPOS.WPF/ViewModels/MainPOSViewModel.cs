@@ -474,16 +474,25 @@ public partial class MainPOSViewModel : BaseViewModel
             _receiptHeader = await _settingsService.GetSettingAsync("ReceiptHeader") ?? "";
             _receiptFooter = await _settingsService.GetSettingAsync("ReceiptFooter") ?? "";
 
-            // Load default receipt printer
+            // Load default receipt printer (or the only one if just one exists)
             var receiptPrinter = await _db.Printers
                 .Where(p => p.IsActive && p.IsDefault && p.Type == Domain.Enums.PrinterType.Receipt)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync()
+                ?? await _db.Printers
+                    .Where(p => p.IsActive && p.Type == Domain.Enums.PrinterType.Receipt)
+                    .FirstOrDefaultAsync()
+                ?? await _db.Printers
+                    .Where(p => p.IsActive && p.SystemPrinterName != null)
+                    .FirstOrDefaultAsync();
             _configuredReceiptPrinter = receiptPrinter?.SystemPrinterName;
 
-            // Load default KOT printer
+            // Load default KOT printer (fall back to receipt printer)
             var kotPrinter = await _db.Printers
                 .Where(p => p.IsActive && p.IsDefault && p.Type == Domain.Enums.PrinterType.KOT)
-                .FirstOrDefaultAsync();
+                .FirstOrDefaultAsync()
+                ?? await _db.Printers
+                    .Where(p => p.IsActive && p.Type == Domain.Enums.PrinterType.KOT)
+                    .FirstOrDefaultAsync();
             _configuredKotPrinter = kotPrinter?.SystemPrinterName;
         }
         catch { /* Non-fatal — use defaults */ }
