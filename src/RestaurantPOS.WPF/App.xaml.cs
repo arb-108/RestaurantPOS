@@ -151,6 +151,21 @@ public partial class App : System.Windows.Application
                 catch { /* column may already exist */ }
             }
 
+            // Add SystemPrinterName column to Printers if missing
+            try
+            {
+                await db.Database.ExecuteSqlRawAsync("SELECT SystemPrinterName FROM Printers LIMIT 0");
+            }
+            catch
+            {
+                try
+                {
+                    await db.Database.ExecuteSqlRawAsync("ALTER TABLE Printers ADD COLUMN SystemPrinterName TEXT");
+                    Log.Information("Added SystemPrinterName column to Printers");
+                }
+                catch { /* column may already exist */ }
+            }
+
             // Validate schema: check a column from a recent change
             try
             {
