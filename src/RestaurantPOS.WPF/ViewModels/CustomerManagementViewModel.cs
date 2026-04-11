@@ -18,6 +18,7 @@ public partial class CustomerManagementViewModel : BaseViewModel
     private readonly PosDbContext _db;
     private readonly IPrintService _printService;
     private readonly IAuthService _authService;
+    private string? _configuredPrinter;
 
     // ── All customers loaded from DB ──
     private List<Customer> _allCustomers = [];
@@ -75,6 +76,19 @@ public partial class CustomerManagementViewModel : BaseViewModel
     [RelayCommand]
     private async Task LoadDataAsync()
     {
+        // Load configured printer for direct printing
+        try
+        {
+            var printer = await _db.Printers
+                .Where(p => p.IsActive && p.IsDefault && p.Type == Domain.Enums.PrinterType.Receipt)
+                .FirstOrDefaultAsync()
+                ?? await _db.Printers
+                    .Where(p => p.IsActive && p.SystemPrinterName != null)
+                    .FirstOrDefaultAsync();
+            _configuredPrinter = printer?.SystemPrinterName;
+        }
+        catch { }
+
         _allCustomers = (await _customerService.GetAllCustomersAsync()).ToList();
 
         // Load order counts and actual totals for all customers in one query
@@ -322,9 +336,13 @@ public partial class CustomerManagementViewModel : BaseViewModel
             .FirstOrDefaultAsync(o => o.Id == orderRow.OrderId);
         if (order == null) return;
 
+        var restName = (await _db.AppSettings.FirstOrDefaultAsync(s => s.Key == "ReceiptRestaurantName"))?.Value
+                    ?? (await _db.AppSettings.FirstOrDefaultAsync(s => s.Key == "RestaurantName"))?.Value
+                    ?? "Restaurant";
+
         var receiptData = new ReceiptData
         {
-            RestaurantName = "KFC Restaurant",
+            RestaurantName = restName,
             OrderNumber = order.OrderNumber,
             OrderType = order.OrderType.ToString(),
             CashierName = "Admin",
@@ -350,7 +368,8 @@ public partial class CustomerManagementViewModel : BaseViewModel
             });
         }
 
-        var previewWindow = new Views.PrintPreviewWindow(receiptData, _printService);
+        var previewWindow = new Views.PrintPreviewWindow(receiptData, _printService)
+            { ConfiguredPrinterName = _configuredPrinter };
         previewWindow.Owner = System.Windows.Application.Current.MainWindow;
         previewWindow.ShowDialog();
     }

@@ -753,12 +753,80 @@ public partial class MainPOSView : UserControl
 
     private async void MobileTextBox_PreviewKeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Enter && DataContext is MainPOSViewModel vm)
+        if (DataContext is not MainPOSViewModel vm) return;
+
+        // ── Down arrow: navigate dropdown suggestions ──
+        if (e.Key == Key.Down && vm.IsPhoneSearchActive && vm.PhoneSearchResults.Count > 0)
         {
+            vm.SelectedPhoneSearchIndex = Math.Min(vm.SelectedPhoneSearchIndex + 1, vm.PhoneSearchResults.Count - 1);
+            PhoneSearchListBox.ScrollIntoView(vm.PhoneSearchResults[vm.SelectedPhoneSearchIndex]);
+            e.Handled = true;
+            return;
+        }
+
+        // ── Up arrow: navigate dropdown suggestions (or exit to grid) ──
+        if (e.Key == Key.Up)
+        {
+            if (vm.IsPhoneSearchActive && vm.PhoneSearchResults.Count > 0 && vm.SelectedPhoneSearchIndex > 0)
+            {
+                vm.SelectedPhoneSearchIndex--;
+                PhoneSearchListBox.ScrollIntoView(vm.PhoneSearchResults[vm.SelectedPhoneSearchIndex]);
+                e.Handled = true;
+                return;
+            }
+            else if (vm.IsPhoneSearchActive && vm.SelectedPhoneSearchIndex == 0)
+            {
+                vm.SelectedPhoneSearchIndex = -1;
+                PhoneSearchListBox.ScrollIntoView(vm.PhoneSearchResults[0]);
+                e.Handled = true;
+                return;
+            }
+            else if (!vm.IsPhoneSearchActive)
+            {
+                // Up from Mobile (no dropdown) → last row of DataGrid
+                if (vm.OrderItems.Count > 0)
+                {
+                    OrderGrid.SelectedIndex = vm.OrderItems.Count - 1;
+                    OrderGrid.ScrollIntoView(OrderGrid.SelectedItem);
+                    SetZone(PosZone.OrderGrid);
+                }
+                else
+                {
+                    SetZone(PosZone.MenuItems);
+                }
+                e.Handled = true;
+                return;
+            }
+        }
+
+        // ── Escape: close dropdown ──
+        if (e.Key == Key.Escape && vm.IsPhoneSearchActive)
+        {
+            vm.IsPhoneSearchActive = false;
+            vm.SelectedPhoneSearchIndex = -1;
+            e.Handled = true;
+            return;
+        }
+
+        // ── Enter ──
+        if (e.Key == Key.Enter)
+        {
+            // If a dropdown item is highlighted, select it
+            if (vm.IsPhoneSearchActive && vm.SelectedPhoneSearchIndex >= 0
+                && vm.SelectedPhoneSearchIndex < vm.PhoneSearchResults.Count)
+            {
+                var selected = vm.PhoneSearchResults[vm.SelectedPhoneSearchIndex];
+                vm.SelectCustomerFromSearchCommand.Execute(selected);
+                vm.SelectedPhoneSearchIndex = -1;
+                DiscPercentBox.Focus();
+                DiscPercentBox.SelectAll();
+                e.Handled = true;
+                return;
+            }
+
             // DineIn: Enter always goes directly to Disc (phone is optional)
             if (vm.SelectedOrderType == Domain.Enums.OrderType.DineIn)
             {
-                // If phone is entered and matched, close dropdown first
                 if (vm.IsPhoneMatched)
                     await vm.PhoneEnterPressedCommand.ExecuteAsync(null);
 
@@ -767,37 +835,18 @@ public partial class MainPOSView : UserControl
             }
             else if (vm.IsPhoneMatched)
             {
-                // Green = matched → close dropdown and advance to Disc field
                 await vm.PhoneEnterPressedCommand.ExecuteAsync(null);
                 DiscPercentBox.Focus();
                 DiscPercentBox.SelectAll();
             }
             else
             {
-                // Not matched → opens AddCustomer form (handled by command)
                 await vm.PhoneEnterPressedCommand.ExecuteAsync(null);
-                // After add customer dialog closes, if now matched, advance to Disc
                 if (vm.IsPhoneMatched)
                 {
                     DiscPercentBox.Focus();
                     DiscPercentBox.SelectAll();
                 }
-            }
-            e.Handled = true;
-        }
-        else if (e.Key == Key.Up)
-        {
-            // Up from Mobile → last row of DataGrid
-            var vmUp = DataContext as MainPOSViewModel;
-            if (vmUp != null && vmUp.OrderItems.Count > 0)
-            {
-                OrderGrid.SelectedIndex = vmUp.OrderItems.Count - 1;
-                OrderGrid.ScrollIntoView(OrderGrid.SelectedItem);
-                SetZone(PosZone.OrderGrid);
-            }
-            else
-            {
-                SetZone(PosZone.MenuItems);
             }
             e.Handled = true;
         }
@@ -809,6 +858,29 @@ public partial class MainPOSView : UserControl
             && DataContext is MainPOSViewModel vm)
         {
             vm.SelectCustomerFromSearchCommand.Execute(customer);
+        }
+    }
+
+    private void CustomerSearchListItem_Click(object sender, MouseButtonEventArgs e)
+    {
+        // Find the ListBoxItem that was clicked
+        // Note: e.OriginalSource can be a Run (not a Visual), so walk up via LogicalTree first
+        DependencyObject? current = e.OriginalSource as DependencyObject;
+        if (current == null) return;
+
+        // If it's not a Visual (e.g. Run inside TextBlock), get the parent TextBlock via LogicalTree
+        while (current != null && current is not System.Windows.Media.Visual)
+            current = LogicalTreeHelper.GetParent(current);
+
+        // Now walk up the visual tree to find the ListBoxItem
+        while (current != null && current is not ListBoxItem)
+            current = VisualTreeHelper.GetParent(current);
+
+        if (current is ListBoxItem lbi && lbi.DataContext is Customer customer
+            && DataContext is MainPOSViewModel vm)
+        {
+            vm.SelectCustomerFromSearchCommand.Execute(customer);
+            vm.SelectedPhoneSearchIndex = -1;
         }
     }
 }

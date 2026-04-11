@@ -9,8 +9,10 @@ public class KotData
     public string? TableName { get; set; }
     public string OrderType { get; set; } = string.Empty;
     public string? WaiterName { get; set; }
+    public string? CashierName { get; set; }
     public DateTime DateTime { get; set; }
     public List<KotItem> Items { get; set; } = [];
+    public string? HeaderBanner { get; set; }
 }
 
 public class KotItem
@@ -19,6 +21,9 @@ public class KotItem
     public int Quantity { get; set; }
     public string? Notes { get; set; }
     public List<string> Modifiers { get; set; } = [];
+    public bool IsSubItem { get; set; }
+    public bool IsDealHeader { get; set; }
+    public bool IsDealSubItem { get; set; }
 }
 
 public class KotBuilder
@@ -36,60 +41,118 @@ public class KotBuilder
 
         Write(ms, EscPos.Init);
 
-        // Header — station name in large text
+        // ═══ HEADER ═══
         Write(ms, EscPos.AlignCenter);
         Write(ms, EscPos.DoubleOn);
-        WriteText(ms, $"** {data.StationName.ToUpper()} **");
+        WriteText(ms, "KITCHEN ORDER");
         Write(ms, EscPos.NormalSize);
         WriteText(ms, "");
 
-        Write(ms, EscPos.AlignLeft);
-        WriteText(ms, EscPos.DoubleLine(_width));
+        // ═══ REPRINT BANNER ═══
+        if (!string.IsNullOrEmpty(data.HeaderBanner))
+        {
+            Write(ms, EscPos.BoldOn);
+            WriteText(ms, data.HeaderBanner);
+            Write(ms, EscPos.BoldOff);
+            WriteText(ms, "");
+        }
 
-        // Order info
+        Write(ms, EscPos.AlignLeft);
+
+        // ═══ ORDER INFO (pharmacy-style: label : value) ═══
         Write(ms, EscPos.BoldOn);
-        WriteText(ms, $"KOT - {data.OrderNumber}");
+        WriteText(ms, $"Order #  {data.OrderNumber}");
         Write(ms, EscPos.BoldOff);
 
-        var label = data.TableName ?? data.OrderType;
-        WriteText(ms, EscPos.PadBetween(label, data.DateTime.ToString("HH:mm"), _width));
+        WriteText(ms, $"Type    : {data.OrderType}");
 
-        if (data.WaiterName != null)
-            WriteText(ms, $"Waiter: {data.WaiterName}");
+        if (!string.IsNullOrEmpty(data.TableName))
+            WriteText(ms, $"Table   : {data.TableName}");
+
+        if (!string.IsNullOrEmpty(data.CashierName))
+            WriteText(ms, $"Cashier : {data.CashierName}");
+
+        if (!string.IsNullOrEmpty(data.WaiterName))
+            WriteText(ms, $"Waiter  : {data.WaiterName}");
+
+        // Date / Time row
+        var datePart = $"Date: {data.DateTime:dd/MM/yyyy}";
+        var timePart = $"Time: {data.DateTime:HH:mm:ss}";
+        WriteText(ms, EscPos.PadBetween(datePart, timePart, _width));
 
         WriteText(ms, EscPos.DashLine(_width));
 
-        // Items — large and bold for kitchen readability
+        // ═══ ITEMS HEADER ═══
+        Write(ms, EscPos.BoldOn);
+        WriteText(ms, FormatKotLine("Qty", "Item", _width));
+        Write(ms, EscPos.BoldOff);
+        WriteText(ms, EscPos.DashLine(_width));
+
+        // ═══ ITEMS ═══
+        int totalQty = 0;
         foreach (var item in data.Items)
         {
-            Write(ms, EscPos.BoldOn);
-            Write(ms, EscPos.DoubleHeightOn);
-            WriteText(ms, $"{item.Quantity}x  {item.Name}");
-            Write(ms, EscPos.NormalSize);
-            Write(ms, EscPos.BoldOff);
-
-            if (!string.IsNullOrWhiteSpace(item.Notes))
+            if (item.IsDealHeader)
             {
+                // Deal header — bold with [DEAL] tag
                 Write(ms, EscPos.BoldOn);
-                WriteText(ms, $"   >> {item.Notes}");
+                WriteText(ms, FormatKotLine(item.Quantity.ToString(), $"[DEAL] {StripNonPrintable(item.Name)}", _width));
                 Write(ms, EscPos.BoldOff);
+                totalQty += item.Quantity;
+            }
+            else if (item.IsDealSubItem)
+            {
+                // Deal sub-item — indented with qty
+                WriteText(ms, $"     {FormatKotLine(item.Quantity.ToString(), $"- {item.Name}", _width)}");
+            }
+            else if (item.IsSubItem)
+            {
+                // Legacy sub-item
+                WriteText(ms, $"       {item.Name}");
+            }
+            else
+            {
+                // Regular item
+                Write(ms, EscPos.BoldOn);
+                WriteText(ms, FormatKotLine(item.Quantity.ToString(), StripNonPrintable(item.Name), _width));
+                Write(ms, EscPos.BoldOff);
+                totalQty += item.Quantity;
             }
 
-            foreach (var mod in item.Modifiers)
-                WriteText(ms, $"   + {mod}");
+            // Notes (special instructions)
+            if (!string.IsNullOrWhiteSpace(item.Notes))
+            {
+                WriteText(ms, $"       >> {item.Notes}");
+            }
 
-            WriteText(ms, "");
+            // Modifiers
+            foreach (var mod in item.Modifiers)
+                WriteText(ms, $"       + {mod}");
         }
 
         WriteText(ms, EscPos.DashLine(_width));
 
-        Write(ms, EscPos.AlignCenter);
-        WriteText(ms, data.DateTime.ToString("dd/MM/yyyy HH:mm:ss"));
+        // ═══ TOTAL ITEMS ═══
+        Write(ms, EscPos.BoldOn);
+        WriteText(ms, EscPos.PadBetween("Total Item(s)", totalQty.ToString(), _width));
+        Write(ms, EscPos.BoldOff);
 
-        Write(ms, EscPos.FeedLines3);
+        WriteText(ms, EscPos.DashLine(_width));
+
+        // ═══ FOOTER ═══
+        Write(ms, EscPos.AlignCenter);
+        WriteText(ms, $"Printed: {data.DateTime:dd/MM/yyyy HH:mm:ss}");
+
+        Write(ms, EscPos.FeedLines5);
         Write(ms, EscPos.PartialCut);
 
         return ms.ToArray();
+    }
+
+    private static string FormatKotLine(string qty, string name, int width)
+    {
+        var qtyCol = qty.PadLeft(4);
+        return $"{qtyCol}   {name}";
     }
 
     private static void Write(MemoryStream ms, byte[] data) => ms.Write(data);
@@ -97,5 +160,19 @@ public class KotBuilder
     {
         var bytes = Encoding.UTF8.GetBytes(text + "\n");
         ms.Write(bytes);
+    }
+
+    /// <summary>Strip emoji and non-printable chars for thermal printer.</summary>
+    private static string StripNonPrintable(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return input;
+        var sb = new StringBuilder();
+        foreach (var c in input)
+        {
+            if (c >= 0x20 && c <= 0x7E) sb.Append(c);
+            else if (c >= 0xA0 && c <= 0xFF) sb.Append(c);
+            else if (c == '\n' || c == '\r') sb.Append(c);
+        }
+        return System.Text.RegularExpressions.Regex.Replace(sb.ToString().Trim(), @"\s{2,}", " ");
     }
 }

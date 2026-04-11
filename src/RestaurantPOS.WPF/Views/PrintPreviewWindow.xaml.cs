@@ -173,146 +173,224 @@ public partial class PrintPreviewWindow : Window
     {
         var p = _activePanel;
         p.Children.Clear();
+        var d = _receiptData;
 
-        // ── Restaurant Header ──
-        var headerBorder = new Border
+        // ═══ RESTAURANT HEADER (centered, like pharmacy receipt) ═══
+        AddSpacer(p, 4);
+        p.Children.Add(new TextBlock
         {
-            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FEF2F2")!),
-            CornerRadius = new CornerRadius(4),
-            Padding = new Thickness(8, 6, 8, 6),
-            Margin = new Thickness(0, 0, 0, 4)
-        };
-        var headerStack = new StackPanel { HorizontalAlignment = HorizontalAlignment.Center };
-        headerStack.Children.Add(new TextBlock
-        {
-            Text = _receiptData.RestaurantName,
+            Text = d.RestaurantName.ToUpper(),
             FontSize = 16, FontWeight = FontWeights.ExtraBold,
-            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D32F2F")!),
-            HorizontalAlignment = HorizontalAlignment.Center
+            Foreground = Brushes.Black,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            TextAlignment = TextAlignment.Center
         });
-        // Address & phone from DB settings
-        var addrParts = new List<string>();
-        if (!string.IsNullOrWhiteSpace(_receiptData.RestaurantAddress)) addrParts.Add(_receiptData.RestaurantAddress);
-        if (!string.IsNullOrWhiteSpace(_receiptData.RestaurantPhone)) addrParts.Add(_receiptData.RestaurantPhone);
-        if (addrParts.Count > 0)
+        if (!string.IsNullOrWhiteSpace(d.RestaurantAddress))
         {
-            headerStack.Children.Add(new TextBlock
+            p.Children.Add(new TextBlock
             {
-                Text = string.Join(" | ", addrParts),
-                FontSize = 8, FontWeight = FontWeights.Normal,
-                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#555")!),
+                Text = d.RestaurantAddress,
+                FontSize = 9, FontWeight = FontWeights.SemiBold,
+                Foreground = Brushes.Black,
                 HorizontalAlignment = HorizontalAlignment.Center,
-                TextWrapping = TextWrapping.Wrap
+                TextAlignment = TextAlignment.Center
             });
         }
-        headerBorder.Child = headerStack;
-        p.Children.Add(headerBorder);
-        AddSpacer(p, 2);
-        AddDoubleLine(p);
-        AddSpacer(p, 2);
+        if (!string.IsNullOrWhiteSpace(d.RestaurantPhone))
+        {
+            p.Children.Add(new TextBlock
+            {
+                Text = d.RestaurantPhone,
+                FontSize = 8,
+                Foreground = Brushes.Black,
+                HorizontalAlignment = HorizontalAlignment.Center,
+                TextAlignment = TextAlignment.Center
+            });
+        }
 
-        // ── Order Info (compact) ──
-        AddTwoColumnRow(p, $"Order: {_receiptData.OrderNumber}", _receiptData.DateTime.ToString("dd/MM/yy HH:mm"), 9, FontWeights.SemiBold);
-        AddTwoColumnRow(p, $"Type: {_receiptData.OrderType}", !string.IsNullOrEmpty(_receiptData.TableName) ? _receiptData.TableName : "", 9, FontWeights.Normal);
-        if (!string.IsNullOrEmpty(_receiptData.CashierName))
-            AddTwoColumnRow(p, $"Cashier: {_receiptData.CashierName}", !string.IsNullOrEmpty(_receiptData.WaiterName) ? $"Waiter: {_receiptData.WaiterName}" : "", 9, FontWeights.Normal);
+        if (!string.IsNullOrWhiteSpace(d.HeaderMessage))
+        {
+            AddSpacer(p, 2);
+            AddCenteredText(p, d.HeaderMessage, 8, FontWeights.SemiBold, "#333");
+        }
 
-        // ── Delivery Details Section (compact) ──
-        if (_receiptData.OrderType == "Delivery")
+        AddSpacer(p, 6);
+
+        // ═══ ORDER INFO BLOCK ═══
+        AddInfoRow(p, "Order #", d.OrderNumber, true);
+        AddInfoRow(p, "Cashier", d.CashierName ?? "Admin");
+        if (!string.IsNullOrEmpty(d.WaiterName))
+            AddInfoRow(p, "Waiter", d.WaiterName);
+
+        // Date / Time / Page on one row (3-column)
+        var dtGrid = new Grid { Margin = new Thickness(0, 1, 0, 1) };
+        dtGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        dtGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        dtGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var dateCol = new TextBlock { Text = $"Date: {d.DateTime:dd/MM/yyyy}", FontSize = 8, Foreground = Brushes.Black };
+        var timeCol = new TextBlock { Text = $"Time: {d.DateTime:HH:mm:ss}", FontSize = 8, Foreground = Brushes.Black };
+        var pageCol = new TextBlock { Text = "Page 1 of 1", FontSize = 8, Foreground = Brushes.Black, HorizontalAlignment = HorizontalAlignment.Right };
+        Grid.SetColumn(dateCol, 0); Grid.SetColumn(timeCol, 1); Grid.SetColumn(pageCol, 2);
+        dtGrid.Children.Add(dateCol); dtGrid.Children.Add(timeCol); dtGrid.Children.Add(pageCol);
+        p.Children.Add(dtGrid);
+
+        // Order Type + Payment method row
+        AddTwoColumnRow(p, $"Type : {d.OrderType}", d.PaymentMethod, 9, FontWeights.Normal);
+
+        // Table info
+        if (!string.IsNullOrEmpty(d.TableName))
+            AddInfoRow(p, "Table", d.TableName);
+
+        // ═══ CUSTOMER / DELIVERY INFO (shown when any customer data exists) ═══
+        bool hasCustomerInfo = !string.IsNullOrEmpty(d.CustomerName) || !string.IsNullOrEmpty(d.CustomerPhone)
+                            || !string.IsNullOrEmpty(d.CustomerAddress) || !string.IsNullOrEmpty(d.DriverName)
+                            || !string.IsNullOrEmpty(d.DeliveryNote);
+        if (hasCustomerInfo)
         {
             AddDashLine(p);
-            AddCenteredText(p, "DELIVERY INFO", 9, FontWeights.Bold, "#1565C0");
-            if (!string.IsNullOrEmpty(_receiptData.CustomerName))
-                AddTwoColumnRow(p, _receiptData.CustomerName, _receiptData.CustomerPhone ?? "", 9, FontWeights.SemiBold);
-            if (!string.IsNullOrEmpty(_receiptData.CustomerAddress))
-                AddTwoColumnRow(p, "Addr:", _receiptData.CustomerAddress, 9, FontWeights.Normal);
-            if (!string.IsNullOrEmpty(_receiptData.DriverName))
-                AddTwoColumnRow(p, "Driver:", $"{_receiptData.DriverName} ({_receiptData.DriverPhone})", 9, FontWeights.Normal);
-            if (!string.IsNullOrEmpty(_receiptData.DeliveryNote))
-                AddTwoColumnRow(p, "Note:", _receiptData.DeliveryNote, 9, FontWeights.Normal, "#E65100");
+            var sectionTitle = d.OrderType == "Delivery" ? "DELIVERY INFO"
+                             : d.OrderType == "TakeAway" ? "TAKEAWAY INFO"
+                             : "CUSTOMER INFO";
+            AddCenteredText(p, sectionTitle, 9, FontWeights.Bold, "#000");
+            if (!string.IsNullOrEmpty(d.CustomerName))
+                AddInfoRow(p, "Customer", d.CustomerName);
+            if (!string.IsNullOrEmpty(d.CustomerPhone))
+                AddInfoRow(p, "Phone", d.CustomerPhone);
+            if (!string.IsNullOrEmpty(d.CustomerAddress))
+                AddInfoRow(p, "Address", d.CustomerAddress);
+            if (!string.IsNullOrEmpty(d.DriverName))
+                AddInfoRow(p, "Driver", $"{d.DriverName}" + (!string.IsNullOrEmpty(d.DriverPhone) ? $" ({d.DriverPhone})" : ""));
+            if (!string.IsNullOrEmpty(d.DeliveryNote))
+                AddInfoRow(p, "Remarks", d.DeliveryNote);
         }
 
         AddSpacer(p, 2);
         AddDashLine(p);
 
-        // ── Item Header ──
+        // ═══ ITEMS COLUMN HEADER ═══
         AddItemHeaderRow(p);
         AddDashLine(p);
 
-        // ── Items ──
-        foreach (var item in _receiptData.Items)
+        // ═══ ITEMS LIST ═══
+        int mainItemCount = 0;
+        foreach (var item in d.Items)
         {
             if (item.Quantity == 0 && item.UnitPrice == 0)
             {
-                // Deal sub-item — just show indented name
+                // Deal sub-item — indented
                 p.Children.Add(new TextBlock
                 {
-                    Text = item.Name,
+                    Text = $"  {item.Name.TrimStart()}",
                     FontSize = 8,
-                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#555")!),
-                    Margin = new Thickness(10, 0, 0, 1)
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#444")!),
+                    Margin = new Thickness(8, 0, 0, 1)
                 });
                 continue;
             }
             AddItemRow(p, item);
+            mainItemCount++;
             if (!string.IsNullOrWhiteSpace(item.Notes))
             {
                 p.Children.Add(new TextBlock
                 {
                     Text = $"  * {item.Notes}",
                     FontSize = 8,
-                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#888")!),
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#666")!),
                     FontStyle = FontStyles.Italic,
-                    Margin = new Thickness(0, 0, 0, 2)
+                    Margin = new Thickness(8, 0, 0, 2)
                 });
             }
         }
 
         AddDashLine(p);
 
-        // ── Summary (compact) ──
-        AddTwoColumnRow(p, $"Items: {_receiptData.Items.Count}  Gross:", FormatCurrency(_receiptData.SubTotal), 9, FontWeights.SemiBold);
-        if (_receiptData.DiscountAmount > 0)
-            AddTwoColumnRow(p, "Disc.:", $"-{FormatCurrency(_receiptData.DiscountAmount)}", 9, FontWeights.Normal, "#E53935");
-        if (_receiptData.TaxAmount > 0)
-            AddTwoColumnRow(p, "GST:", FormatCurrency(_receiptData.TaxAmount), 9, FontWeights.Normal);
-        if (_receiptData.ServiceCharge > 0)
-            AddTwoColumnRow(p, "Service:", FormatCurrency(_receiptData.ServiceCharge), 9, FontWeights.Normal);
+        // ═══ TOTALS SECTION (pharmacy-style: Item(s) count + Gross/Disc/Tax) ═══
+        // Item count + Gross on same area
+        var summaryGrid = new Grid { Margin = new Thickness(0, 2, 0, 0) };
+        summaryGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        summaryGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
+        summaryGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
 
-        AddSpacer(p, 2);
-        AddDoubleLine(p);
-        AddSpacer(p, 2);
+        var itemCountBlock = new TextBlock { FontSize = 9, FontWeight = FontWeights.SemiBold };
+        itemCountBlock.Inlines.Add(new Run("Item(s)  ") { FontWeight = FontWeights.Normal });
+        itemCountBlock.Inlines.Add(new Run(mainItemCount.ToString()) { FontWeight = FontWeights.Bold });
+        Grid.SetColumn(itemCountBlock, 0);
 
-        // ── Net Amount ──
-        AddNetAmountRow(p, _receiptData.GrandTotal);
+        var grossLabel = new TextBlock { Text = "Gross :", FontSize = 9, HorizontalAlignment = HorizontalAlignment.Right };
+        Grid.SetColumn(grossLabel, 1);
 
-        AddSpacer(p, 2);
-        AddDoubleLine(p);
-        AddSpacer(p, 2);
+        var grossValue = new TextBlock { Text = Fmt(d.SubTotal), FontSize = 9, FontWeight = FontWeights.SemiBold, HorizontalAlignment = HorizontalAlignment.Right };
+        Grid.SetColumn(grossValue, 2);
 
-        // ── Payment Info (compact) ──
-        AddTwoColumnRow(p, $"Pay: {_receiptData.PaymentMethod}", FormatCurrency(_receiptData.TenderedAmount), 9, FontWeights.SemiBold);
-        if (_receiptData.ChangeAmount > 0)
-            AddTwoColumnRow(p, "Change:", FormatCurrency(_receiptData.ChangeAmount), 9, FontWeights.Normal, "#2E7D32");
+        summaryGrid.Children.Add(itemCountBlock);
+        summaryGrid.Children.Add(grossLabel);
+        summaryGrid.Children.Add(grossValue);
+        p.Children.Add(summaryGrid);
 
-        AddSpacer(p, 3);
+        // Discount
+        if (d.DiscountAmount > 0)
+            AddSummaryRow(p, "Disc. :", $"-{Fmt(d.DiscountAmount)}");
+
+        // Tax / GST
+        if (d.TaxAmount > 0)
+            AddSummaryRow(p, "Tax (GST) :", Fmt(d.TaxAmount));
+
+        // Service Charge
+        if (d.ServiceCharge > 0)
+            AddSummaryRow(p, "Service :", Fmt(d.ServiceCharge));
+
         AddDashLine(p);
-        AddSpacer(p, 3);
 
-        // ── Footer (compact) ──
-        if (_receiptData.OrderType == "Delivery")
-            AddCenteredText(p, "Thank you! Enjoy your meal - KFC Delivery", 8, FontWeights.SemiBold, "#333");
+        // ═══ NET AMOUNT (prominent, like pharmacy receipt) ═══
+        var netGrid = new Grid { Margin = new Thickness(0, 3, 0, 3) };
+        netGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        netGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
+        netGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
+
+        var cashierBottom = new TextBlock { Text = d.CashierName ?? "Admin", FontSize = 9, FontWeight = FontWeights.Normal, VerticalAlignment = VerticalAlignment.Center };
+        Grid.SetColumn(cashierBottom, 0);
+
+        var netLabel = new TextBlock { Text = "Net Amount :", FontSize = 10, FontWeight = FontWeights.Bold, HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center };
+        Grid.SetColumn(netLabel, 1);
+
+        var netValue = new TextBlock
+        {
+            Text = Fmt(d.GrandTotal), FontSize = 13, FontWeight = FontWeights.ExtraBold,
+            HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center,
+            TextDecorations = TextDecorations.Underline
+        };
+        Grid.SetColumn(netValue, 2);
+
+        netGrid.Children.Add(cashierBottom);
+        netGrid.Children.Add(netLabel);
+        netGrid.Children.Add(netValue);
+        p.Children.Add(netGrid);
+
+        AddDashLine(p);
+
+        // ═══ PAYMENT INFO ═══
+        AddTwoColumnRow(p, $"Payment : {d.PaymentMethod}", Fmt(d.TenderedAmount), 9, FontWeights.Normal);
+        if (d.ChangeAmount > 0)
+            AddTwoColumnRow(p, "Change :", Fmt(d.ChangeAmount), 9, FontWeights.Normal);
+
+        AddDashLine(p);
+        AddSpacer(p, 4);
+
+        // ═══ FOOTER ═══
+        if (d.OrderType == "Delivery")
+            AddCenteredText(p, "Thank you! Enjoy your meal", 8, FontWeights.SemiBold, "#333");
         else
             AddCenteredText(p, "Thank you for dining with us!", 8, FontWeights.SemiBold, "#333");
 
-        AddCenteredText(p, "*** KFC RESTAURANT ***", 8, FontWeights.Bold, "#D32F2F");
+        AddCenteredText(p, $"*** {d.RestaurantName.ToUpper()} ***", 8, FontWeights.Bold, "#000");
 
-        if (!string.IsNullOrWhiteSpace(_receiptData.FooterMessage))
-            AddCenteredText(p, _receiptData.FooterMessage, 7, FontWeights.Normal, "#888");
+        if (!string.IsNullOrWhiteSpace(d.FooterMessage))
+            AddCenteredText(p, d.FooterMessage, 7, FontWeights.Normal, "#666");
 
-        AddCenteredText(p, _receiptData.DateTime.ToString("dd/MM/yy HH:mm"), 7, FontWeights.Normal, "#999");
+        AddCenteredText(p, d.DateTime.ToString("dd/MM/yyyy HH:mm:ss"), 7, FontWeights.Normal, "#999");
         AddSpacer(p, 4);
 
+        // Barcode-style decoration
         p.Children.Add(new TextBlock
         {
             Text = "||||| |||| ||||| |||| ||||| ||||",
@@ -324,6 +402,36 @@ public partial class PrintPreviewWindow : Window
         });
     }
 
+    /// <summary>Label : Value info row (like "Order # 49179")</summary>
+    private static void AddInfoRow(StackPanel p, string label, string value, bool bold = false)
+    {
+        var tb = new TextBlock { FontSize = 9, Margin = new Thickness(0, 1, 0, 1) };
+        tb.Inlines.Add(new Run($"{label} : ") { FontWeight = FontWeights.Normal });
+        tb.Inlines.Add(new Run(value) { FontWeight = bold ? FontWeights.Bold : FontWeights.SemiBold, FontSize = bold ? 11 : 9 });
+        p.Children.Add(tb);
+    }
+
+    /// <summary>Right-aligned summary row (label + value in last 2 columns)</summary>
+    private static void AddSummaryRow(StackPanel p, string label, string value)
+    {
+        var grid = new Grid { Margin = new Thickness(0, 1, 0, 1) };
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(80) });
+        grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(70) });
+
+        var lbl = new TextBlock { Text = label, FontSize = 9, HorizontalAlignment = HorizontalAlignment.Right };
+        Grid.SetColumn(lbl, 1);
+        var val = new TextBlock { Text = value, FontSize = 9, HorizontalAlignment = HorizontalAlignment.Right };
+        Grid.SetColumn(val, 2);
+
+        grid.Children.Add(lbl);
+        grid.Children.Add(val);
+        p.Children.Add(grid);
+    }
+
+    /// <summary>Format paisa to decimal string without currency symbol.</summary>
+    private static string Fmt(long paisa) => $"{paisa / 100m:N2}";
+
     // ══════════════════════════════════════════════
     //  KITCHEN ORDER TICKET (Page 2 or standalone)
     // ══════════════════════════════════════════════
@@ -333,115 +441,142 @@ public partial class PrintPreviewWindow : Window
         var p = _activePanel;
         p.Children.Clear();
 
-        // ── Reprint banner ──
+        // ═══ HEADER (centered, same clean style as bill) ═══
+        AddSpacer(p, 4);
+        p.Children.Add(new TextBlock
+        {
+            Text = "KITCHEN ORDER",
+            FontSize = 16, FontWeight = FontWeights.ExtraBold,
+            Foreground = Brushes.Black,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            TextAlignment = TextAlignment.Center
+        });
+
+        // ═══ REPRINT BANNER ═══
         if (!string.IsNullOrEmpty(data.HeaderMessage))
         {
-            AddSpacer(p, 4);
-            AddCenteredBoldBanner(p, data.HeaderMessage, 14, "#D32F2F");
-            AddSpacer(p, 6);
+            AddSpacer(p, 2);
+            AddCenteredText(p, data.HeaderMessage, 10, FontWeights.Bold, "#000");
         }
 
-        // ── Kitchen Header ──
-        AddSpacer(p, 4);
-        AddCenteredText(p, "*** KITCHEN ***", 12, FontWeights.Bold, "#333");
-        AddSpacer(p, 8);
-
-        // ── Large Order Number ──
-        AddCenteredText(p, data.OrderNumber, 26, FontWeights.ExtraBold, "#000");
-        AddSpacer(p, 4);
-
-        // ── Table Name ──
-        if (!string.IsNullOrEmpty(data.TableName))
-        {
-            AddCenteredText(p, data.TableName, 22, FontWeights.Bold, "#000");
-            AddSpacer(p, 4);
-        }
-
-        // ── Date/Time and Cashier ──
-        AddLeftText(p, $"{data.DateTime:dd/MM/yyyy}  {data.DateTime:HH:mm}", 10, "#555");
-        if (!string.IsNullOrEmpty(data.CashierName))
-            AddLeftText(p, $"{data.CashierName}, POS 1", 10, "#555");
-
-        AddSpacer(p, 4);
-        AddDottedLine(p);
-        AddSpacer(p, 4);
-
-        // ── Order Type ──
-        AddCenteredText(p, data.OrderType, 14, FontWeights.Bold, "#000");
-
-        AddSpacer(p, 4);
-        AddDottedLine(p);
         AddSpacer(p, 6);
 
-        // ── Items ──
+        // ═══ ORDER INFO (pharmacy style: label : value) ═══
+        AddInfoRow(p, "Order #", data.OrderNumber, true);
+        AddInfoRow(p, "Type", data.OrderType);
+        if (!string.IsNullOrEmpty(data.TableName))
+            AddInfoRow(p, "Table", data.TableName);
+        if (!string.IsNullOrEmpty(data.CashierName))
+            AddInfoRow(p, "Cashier", data.CashierName);
+
+        // Date / Time row
+        var dtGrid = new Grid { Margin = new Thickness(0, 1, 0, 1) };
+        dtGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        dtGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var dateCol = new TextBlock { Text = $"Date: {data.DateTime:dd/MM/yyyy}", FontSize = 8, Foreground = Brushes.Black };
+        var timeCol = new TextBlock { Text = $"Time: {data.DateTime:HH:mm:ss}", FontSize = 8, Foreground = Brushes.Black, HorizontalAlignment = HorizontalAlignment.Right };
+        Grid.SetColumn(dateCol, 0); Grid.SetColumn(timeCol, 1);
+        dtGrid.Children.Add(dateCol); dtGrid.Children.Add(timeCol);
+        p.Children.Add(dtGrid);
+
+        AddDashLine(p);
+
+        // ═══ ITEMS HEADER ═══
+        var headerGrid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
+        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(40) });
+        headerGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        var qtyH = new TextBlock { Text = "Qty", FontSize = 9, FontWeight = FontWeights.Bold };
+        var itemH = new TextBlock { Text = "Item", FontSize = 9, FontWeight = FontWeights.Bold };
+        Grid.SetColumn(qtyH, 0); Grid.SetColumn(itemH, 1);
+        headerGrid.Children.Add(qtyH); headerGrid.Children.Add(itemH);
+        p.Children.Add(headerGrid);
+        AddDashLine(p);
+
+        // ═══ ITEMS ═══
+        int totalQty = 0;
         foreach (var item in data.Items)
         {
-            AddKitchenItemRow(p, item);
-        }
-
-        AddSpacer(p, 4);
-        AddDottedLine(p);
-        AddSpacer(p, 6);
-
-        // ── Total items ──
-        // Count only main items (not deal sub-items)
-        var totalItems = data.Items.Where(i => !i.Name.StartsWith("      ")).Sum(i => i.Quantity);
-        AddCenteredText(p, $"Total Items: {totalItems}", 11, FontWeights.SemiBold, "#333");
-        AddSpacer(p, 4);
-
-        // ── Timestamp ──
-        AddCenteredText(p, $"Printed: {data.DateTime:dd/MM/yyyy HH:mm:ss}", 8, FontWeights.Normal, "#999");
-        AddSpacer(p, 10);
-    }
-
-    // ══════════════════════════════════════════════
-    //  HELPER: Kitchen item row
-    // ══════════════════════════════════════════════
-
-    private static void AddKitchenItemRow(StackPanel p, ReceiptItem item)
-    {
-        var itemPanel = new StackPanel { Margin = new Thickness(0, 4, 0, 2) };
-
-        // Deal sub-item (indented component) — smaller font, no bold
-        bool isSubItem = item.Name.StartsWith("      ");
-        // Deal header line
-        bool isDealHeader = item.Name.Contains("──");
-
-        var mainLine = new TextBlock
-        {
-            FontSize = isSubItem ? 12 : 14,
-            FontWeight = isSubItem ? FontWeights.SemiBold : FontWeights.Bold,
-            Foreground = Brushes.Black,
-            TextWrapping = TextWrapping.Wrap,
-            Margin = isSubItem ? new Thickness(16, 0, 0, 0) : new Thickness(0)
-        };
-        mainLine.Inlines.Add(new Run($"{item.Quantity} x ")
-        {
-            FontWeight = FontWeights.ExtraBold,
-            FontSize = isSubItem ? 12 : 14
-        });
-        mainLine.Inlines.Add(new Run(isSubItem ? item.Name.TrimStart() : item.Name)
-        {
-            FontWeight = isDealHeader ? FontWeights.ExtraBold : (isSubItem ? FontWeights.SemiBold : FontWeights.Bold),
-            FontSize = isSubItem ? 12 : 14
-        });
-        itemPanel.Children.Add(mainLine);
-
-        if (!string.IsNullOrWhiteSpace(item.Notes))
-        {
-            itemPanel.Children.Add(new TextBlock
+            if (item.IsDealSubItem)
             {
-                Text = $"    {item.Notes}",
-                FontSize = 11,
-                Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#555")!),
-                FontWeight = FontWeights.Normal,
-                TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(12, 0, 0, 0)
-            });
+                // Deal sub-item — indented with dash
+                var subGrid = new Grid { Margin = new Thickness(0, 0, 0, 1) };
+                subGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(40) });
+                subGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+                var subQty = new TextBlock { Text = item.Quantity.ToString(), FontSize = 9, Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#444")!) };
+                var subName = new TextBlock { Text = $"  - {item.Name.TrimStart()}", FontSize = 9, Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#444")!), TextWrapping = TextWrapping.Wrap };
+                Grid.SetColumn(subQty, 0); Grid.SetColumn(subName, 1);
+                subGrid.Children.Add(subQty); subGrid.Children.Add(subName);
+                p.Children.Add(subGrid);
+            }
+            else if (item.IsDealHeader)
+            {
+                // Deal header — bold with markers
+                var itemGrid = new Grid { Margin = new Thickness(0, 4, 0, 1) };
+                itemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(40) });
+                itemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+                var qtyBlock = new TextBlock { Text = item.Quantity.ToString(), FontSize = 10, FontWeight = FontWeights.Bold };
+                var nameBlock = new TextBlock { Text = $"[DEAL] {item.Name}", FontSize = 10, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap };
+                Grid.SetColumn(qtyBlock, 0); Grid.SetColumn(nameBlock, 1);
+                itemGrid.Children.Add(qtyBlock); itemGrid.Children.Add(nameBlock);
+                p.Children.Add(itemGrid);
+
+                totalQty += item.Quantity;
+            }
+            else if (item.Quantity == 0 && item.UnitPrice == 0)
+            {
+                // Customer receipt deal sub-item (legacy)
+                p.Children.Add(new TextBlock
+                {
+                    Text = $"       {item.Name.TrimStart()}",
+                    FontSize = 8, Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#444")!),
+                    Margin = new Thickness(0, 0, 0, 1)
+                });
+            }
+            else
+            {
+                // Regular item row
+                var itemGrid = new Grid { Margin = new Thickness(0, 2, 0, 2) };
+                itemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(40) });
+                itemGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+
+                var qtyBlock = new TextBlock { Text = item.Quantity.ToString(), FontSize = 10, FontWeight = FontWeights.Bold };
+                var nameBlock = new TextBlock { Text = item.Name, FontSize = 10, FontWeight = FontWeights.Bold, TextWrapping = TextWrapping.Wrap };
+                Grid.SetColumn(qtyBlock, 0); Grid.SetColumn(nameBlock, 1);
+                itemGrid.Children.Add(qtyBlock); itemGrid.Children.Add(nameBlock);
+                p.Children.Add(itemGrid);
+
+                totalQty += item.Quantity;
+            }
+
+            // Notes
+            if (!string.IsNullOrWhiteSpace(item.Notes))
+            {
+                p.Children.Add(new TextBlock
+                {
+                    Text = $"       >> {item.Notes}",
+                    FontSize = 8, FontWeight = FontWeights.SemiBold,
+                    Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#555")!),
+                    Margin = new Thickness(0, 0, 0, 1)
+                });
+            }
         }
 
-        p.Children.Add(itemPanel);
+        AddDashLine(p);
+
+        // ═══ TOTAL ITEMS ═══
+        AddTwoColumnRow(p, "Total Item(s)", totalQty.ToString(), 10, FontWeights.Bold);
+
+        AddDashLine(p);
+
+        // ═══ FOOTER ═══
+        AddSpacer(p, 2);
+        AddCenteredText(p, $"Printed: {data.DateTime:dd/MM/yyyy HH:mm:ss}", 8, FontWeights.Normal, "#999");
+        AddSpacer(p, 6);
     }
+
+    // Kitchen item rows are now built inline in BuildKitchenSlipContent
 
     private static void AddCenteredBoldBanner(StackPanel p, string text, double fontSize, string colorHex)
     {
@@ -494,41 +629,7 @@ public partial class PrintPreviewWindow : Window
     //  SHARED HELPER METHODS (panel-targeted)
     // ══════════════════════════════════════════════
 
-    private static void AddNetAmountRow(StackPanel p, long grandTotal)
-    {
-        var netBorder = new Border
-        {
-            Background = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#FFF8F8")!),
-            CornerRadius = new CornerRadius(3),
-            Padding = new Thickness(6, 4, 6, 4),
-            Margin = new Thickness(0, 2, 0, 2)
-        };
-        var netPanel = new Grid();
-        netPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Auto) });
-        netPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-
-        var netLabel = new TextBlock
-        {
-            Text = "Net Amount :",
-            FontSize = 13, FontWeight = FontWeights.Bold,
-            Foreground = Brushes.Black, VerticalAlignment = VerticalAlignment.Center
-        };
-        Grid.SetColumn(netLabel, 0);
-
-        var netValue = new TextBlock
-        {
-            Text = $"Rs. {grandTotal / 100m:N2}",
-            FontSize = 15, FontWeight = FontWeights.ExtraBold,
-            Foreground = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D32F2F")!),
-            HorizontalAlignment = HorizontalAlignment.Right, VerticalAlignment = VerticalAlignment.Center
-        };
-        Grid.SetColumn(netValue, 1);
-
-        netPanel.Children.Add(netLabel);
-        netPanel.Children.Add(netValue);
-        netBorder.Child = netPanel;
-        p.Children.Add(netBorder);
-    }
+    // AddNetAmountRow no longer used — Net Amount is now inline in BuildCustomerBillContent
 
     private static void AddCenteredText(StackPanel p, string text, double fontSize, FontWeight weight, string colorHex)
     {
@@ -678,50 +779,41 @@ public partial class PrintPreviewWindow : Window
 
     private async void Print_Click(object sender, RoutedEventArgs e)
     {
-        // If a system printer is configured, send ESC/POS raw data directly (no dialog)
+        // If a system printer is configured, print directly without any dialog
         if (!string.IsNullOrWhiteSpace(ConfiguredPrinterName))
         {
             try
             {
-                if (_isKitchenSlip)
+                // Try ESC/POS raw printing first (thermal printers)
+                bool rawSuccess = false;
+                try
                 {
-                    var kotData = new RestaurantPOS.Printing.KOT.KotData
+                    if (_isKitchenSlip)
                     {
-                        OrderNumber = _receiptData.OrderNumber,
-                        TableName = _receiptData.TableName,
-                        OrderType = _receiptData.OrderType,
-                        DateTime = _receiptData.DateTime,
-                        Items = _receiptData.Items.Select(i => new RestaurantPOS.Printing.KOT.KotItem
-                        {
-                            Name = i.Name,
-                            Quantity = i.Quantity,
-                            Notes = i.Notes
-                        }).ToList()
-                    };
-                    await _printService.PrintKotAsync(kotData, ConfiguredPrinterName);
+                        await _printService.PrintKotAsync(BuildKotData(_receiptData), ConfiguredPrinterName);
+                    }
+                    else
+                    {
+                        await _printService.PrintReceiptAsync(_receiptData, ConfiguredPrinterName);
+                    }
+
+                    // Combined mode: also print kitchen slip
+                    if (_isCombined && _kitchenData != null)
+                    {
+                        await _printService.PrintKotAsync(BuildKotData(_kitchenData), ConfiguredPrinterName);
+                    }
+                    rawSuccess = true;
                 }
-                else
+                catch
                 {
-                    await _printService.PrintReceiptAsync(_receiptData, ConfiguredPrinterName);
+                    // ESC/POS raw failed — fall through to visual print (NOT dialog)
+                    rawSuccess = false;
                 }
 
-                // Combined mode: also print kitchen slip
-                if (_isCombined && _kitchenData != null)
+                if (!rawSuccess)
                 {
-                    var kotData = new RestaurantPOS.Printing.KOT.KotData
-                    {
-                        OrderNumber = _kitchenData.OrderNumber,
-                        TableName = _kitchenData.TableName,
-                        OrderType = _kitchenData.OrderType,
-                        DateTime = _kitchenData.DateTime,
-                        Items = _kitchenData.Items.Select(i => new RestaurantPOS.Printing.KOT.KotItem
-                        {
-                            Name = i.Name,
-                            Quantity = i.Quantity,
-                            Notes = i.Notes
-                        }).ToList()
-                    };
-                    await _printService.PrintKotAsync(kotData, ConfiguredPrinterName);
+                    // Fallback: print visual directly to the configured printer (no dialog)
+                    PrintDirectToConfiguredPrinter();
                 }
 
                 Close();
@@ -729,15 +821,69 @@ public partial class PrintPreviewWindow : Window
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Direct print failed: {ex.Message}\nFalling back to print dialog.",
+                MessageBox.Show($"Print failed: {ex.Message}",
                     "Print Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
             }
         }
 
-        // Fallback: Show Windows print dialog
-        var printDialog = new PrintDialog();
-        if (printDialog.ShowDialog() != true) return;
+        // No printer configured: print visual directly to default printer (no dialog)
+        try
+        {
+            PrintDirectToConfiguredPrinter();
+        }
+        catch (Exception ex)
+        {
+            // Last resort: show print dialog
+            var printDialog = new PrintDialog();
+            if (printDialog.ShowDialog() != true) return;
 
+            printDialog.PrintVisual(ReceiptPanel,
+                _isKitchenSlip ? "KFC - Kitchen Order" : "KFC - Customer Bill");
+
+            if (_isCombined && KitchenPanel.Children.Count > 0)
+            {
+                printDialog.PrintVisual(KitchenPanel, "KFC - Kitchen Order");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Sends the receipt visual directly to the configured (or default) printer
+    /// without showing any print dialog.
+    /// </summary>
+    private void PrintDirectToConfiguredPrinter()
+    {
+        PrintQueue? queue = null;
+
+        if (!string.IsNullOrWhiteSpace(ConfiguredPrinterName))
+        {
+            try
+            {
+                var server = new LocalPrintServer();
+                queue = server.GetPrintQueues()
+                    .FirstOrDefault(q => q.Name == ConfiguredPrinterName
+                                      || q.FullName == ConfiguredPrinterName);
+            }
+            catch { /* fall through to default */ }
+        }
+
+        // If we couldn't find the named printer, use default
+        if (queue == null)
+        {
+            try
+            {
+                queue = LocalPrintServer.GetDefaultPrintQueue();
+            }
+            catch { }
+        }
+
+        if (queue == null)
+            throw new InvalidOperationException("No printer found.");
+
+        var printDialog = new PrintDialog { PrintQueue = queue };
+
+        // Print without showing dialog
         printDialog.PrintVisual(ReceiptPanel,
             _isKitchenSlip ? "KFC - Kitchen Order" : "KFC - Customer Bill");
 
@@ -745,6 +891,32 @@ public partial class PrintPreviewWindow : Window
         {
             printDialog.PrintVisual(KitchenPanel, "KFC - Kitchen Order");
         }
+    }
+
+    /// <summary>
+    /// Converts ReceiptData into KotData for ESC/POS kitchen printing.
+    /// </summary>
+    private static RestaurantPOS.Printing.KOT.KotData BuildKotData(ReceiptData src)
+    {
+        return new RestaurantPOS.Printing.KOT.KotData
+        {
+            OrderNumber = src.OrderNumber,
+            TableName = src.TableName,
+            OrderType = src.OrderType,
+            DateTime = src.DateTime,
+            CashierName = src.CashierName,
+            WaiterName = src.WaiterName,
+            HeaderBanner = src.HeaderMessage,
+            Items = src.Items.Select(i => new RestaurantPOS.Printing.KOT.KotItem
+            {
+                Name = i.Name.TrimStart(),
+                Quantity = i.Quantity,
+                Notes = i.Notes,
+                IsSubItem = !i.IsDealHeader && !i.IsDealSubItem && i.Quantity == 0 && i.UnitPrice == 0,
+                IsDealHeader = i.IsDealHeader,
+                IsDealSubItem = i.IsDealSubItem
+            }).ToList()
+        };
     }
 
     private void Pdf_Click(object sender, RoutedEventArgs e)

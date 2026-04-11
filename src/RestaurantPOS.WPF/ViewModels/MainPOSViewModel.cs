@@ -299,6 +299,9 @@ public partial class MainPOSViewModel : BaseViewModel
 
     public ObservableCollection<Customer> PhoneSearchResults { get; } = [];
 
+    [ObservableProperty]
+    private int _selectedPhoneSearchIndex = -1;
+
     // Comment
     [ObservableProperty]
     private string _commentText = string.Empty;
@@ -1314,7 +1317,9 @@ public partial class MainPOSViewModel : BaseViewModel
 
         var receiptData = new ReceiptData
         {
-            RestaurantName = "KFC Restaurant",
+            RestaurantName = _receiptRestaurantName,
+            RestaurantAddress = _receiptAddress,
+            RestaurantPhone = _receiptPhone,
             OrderNumber = state.OrderNumber,
             OrderType = state.OrderType.ToString(),
             CashierName = _loggedInUser?.FullName ?? "Admin",
@@ -1511,7 +1516,9 @@ public partial class MainPOSViewModel : BaseViewModel
 
             var receiptData = new ReceiptData
             {
-                RestaurantName = "KFC Restaurant",
+                RestaurantName = _receiptRestaurantName,
+                RestaurantAddress = _receiptAddress,
+                RestaurantPhone = _receiptPhone,
                 OrderNumber = state.OrderNumber,
                 OrderType = state.OrderType.ToString(),
                 CashierName = _loggedInUser?.FullName ?? "Admin",
@@ -2098,6 +2105,7 @@ public partial class MainPOSViewModel : BaseViewModel
     partial void OnCustomerPhoneChanged(string value)
     {
         if (_isRestoringState) return;
+        SelectedPhoneSearchIndex = -1;
         _ = SearchCustomerByPhoneAsync(value);
     }
 
@@ -2310,21 +2318,31 @@ public partial class MainPOSViewModel : BaseViewModel
                           : !string.IsNullOrWhiteSpace(_receiptFooter) ? _receiptFooter : null
         };
 
-        // Add delivery-specific info if this is a delivery order
-        if (SelectedOrderType == OrderType.Delivery)
-        {
+        // Add customer & delivery info for all order types (when available)
+        if (!string.IsNullOrWhiteSpace(CustomerName))
             data.CustomerName = CustomerName;
+        if (!string.IsNullOrWhiteSpace(CustomerPhone))
             data.CustomerPhone = CustomerPhone;
-            data.CustomerAddress = _matchedCustomer?.Addresses?.FirstOrDefault(a => a.IsDefault)?.AddressLine1
-                                   ?? _matchedCustomer?.Addresses?.FirstOrDefault()?.AddressLine1;
 
+        // Address from matched customer
+        var custAddr = _matchedCustomer?.Addresses?.FirstOrDefault(a => a.IsDefault)?.AddressLine1
+                       ?? _matchedCustomer?.Addresses?.FirstOrDefault()?.AddressLine1;
+        if (!string.IsNullOrWhiteSpace(custAddr))
+            data.CustomerAddress = custAddr;
+
+        // Delivery/Takeaway: also include driver, notes from order state
+        if (SelectedOrderType == OrderType.Delivery || SelectedOrderType == OrderType.TakeAway)
+        {
             var stKey = $"{SelectedOrderType}-{OrderNumber}";
             if (_orderStates.TryGetValue(stKey, out var dState))
             {
-                data.DriverName = dState.DriverName;
-                data.DriverPhone = dState.DriverPhone;
-                data.DeliveryNote = dState.OrderNote;
-                if (string.IsNullOrEmpty(data.CustomerAddress))
+                if (!string.IsNullOrEmpty(dState.DriverName))
+                    data.DriverName = dState.DriverName;
+                if (!string.IsNullOrEmpty(dState.DriverPhone))
+                    data.DriverPhone = dState.DriverPhone;
+                if (!string.IsNullOrEmpty(dState.OrderNote))
+                    data.DeliveryNote = dState.OrderNote;
+                if (string.IsNullOrEmpty(data.CustomerAddress) && !string.IsNullOrEmpty(dState.CustomerAddress))
                     data.CustomerAddress = dState.CustomerAddress;
             }
         }
@@ -2524,13 +2542,17 @@ public partial class MainPOSViewModel : BaseViewModel
 
             if (deal != null && deal.Items.Count > 0)
             {
-                // Add deal header with indent
+                // Strip emoji and special chars from deal name for thermal printer
+                var cleanName = StripNonPrintable(oi.Name);
+
+                // Add deal header
                 result.Add(new KitchenPrintItem
                 {
-                    Name = $"   ── {oi.Name} ──",
+                    Name = cleanName,
                     Quantity = printQty,
                     Remarks = oi.Remarks,
-                    IsAdditional = isAdditional
+                    IsAdditional = isAdditional,
+                    IsDealHeader = true
                 });
 
                 // Expand: each deal component × order quantity, indented
@@ -2538,10 +2560,11 @@ public partial class MainPOSViewModel : BaseViewModel
                 {
                     result.Add(new KitchenPrintItem
                     {
-                        Name = $"      {di.MenuItem.Name}",
+                        Name = di.MenuItem.Name,
                         Quantity = di.Quantity * printQty,
                         Remarks = string.Empty,
-                        IsAdditional = isAdditional
+                        IsAdditional = isAdditional,
+                        IsDealSubItem = true
                     });
                 }
             }
@@ -2568,6 +2591,26 @@ public partial class MainPOSViewModel : BaseViewModel
             oi.KitchenPrinted = true;
             oi.KitchenPrintedQty = oi.Quantity;
         }
+    }
+
+    /// <summary>Strip emoji and non-printable chars for thermal printer compatibility.</summary>
+    private static string StripNonPrintable(string input)
+    {
+        if (string.IsNullOrEmpty(input)) return input;
+        var sb = new System.Text.StringBuilder();
+        foreach (var c in input)
+        {
+            // Keep ASCII printable + common extended latin
+            if (c >= 0x20 && c <= 0x7E)       // Basic ASCII printable
+                sb.Append(c);
+            else if (c >= 0xA0 && c <= 0xFF)   // Latin-1 supplement
+                sb.Append(c);
+            else if (c == '\n' || c == '\r')
+                sb.Append(c);
+            // Skip emojis, symbols, surrogates
+        }
+        // Clean up multiple spaces
+        return System.Text.RegularExpressions.Regex.Replace(sb.ToString().Trim(), @"\s{2,}", " ");
     }
 
     private ReceiptData BuildKitchenReceiptData(List<KitchenPrintItem> items, bool isFullReprint)
@@ -2603,7 +2646,9 @@ public partial class MainPOSViewModel : BaseViewModel
                 LineTotal = 0,
                 Notes = ki.IsAdditional
                     ? $"(+{ki.Quantity} EXTRA)" + (string.IsNullOrWhiteSpace(ki.Remarks) ? "" : $" {ki.Remarks}")
-                    : (string.IsNullOrWhiteSpace(ki.Remarks) ? null : ki.Remarks)
+                    : (string.IsNullOrWhiteSpace(ki.Remarks) ? null : ki.Remarks),
+                IsDealHeader = ki.IsDealHeader,
+                IsDealSubItem = ki.IsDealSubItem
             });
         }
 
@@ -2765,6 +2810,8 @@ public class KitchenPrintItem
     public int Quantity { get; set; }
     public string Remarks { get; set; } = string.Empty;
     public bool IsAdditional { get; set; }
+    public bool IsDealHeader { get; set; }
+    public bool IsDealSubItem { get; set; }
 }
 
 public class OrderSummaryViewModel

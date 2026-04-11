@@ -47,6 +47,6 @@ public static class EscPos
 
     public static string FormatCurrency(long paisa)
     {
-        return $"Rs. {paisa / 100m:N2}";
+        return $"{paisa / 100m:N2}";
     }
 }

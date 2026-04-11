@@ -1274,7 +1274,8 @@ public partial class ReportsViewModel : BaseViewModel
             data.Items.Add(new ReceiptItem { Name = $"Expenses: {SaleExpenses}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
             data.Items.Add(new ReceiptItem { Name = $"Cash In Hand: {SaleCashInHand}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
 
-            var preview = new Views.PrintPreviewWindow(data, _printService);
+            var preview = new Views.PrintPreviewWindow(data, _printService)
+                { ConfiguredPrinterName = _configuredPrinter };
             preview.Owner = AppWindow.Current.MainWindow;
             preview.ShowDialog();
         }

@@ -290,10 +290,10 @@ public partial class ShiftManagementViewModel : BaseViewModel
             return;
         }
 
-        // Check for open orders
+        // Check for open orders (any status that isn't Closed or Void)
         var openOrdersList = await _db.Orders
             .Where(o => o.ShiftId == ActiveShift.Id &&
-                (o.Status == OrderStatus.Open || o.Status == OrderStatus.Preparing))
+                o.Status != OrderStatus.Closed && o.Status != OrderStatus.Void)
             .ToListAsync();
 
         // Auto-void ghost orders (created but no items were added)
@@ -314,8 +314,16 @@ public partial class ShiftManagementViewModel : BaseViewModel
 
         if (openOrdersList.Count > 0)
         {
+            // Build a summary of open orders for the dialog
+            var orderSummary = string.Join("\n", openOrdersList
+                .Take(15)
+                .Select(o => $"  • {o.OrderNumber}  ({o.OrderType})  {o.CreatedAt:HH:mm}"));
+            if (openOrdersList.Count > 15)
+                orderSummary += $"\n  ... and {openOrdersList.Count - 15} more";
+
             var result = MessageBox.Show(
-                $"There are {openOrdersList.Count} open order(s) in this shift.\n\n" +
+                $"There are {openOrdersList.Count} open order(s) in this shift:\n\n" +
+                $"{orderSummary}\n\n" +
                 "Click YES to void all open orders and close shift.\n" +
                 "Click NO to go back and handle them manually.",
                 "Open Orders", MessageBoxButton.YesNo, MessageBoxImage.Warning);
@@ -323,7 +331,10 @@ public partial class ShiftManagementViewModel : BaseViewModel
             if (result == MessageBoxResult.Yes)
             {
                 foreach (var order in openOrdersList)
+                {
                     order.Status = OrderStatus.Void;
+                    order.VoidReason = "Voided on shift close";
+                }
                 await _db.SaveChangesAsync();
             }
             else
