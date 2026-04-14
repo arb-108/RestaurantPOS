@@ -317,7 +317,7 @@ public partial class ShiftManagementViewModel : BaseViewModel
             // Build a summary of open orders for the dialog
             var orderSummary = string.Join("\n", openOrdersList
                 .Take(15)
-                .Select(o => $"  • {o.OrderNumber}  ({o.OrderType})  {o.CreatedAt:HH:mm}"));
+                .Select(o => $"  • {o.OrderNumber}  ({o.OrderType})  {o.CreatedAt.ToLocalTime():hh:mm tt}"));
             if (openOrdersList.Count > 15)
                 orderSummary += $"\n  ... and {openOrdersList.Count - 15} more";
 

@@ -449,7 +449,7 @@ public partial class SettingsViewModel : BaseViewModel
                     FileName = fi.Name,
                     FilePath = fi.FullName,
                     Size = FormatFileSize(fi.Length),
-                    Date = fi.LastWriteTime.ToString("dd/MM/yyyy HH:mm"),
+                    Date = fi.LastWriteTime.ToString("dd/MM/yyyy hh:mm tt"),
                     RawDate = fi.LastWriteTime
                 });
             }
@@ -759,87 +759,71 @@ public partial class SettingsViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    private async Task SaveUserAsync()
+    private async Task AddUserWindowAsync()
     {
-        if (string.IsNullOrWhiteSpace(UserFullName) || string.IsNullOrWhiteSpace(UserUsername) || UserRole == null)
+        var window = new Views.UserFormWindow(Roles);
+        window.Owner = System.Windows.Application.Current.MainWindow;
+        if (window.ShowDialog() == true)
         {
-            StatusMessage = "Full name, username, and role are required.";
+            await SaveUserFromWindow(window);
+        }
+    }
+
+    [RelayCommand]
+    private async Task EditUserWindowAsync(User? user)
+    {
+        if (user == null) return;
+        var window = new Views.UserFormWindow(Roles, user);
+        window.Owner = System.Windows.Application.Current.MainWindow;
+        if (window.ShowDialog() == true)
+        {
+            await SaveUserFromWindow(window);
+        }
+    }
+
+    private async Task SaveUserFromWindow(Views.UserFormWindow w)
+    {
+        // Check username uniqueness
+        var checkId = w.IsEditing ? w.EditUserId : 0;
+        var existing = await _db.Users.FirstOrDefaultAsync(u => u.Username == w.UserUsername && u.Id != checkId && u.IsActive);
+        if (existing != null)
+        {
+            MessageBox.Show("Username already taken.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
-        if (IsEditingUser)
+        if (w.IsEditing)
         {
-            // Update existing user
-            var user = await _db.Users.FindAsync(_editingUserId);
+            var user = await _db.Users.FindAsync(w.EditUserId);
             if (user == null) return;
-
-            // Check username uniqueness
-            var existing = await _db.Users.FirstOrDefaultAsync(u => u.Username == UserUsername && u.Id != _editingUserId && u.IsActive);
-            if (existing != null)
-            {
-                StatusMessage = "Username already taken.";
-                return;
-            }
-
-            user.FullName = UserFullName;
-            user.Username = UserUsername;
-            user.Phone = string.IsNullOrWhiteSpace(UserPhone) ? null : UserPhone;
-            user.Email = string.IsNullOrWhiteSpace(UserEmail) ? null : UserEmail;
-            user.RoleId = UserRole.Id;
-
-            if (!string.IsNullOrWhiteSpace(UserPassword))
-            {
-                if (UserPassword != UserConfirmPassword)
-                {
-                    StatusMessage = "Passwords do not match.";
-                    return;
-                }
-                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserPassword);
-            }
-
-            if (!string.IsNullOrWhiteSpace(UserPin))
-            {
-                user.Pin = HashPin(UserPin);
-            }
+            user.FullName = w.UserFullName;
+            user.Username = w.UserUsername;
+            user.Phone = string.IsNullOrWhiteSpace(w.UserPhone) ? null : w.UserPhone;
+            user.Email = string.IsNullOrWhiteSpace(w.UserEmail) ? null : w.UserEmail;
+            user.RoleId = w.SelectedRole!.Id;
+            if (!string.IsNullOrWhiteSpace(w.UserPassword))
+                user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(w.UserPassword);
+            if (!string.IsNullOrWhiteSpace(w.UserPin))
+                user.Pin = HashPin(w.UserPin);
         }
         else
         {
-            // Create new user
-            if (string.IsNullOrWhiteSpace(UserPassword))
-            {
-                StatusMessage = "Password is required for new users.";
-                return;
-            }
-            if (UserPassword != UserConfirmPassword)
-            {
-                StatusMessage = "Passwords do not match.";
-                return;
-            }
-
-            var existing = await _db.Users.FirstOrDefaultAsync(u => u.Username == UserUsername && u.IsActive);
-            if (existing != null)
-            {
-                StatusMessage = "Username already taken.";
-                return;
-            }
-
             var user = new User
             {
-                FullName = UserFullName,
-                Username = UserUsername,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(UserPassword),
-                Pin = string.IsNullOrWhiteSpace(UserPin) ? null : HashPin(UserPin),
-                RoleId = UserRole.Id,
-                Phone = string.IsNullOrWhiteSpace(UserPhone) ? null : UserPhone,
-                Email = string.IsNullOrWhiteSpace(UserEmail) ? null : UserEmail
+                FullName = w.UserFullName,
+                Username = w.UserUsername,
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword(w.UserPassword),
+                Pin = string.IsNullOrWhiteSpace(w.UserPin) ? null : HashPin(w.UserPin),
+                RoleId = w.SelectedRole!.Id,
+                Phone = string.IsNullOrWhiteSpace(w.UserPhone) ? null : w.UserPhone,
+                Email = string.IsNullOrWhiteSpace(w.UserEmail) ? null : w.UserEmail
             };
             _db.Users.Add(user);
         }
 
         await _db.SaveChangesAsync();
         await LoadUsersAsync();
-        ClearUserForm();
-        StatusMessage = IsEditingUser ? "User updated!" : "User created!";
+        StatusMessage = w.IsEditing ? "User updated!" : "User created!";
     }
 
     [RelayCommand]
@@ -859,28 +843,6 @@ public partial class SettingsViewModel : BaseViewModel
         SelectedUser.IsActive = false;
         await _db.SaveChangesAsync();
         await LoadUsersAsync();
-        ClearUserForm();
-    }
-
-    [RelayCommand]
-    private void NewUser()
-    {
-        SelectedUser = null;
-        ClearUserForm();
-    }
-
-    private void ClearUserForm()
-    {
-        UserFullName = "";
-        UserUsername = "";
-        UserPhone = "";
-        UserEmail = "";
-        UserPassword = "";
-        UserConfirmPassword = "";
-        UserPin = "";
-        UserRole = null;
-        IsEditingUser = false;
-        _editingUserId = 0;
     }
 
     // Role management

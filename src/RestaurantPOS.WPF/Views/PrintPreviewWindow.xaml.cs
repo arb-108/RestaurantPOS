@@ -228,7 +228,7 @@ public partial class PrintPreviewWindow : Window
         dtGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         dtGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var dateCol = new TextBlock { Text = $"Date: {d.DateTime:dd/MM/yyyy}", FontSize = 8, Foreground = Brushes.Black };
-        var timeCol = new TextBlock { Text = $"Time: {d.DateTime:HH:mm:ss}", FontSize = 8, Foreground = Brushes.Black };
+        var timeCol = new TextBlock { Text = $"Time: {d.DateTime:hh:mm:ss tt}", FontSize = 8, Foreground = Brushes.Black };
         var pageCol = new TextBlock { Text = "Page 1 of 1", FontSize = 8, Foreground = Brushes.Black, HorizontalAlignment = HorizontalAlignment.Right };
         Grid.SetColumn(dateCol, 0); Grid.SetColumn(timeCol, 1); Grid.SetColumn(pageCol, 2);
         dtGrid.Children.Add(dateCol); dtGrid.Children.Add(timeCol); dtGrid.Children.Add(pageCol);
@@ -387,7 +387,7 @@ public partial class PrintPreviewWindow : Window
         if (!string.IsNullOrWhiteSpace(d.FooterMessage))
             AddCenteredText(p, d.FooterMessage, 7, FontWeights.Normal, "#666");
 
-        AddCenteredText(p, d.DateTime.ToString("dd/MM/yyyy HH:mm:ss"), 7, FontWeights.Normal, "#999");
+        AddCenteredText(p, d.DateTime.ToString("dd/MM/yyyy hh:mm:ss tt"), 7, FontWeights.Normal, "#999");
         AddSpacer(p, 4);
 
         // Barcode-style decoration
@@ -461,9 +461,29 @@ public partial class PrintPreviewWindow : Window
 
         AddSpacer(p, 6);
 
-        // ═══ ORDER INFO (pharmacy style: label : value) ═══
-        AddInfoRow(p, "Order #", data.OrderNumber, true);
-        AddInfoRow(p, "Type", data.OrderType);
+        // ═══ ORDER NUMBER — large bold for kitchen readability ═══
+        AddDashLine(p);
+        p.Children.Add(new TextBlock
+        {
+            Text = data.OrderNumber,
+            FontSize = 22, FontWeight = FontWeights.ExtraBold,
+            Foreground = Brushes.Black,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            TextAlignment = TextAlignment.Center,
+            Margin = new Thickness(0, 4, 0, 4)
+        });
+        AddDashLine(p);
+
+        // ═══ ORDER TYPE — highlighted ═══
+        p.Children.Add(new TextBlock
+        {
+            Text = data.OrderType.ToUpper(),
+            FontSize = 16, FontWeight = FontWeights.ExtraBold,
+            Foreground = Brushes.Black,
+            HorizontalAlignment = HorizontalAlignment.Center,
+            TextAlignment = TextAlignment.Center,
+            Margin = new Thickness(0, 4, 0, 4)
+        });
         if (!string.IsNullOrEmpty(data.TableName))
             AddInfoRow(p, "Table", data.TableName);
         if (!string.IsNullOrEmpty(data.CashierName))
@@ -474,7 +494,7 @@ public partial class PrintPreviewWindow : Window
         dtGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         dtGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         var dateCol = new TextBlock { Text = $"Date: {data.DateTime:dd/MM/yyyy}", FontSize = 8, Foreground = Brushes.Black };
-        var timeCol = new TextBlock { Text = $"Time: {data.DateTime:HH:mm:ss}", FontSize = 8, Foreground = Brushes.Black, HorizontalAlignment = HorizontalAlignment.Right };
+        var timeCol = new TextBlock { Text = $"Time: {data.DateTime:hh:mm:ss tt}", FontSize = 8, Foreground = Brushes.Black, HorizontalAlignment = HorizontalAlignment.Right };
         Grid.SetColumn(dateCol, 0); Grid.SetColumn(timeCol, 1);
         dtGrid.Children.Add(dateCol); dtGrid.Children.Add(timeCol);
         p.Children.Add(dtGrid);
@@ -572,7 +592,7 @@ public partial class PrintPreviewWindow : Window
 
         // ═══ FOOTER ═══
         AddSpacer(p, 2);
-        AddCenteredText(p, $"Printed: {data.DateTime:dd/MM/yyyy HH:mm:ss}", 8, FontWeights.Normal, "#999");
+        AddCenteredText(p, $"Printed: {data.DateTime:dd/MM/yyyy hh:mm:ss tt}", 8, FontWeights.Normal, "#999");
         AddSpacer(p, 6);
     }
 

@@ -827,25 +827,39 @@ public partial class MainPOSView : UserControl
             // DineIn: Enter always goes directly to Disc (phone is optional)
             if (vm.SelectedOrderType == Domain.Enums.OrderType.DineIn)
             {
-                if (vm.IsPhoneMatched)
+                if (!string.IsNullOrWhiteSpace(vm.CustomerPhone) && !vm.IsPhoneMatched)
+                {
+                    // Phone entered but not matched — open Add Customer form
                     await vm.PhoneEnterPressedCommand.ExecuteAsync(null);
+                }
+                else if (vm.IsPhoneMatched)
+                {
+                    await vm.PhoneEnterPressedCommand.ExecuteAsync(null);
+                }
 
-                DiscPercentBox.Focus();
-                DiscPercentBox.SelectAll();
-            }
-            else if (vm.IsPhoneMatched)
-            {
-                await vm.PhoneEnterPressedCommand.ExecuteAsync(null);
                 DiscPercentBox.Focus();
                 DiscPercentBox.SelectAll();
             }
             else
             {
-                await vm.PhoneEnterPressedCommand.ExecuteAsync(null);
+                // Delivery/Takeaway: phone is required
                 if (vm.IsPhoneMatched)
                 {
+                    // Phone matched — show customer detail/edit
+                    await vm.PhoneEnterPressedCommand.ExecuteAsync(null);
                     DiscPercentBox.Focus();
                     DiscPercentBox.SelectAll();
+                }
+                else if (!string.IsNullOrWhiteSpace(vm.CustomerPhone))
+                {
+                    // Phone not matched — open Add Customer form
+                    await vm.PhoneEnterPressedCommand.ExecuteAsync(null);
+                    // After form closes, if customer was added, move focus
+                    if (vm.IsPhoneMatched)
+                    {
+                        DiscPercentBox.Focus();
+                        DiscPercentBox.SelectAll();
+                    }
                 }
             }
             e.Handled = true;

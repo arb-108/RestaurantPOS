@@ -228,7 +228,7 @@ public partial class CustomerManagementViewModel : BaseViewModel
             {
                 OrderId = o.Id,
                 OrderNumber = o.OrderNumber,
-                Date = o.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm"),
+                Date = o.CreatedAt.ToLocalTime().ToString("dd/MM/yy hh:mm tt"),
                 Type = o.OrderType.ToString(),
                 Status = o.Status.ToString(),
                 Total = $"Rs. {o.GrandTotal / 100m:N0}",

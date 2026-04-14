@@ -7,36 +7,36 @@
 
     <UserControl.Resources>
         <conv:PaisaToCurrencyConverter x:Key="PaisaToCurrency"/>
-        <conv:BoolToVisibilityConverter x:Key="BoolToVis"/>
     </UserControl.Resources>
 
-    <Grid Margin="20">
+    <Grid Margin="12">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
         <!-- ═══ HEADER ═══ -->
-        <TextBlock Grid.Row="0" Text="ORDERS HISTORY" FontSize="22" FontWeight="Bold"
-                   Foreground="#1A237E" Margin="0,0,0,16"/>
+        <TextBlock Grid.Row="0" Text="Orders History" FontSize="20" FontWeight="Bold"
+                   Foreground="#1A237E" Margin="0,0,0,10"/>
 
         <!-- ═══ SEARCH BAR ═══ -->
-        <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="16,12" Margin="0,0,0,16">
+        <Border Grid.Row="1" Background="White" CornerRadius="6" Padding="12,8" Margin="0,0,0,8">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="350"/>
+                    <ColumnDefinition Width="300"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <TextBlock Grid.Column="0" Text="&#xE721;" FontFamily="Segoe MDL2 Assets"
-                           FontSize="18" VerticalAlignment="Center" Foreground="#666" Margin="0,0,10,0"/>
+                           FontSize="16" VerticalAlignment="Center" Foreground="#666" Margin="0,0,8,0"/>
 
                 <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         FontSize="14" Padding="8,6" VerticalContentAlignment="Center"
+                         FontSize="13" Padding="6,5" VerticalContentAlignment="Center"
                          BorderBrush="#CCC" BorderThickness="1">
                     <TextBox.InputBindings>
                         <KeyBinding Key="Return" Command="{Binding SearchCommand}"/>
@@ -45,8 +45,7 @@
 
                 <Button Grid.Column="2" Content="Search" Command="{Binding SearchCommand}"
                         Background="#1565C0" Foreground="White" FontWeight="SemiBold"
-                        Padding="20,8" Margin="10,0,0,0" Cursor="Hand"
-                        BorderThickness="0" FontSize="13">
+                        Padding="16,6" Margin="8,0,0,0" Cursor="Hand" BorderThickness="0" FontSize="12">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border Background="{TemplateBinding Background}" CornerRadius="4"
@@ -59,8 +58,7 @@
 
                 <Button Grid.Column="3" Content="Clear" Command="{Binding ClearCommand}"
                         Background="#757575" Foreground="White" FontWeight="SemiBold"
-                        Padding="20,8" Margin="8,0,0,0" Cursor="Hand"
-                        BorderThickness="0" FontSize="13">
+                        Padding="16,6" Margin="6,0,0,0" Cursor="Hand" BorderThickness="0" FontSize="12">
                     <Button.Template>
                         <ControlTemplate TargetType="Button">
                             <Border Background="{TemplateBinding Background}" CornerRadius="4"
@@ -72,52 +70,85 @@
                 </Button>
 
                 <TextBlock Grid.Column="4" Text="{Binding StatusMessage}"
-                           FontSize="13" Foreground="#666" VerticalAlignment="Center"
-                           Margin="20,0,0,0"/>
+                           FontSize="12" Foreground="#666" VerticalAlignment="Center" Margin="16,0,0,0"/>
             </Grid>
         </Border>
 
-        <!-- ═══ ORDER DETAIL (shown only when found) ═══ -->
-        <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="20"
-                Visibility="{Binding HasResult, Converter={StaticResource BoolToVis}}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                <Grid DataContext="{Binding FoundOrder}">
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                        <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
+        <!-- ═══ ORDERS DATAGRID ═══ -->
+        <Border Grid.Row="2" Background="White" CornerRadius="6" Padding="0" ClipToBounds="True">
+            <DataGrid ItemsSource="{Binding Orders}"
+                      AutoGenerateColumns="False"
+                      IsReadOnly="True"
+                      CanUserAddRows="False"
+                      CanUserDeleteRows="False"
+                      CanUserReorderColumns="False"
+                      SelectionMode="Single"
+                      SelectionUnit="FullRow"
+                      HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal"
+                      HorizontalGridLinesBrush="#E0E0E0"
+                      BorderThickness="0"
+                      RowHeight="38"
+                      FontSize="12"
+                      Background="White"
+                      RowBackground="White"
+                      AlternatingRowBackground="#FAFAFA">
 
-                    <!-- Order Header -->
-                    <Border Grid.Row="0" Background="#E8EAF6" CornerRadius="6" Padding="16,12" Margin="0,0,0,16">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
+                <!-- Header Style -->
+                <DataGrid.ColumnHeaderStyle>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="#1565C0"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="FontWeight" Value="SemiBold"/>
+                        <Setter Property="FontSize" Value="12"/>
+                        <Setter Property="Padding" Value="10,8"/>
+                        <Setter Property="BorderThickness" Value="0,0,1,0"/>
+                        <Setter Property="BorderBrush" Value="#1976D2"/>
+                    </Style>
+                </DataGrid.ColumnHeaderStyle>
 
-                            <StackPanel Grid.Column="0">
-                                <TextBlock Text="Order #" FontSize="10" Foreground="#666"/>
-                                <TextBlock Text="{Binding OrderNumber}" FontSize="16" FontWeight="Bold" Foreground="#1A237E"/>
-                            </StackPanel>
+                <!-- Cell Style -->
+                <DataGrid.CellStyle>
+                    <Style TargetType="DataGridCell">
+                        <Setter Property="Padding" Value="10,0"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="VerticalAlignment" Value="Center"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="DataGridCell">
+                                    <Border Padding="{TemplateBinding Padding}" Background="{TemplateBinding Background}">
+                                        <ContentPresenter VerticalAlignment="Center"/>
+                                    </Border>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                        <Style.Triggers>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#E3F2FD"/>
+                                <Setter Property="Foreground" Value="Black"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </DataGrid.CellStyle>
 
-                            <StackPanel Grid.Column="1">
-                                <TextBlock Text="Type" FontSize="10" Foreground="#666"/>
-                                <TextBlock Text="{Binding OrderType}" FontSize="14" FontWeight="SemiBold"/>
-                            </StackPanel>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="Order #" Binding="{Binding OrderNumber}" Width="100"/>
+                    <DataGridTextColumn Header="Type" Binding="{Binding OrderType}" Width="90"/>
 
-                            <StackPanel Grid.Column="2">
-                                <TextBlock Text="Status" FontSize="10" Foreground="#666"/>
-                                <TextBlock Text="{Binding Status}" FontSize="14" FontWeight="SemiBold">
+                    <!-- Status with color -->
+                    <DataGridTemplateColumn Header="Status" Width="80">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Status}" FontWeight="SemiBold">
                                     <TextBlock.Style>
                                         <Style TargetType="TextBlock">
+                                            <Setter Property="Foreground" Value="#333"/>
                                             <Style.Triggers>
                                                 <DataTrigger Binding="{Binding Status}" Value="Closed">
                                                     <Setter Property="Foreground" Value="#2E7D32"/>
+                                                </DataTrigger>
+                                                <DataTrigger Binding="{Binding Status}" Value="Open">
+                                                    <Setter Property="Foreground" Value="#E65100"/>
                                                 </DataTrigger>
                                                 <DataTrigger Binding="{Binding Status}" Value="Void">
                                                     <Setter Property="Foreground" Value="#C62828"/>
@@ -126,137 +157,44 @@
                                         </Style>
                                     </TextBlock.Style>
                                 </TextBlock>
-                            </StackPanel>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
 
-                            <StackPanel Grid.Column="3">
-                                <TextBlock Text="Date" FontSize="10" Foreground="#666"/>
-                                <TextBlock Text="{Binding CreatedAt, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}"
-                                           FontSize="14" FontWeight="SemiBold"/>
-                            </StackPanel>
-                        </Grid>
-                    </Border>
+                    <DataGridTextColumn Header="Items" Binding="{Binding ItemCount}" Width="55"/>
+                    <DataGridTextColumn Header="Total" Binding="{Binding GrandTotal, Converter={StaticResource PaisaToCurrency}}" Width="100"/>
+                    <DataGridTextColumn Header="Cashier" Binding="{Binding CashierName}" Width="120"/>
+                    <DataGridTextColumn Header="Customer" Binding="{Binding CustomerName}" Width="130"/>
+                    <DataGridTextColumn Header="Timestamp" Binding="{Binding TimestampDisplay}" Width="160"/>
 
-                    <!-- Customer & Table Info -->
-                    <Border Grid.Row="1" Background="#FFF8E1" CornerRadius="6" Padding="16,10" Margin="0,0,0,12">
-                        <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="Table: " FontSize="12" Foreground="#666" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding TableSession.Table.Name, FallbackValue='N/A'}" FontSize="12" Margin="0,0,20,0"/>
-
-                            <TextBlock Text="Customer: " FontSize="12" Foreground="#666" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding Customer.FullName, FallbackValue='Walk-in'}" FontSize="12" Margin="0,0,20,0"/>
-
-                            <TextBlock Text="Phone: " FontSize="12" Foreground="#666" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding Customer.Phone, FallbackValue='-'}" FontSize="12"/>
-                        </StackPanel>
-                    </Border>
-
-                    <!-- Items Header -->
-                    <TextBlock Grid.Row="2" Text="Order Items" FontSize="15" FontWeight="Bold"
-                               Foreground="#1A237E" Margin="0,0,0,8"/>
-
-                    <!-- Items List -->
-                    <Border Grid.Row="3" BorderBrush="#E0E0E0" BorderThickness="1" CornerRadius="4" Margin="0,0,0,16">
-                        <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-
-                            <!-- Column Headers -->
-                            <Border Grid.Row="0" Background="#F5F5F5" Padding="12,8">
-                                <Grid>
-                                    <Grid.ColumnDefinitions>
-                                        <ColumnDefinition Width="40"/>
-                                        <ColumnDefinition Width="*"/>
-                                        <ColumnDefinition Width="60"/>
-                                        <ColumnDefinition Width="100"/>
-                                        <ColumnDefinition Width="100"/>
-                                    </Grid.ColumnDefinitions>
-                                    <TextBlock Grid.Column="0" Text="#" FontWeight="Bold" FontSize="12"/>
-                                    <TextBlock Grid.Column="1" Text="Item" FontWeight="Bold" FontSize="12"/>
-                                    <TextBlock Grid.Column="2" Text="Qty" FontWeight="Bold" FontSize="12" HorizontalAlignment="Center"/>
-                                    <TextBlock Grid.Column="3" Text="Rate" FontWeight="Bold" FontSize="12" HorizontalAlignment="Right"/>
-                                    <TextBlock Grid.Column="4" Text="Total" FontWeight="Bold" FontSize="12" HorizontalAlignment="Right"/>
-                                </Grid>
-                            </Border>
-
-                            <!-- Item Rows -->
-                            <ItemsControl Grid.Row="1" ItemsSource="{Binding OrderItems}">
-                                <ItemsControl.ItemTemplate>
-                                    <DataTemplate>
-                                        <Border Padding="12,6" BorderBrush="#F0F0F0" BorderThickness="0,0,0,1">
-                                            <Grid>
-                                                <Grid.ColumnDefinitions>
-                                                    <ColumnDefinition Width="40"/>
-                                                    <ColumnDefinition Width="*"/>
-                                                    <ColumnDefinition Width="60"/>
-                                                    <ColumnDefinition Width="100"/>
-                                                    <ColumnDefinition Width="100"/>
-                                                </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="{Binding Id}" FontSize="12" Foreground="#666"/>
-                                                <TextBlock Grid.Column="1" Text="{Binding MenuItem.Name}" FontSize="12"/>
-                                                <TextBlock Grid.Column="2" Text="{Binding Quantity}" FontSize="12" HorizontalAlignment="Center"/>
-                                                <TextBlock Grid.Column="3" Text="{Binding UnitPrice, Converter={StaticResource PaisaToCurrency}}"
-                                                           FontSize="12" HorizontalAlignment="Right"/>
-                                                <TextBlock Grid.Column="4" Text="{Binding LineTotal, Converter={StaticResource PaisaToCurrency}}"
-                                                           FontSize="12" HorizontalAlignment="Right" FontWeight="SemiBold"/>
-                                            </Grid>
-                                        </Border>
-                                    </DataTemplate>
-                                </ItemsControl.ItemTemplate>
-                            </ItemsControl>
-                        </Grid>
-                    </Border>
-
-                    <!-- Totals -->
-                    <Border Grid.Row="4" Background="#E8F5E9" CornerRadius="6" Padding="16,12">
-                        <Grid>
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="Auto"/>
-                            </Grid.RowDefinitions>
-
-                            <TextBlock Grid.Row="0" Grid.Column="0" Text="Subtotal:" FontSize="13"/>
-                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding SubTotal, Converter={StaticResource PaisaToCurrency}}"
-                                       FontSize="13" HorizontalAlignment="Right"/>
-
-                            <TextBlock Grid.Row="1" Grid.Column="0" Text="Discount:" FontSize="13" Margin="0,4,0,0"/>
-                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding DiscountAmount, Converter={StaticResource PaisaToCurrency}}"
-                                       FontSize="13" HorizontalAlignment="Right" Foreground="#C62828" Margin="0,4,0,0"/>
-
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="Tax (GST):" FontSize="13" Margin="0,4,0,0"/>
-                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding TaxAmount, Converter={StaticResource PaisaToCurrency}}"
-                                       FontSize="13" HorizontalAlignment="Right" Margin="0,4,0,0"/>
-
-                            <Border Grid.Row="3" Grid.ColumnSpan="2" Height="1" Background="#A5D6A7" Margin="0,8"/>
-
-                            <TextBlock Grid.Row="4" Grid.Column="0" Text="GRAND TOTAL:" FontSize="16" FontWeight="Bold" Foreground="#1B5E20"/>
-                            <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding GrandTotal, Converter={StaticResource PaisaToCurrency}}"
-                                       FontSize="16" FontWeight="Bold" Foreground="#1B5E20" HorizontalAlignment="Right"/>
-                        </Grid>
-                    </Border>
-                </Grid>
-            </ScrollViewer>
+                    <!-- Reprint Action -->
+                    <DataGridTemplateColumn Header="Action" Width="90">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Button Content="Reprint"
+                                        Command="{Binding DataContext.ReprintCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                        CommandParameter="{Binding}"
+                                        Background="#1565C0" Foreground="White" FontSize="11" FontWeight="SemiBold"
+                                        Padding="10,3" Cursor="Hand" BorderThickness="0">
+                                    <Button.Template>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}" CornerRadius="3"
+                                                    Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Border>
+                                        </ControlTemplate>
+                                    </Button.Template>
+                                </Button>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                </DataGrid.Columns>
+            </DataGrid>
         </Border>
 
-        <!-- ═══ NO RESULT MESSAGE ═══ -->
-        <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="40"
-                Visibility="{Binding NoResult, Converter={StaticResource BoolToVis}}">
-            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
-                <TextBlock Text="&#xE783;" FontFamily="Segoe MDL2 Assets" FontSize="48"
-                           Foreground="#CCC" HorizontalAlignment="Center" Margin="0,0,0,12"/>
-                <TextBlock Text="No order found" FontSize="18" Foreground="#999"
-                           HorizontalAlignment="Center"/>
-                <TextBlock Text="Try a different Order # or Invoice #" FontSize="13"
-                           Foreground="#BBB" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-            </StackPanel>
+        <!-- ═══ FOOTER STATUS ═══ -->
+        <Border Grid.Row="3" Background="#E8EAF6" CornerRadius="4" Padding="12,6" Margin="0,6,0,0">
+            <TextBlock Text="{Binding StatusMessage}" FontSize="12" Foreground="#1A237E" FontWeight="SemiBold"/>
         </Border>
     </Grid>
 </UserControl>

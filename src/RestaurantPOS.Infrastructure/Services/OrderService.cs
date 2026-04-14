@@ -176,6 +176,22 @@ public class OrderService : IOrderService
             order.TableSession.Table.Status = TableStatus.Available;
         }
 
+        // Mark all kitchen orders & items for this order as completed
+        var kitchenOrders = await _db.KitchenOrders
+            .Include(ko => ko.Items)
+            .Where(ko => ko.OrderId == orderId)
+            .ToListAsync();
+        foreach (var ko in kitchenOrders)
+        {
+            ko.Status = KitchenOrderStatus.Ready;
+            ko.UpdatedAt = DateTime.UtcNow;
+            foreach (var koi in ko.Items)
+            {
+                koi.Status = KitchenItemStatus.Done;
+                koi.CompletedAt ??= DateTime.UtcNow;
+            }
+        }
+
         // Record sale in cash drawer log if order is linked to a shift
         if (order.ShiftId.HasValue)
         {

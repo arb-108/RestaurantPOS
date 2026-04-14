@@ -21,6 +21,6 @@ public partial class MainWindow : Window
     private void ShiftPill_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         if (DataContext is ViewModels.MainWindowViewModel vm)
-            vm.NavigateToShiftCommand.Execute(null);
+            vm.NavigateToShiftCommand.Execute(null); // Permission check is inside the command
     }
 }

@@ -204,11 +204,8 @@
                     </StackPanel>
                     <!-- Tab 5 -->
                     <StackPanel x:Name="BtnUsers" Orientation="Horizontal" Visibility="Collapsed">
-                        <Button Style="{StaticResource Btn}" Background="#059669" Command="{Binding SaveUserCommand}" Margin="0,0,6,0">
-                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE74E;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Save User"/></StackPanel>
-                        </Button>
-                        <Button Style="{StaticResource Btn}" Background="#2563EB" Command="{Binding NewUserCommand}" Margin="0,0,6,0">
-                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="New User"/></StackPanel>
+                        <Button Style="{StaticResource Btn}" Background="#2563EB" Command="{Binding AddUserWindowCommand}" Margin="0,0,6,0">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE710;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Add User"/></StackPanel>
                         </Button>
                         <Button Style="{StaticResource Btn}" Background="#7C3AED" Command="{Binding SaveRolePermissionsCommand}">
                             <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE8D7;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Save Permissions"/></StackPanel>
@@ -599,163 +596,124 @@
                 <!-- TAB 5: USER & ROLE MANAGEMENT -->
                 <!-- ══════════════════════════════════════════════ -->
                 <Grid x:Name="PanelUsers" Visibility="Collapsed" Margin="16">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="16"/>
-                        <ColumnDefinition Width="360"/>
-                    </Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
 
-                    <!-- Left: Users list + Roles list + Permissions -->
-                    <Grid Grid.Column="0">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*"/>
-                            <RowDefinition Height="Auto"/>
-                        </Grid.RowDefinitions>
-
-                        <!-- Users DataGrid -->
-                        <DataGrid Grid.Row="0" ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}"
-                                  AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
-                                  GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F3F4F6"
-                                  HeadersVisibility="Column" AlternationCount="2" RowHeight="42" BorderThickness="0"
-                                  ColumnHeaderStyle="{StaticResource DgHeader}" RowStyle="{StaticResource DgRow}" CellStyle="{StaticResource DgCell}">
-                            <DataGrid.Columns>
-                                <DataGridTemplateColumn Header="FULL NAME" Width="*">
-                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                        <TextBlock Text="{Binding FullName}" FontWeight="Bold" Foreground="#1E293B"/>
-                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="USERNAME" Binding="{Binding Username}" Width="120"/>
-                                <DataGridTemplateColumn Header="ROLE" Width="110">
-                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                        <Border Background="#E0E7FF" CornerRadius="10" Padding="8,3" HorizontalAlignment="Left">
-                                            <TextBlock Text="{Binding Role.Name}" FontSize="10" FontWeight="Bold" Foreground="#3730A3"/>
-                                        </Border>
-                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTextColumn Header="PHONE" Binding="{Binding Phone}" Width="120"/>
-                                <DataGridTextColumn Header="EMAIL" Binding="{Binding Email}" Width="160"/>
-                                <DataGridTemplateColumn Header="LAST LOGIN" Width="140">
-                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                        <TextBlock Text="{Binding LastLoginAt, StringFormat='{}{0:dd/MM/yy HH:mm}', TargetNullValue='Never'}" Foreground="#6B7280"/>
-                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                                <DataGridTemplateColumn Header="" Width="36">
-                                    <DataGridTemplateColumn.CellTemplate><DataTemplate>
-                                        <Button Style="{StaticResource SmBtn}" Background="#DC2626" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="10" Width="28" Height="28" Padding="0"
+                    <!-- Users DataGrid (full width) -->
+                    <DataGrid Grid.Row="0" ItemsSource="{Binding Users}" SelectedItem="{Binding SelectedUser}"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                              GridLinesVisibility="Horizontal" HorizontalGridLinesBrush="#F3F4F6"
+                              HeadersVisibility="Column" AlternationCount="2" RowHeight="42" BorderThickness="0"
+                              ColumnHeaderStyle="{StaticResource DgHeader}" RowStyle="{StaticResource DgRow}" CellStyle="{StaticResource DgCell}">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Header="FULL NAME" Width="*">
+                                <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                    <TextBlock Text="{Binding FullName}" FontWeight="Bold" Foreground="#1E293B"/>
+                                </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="USERNAME" Binding="{Binding Username}" Width="120"/>
+                            <DataGridTemplateColumn Header="ROLE" Width="110">
+                                <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                    <Border Background="#E0E7FF" CornerRadius="10" Padding="8,3" HorizontalAlignment="Left">
+                                        <TextBlock Text="{Binding Role.Name}" FontSize="10" FontWeight="Bold" Foreground="#3730A3"/>
+                                    </Border>
+                                </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTextColumn Header="PHONE" Binding="{Binding Phone}" Width="120"/>
+                            <DataGridTextColumn Header="EMAIL" Binding="{Binding Email}" Width="160"/>
+                            <DataGridTemplateColumn Header="LAST LOGIN" Width="150">
+                                <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                    <TextBlock Text="{Binding LastLoginAt, StringFormat='{}{0:dd/MM/yy hh:mm tt}', TargetNullValue='Never'}" Foreground="#6B7280"/>
+                                </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Header="ACTIONS" Width="120">
+                                <DataGridTemplateColumn.CellTemplate><DataTemplate>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                        <Button Style="{StaticResource SmBtn}" Background="#2563EB" Content="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="10" Width="28" Height="28" Padding="0" Margin="0,0,4,0" ToolTip="Edit"
+                                                Command="{Binding DataContext.EditUserWindowCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}" CommandParameter="{Binding}"/>
+                                        <Button Style="{StaticResource SmBtn}" Background="#DC2626" Content="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="10" Width="28" Height="28" Padding="0" ToolTip="Delete"
                                                 Command="{Binding DataContext.DeleteUserCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"/>
-                                    </DataTemplate></DataGridTemplateColumn.CellTemplate>
-                                </DataGridTemplateColumn>
-                            </DataGrid.Columns>
-                        </DataGrid>
+                                    </StackPanel>
+                                </DataTemplate></DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
 
-                        <!-- Roles + Permissions section -->
-                        <Border Grid.Row="1" Background="#FAFBFC" CornerRadius="8" Padding="12" Margin="0,12,0,0" BorderBrush="#E5E7EB" BorderThickness="1">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="220"/>
-                                    <ColumnDefinition Width="12"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
+                    <!-- Roles + Permissions section -->
+                    <Border Grid.Row="1" Background="#FAFBFC" CornerRadius="8" Padding="12" Margin="0,12,0,0" BorderBrush="#E5E7EB" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="220"/>
+                                <ColumnDefinition Width="12"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                                <!-- Roles list -->
-                                <StackPanel Grid.Column="0">
-                                    <Grid Margin="0,0,0,6">
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Roles" FontSize="13" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center"/>
-                                        <Button Grid.Column="1" Style="{StaticResource SmBtn}" Background="#2563EB" Content="+" FontSize="14" Width="28" Margin="4,0"
-                                                Command="{Binding NewRoleCommand}"/>
-                                        <Button Grid.Column="2" Style="{StaticResource SmBtn}" Background="#059669" Content="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="10" Width="28"
-                                                Command="{Binding EditRoleCommand}"/>
-                                    </Grid>
-                                    <ListBox ItemsSource="{Binding Roles}" SelectedItem="{Binding SelectedRole}"
-                                             MaxHeight="160" BorderThickness="1" BorderBrush="#E5E7EB" FontSize="12">
-                                        <ListBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <StackPanel Margin="4,3">
-                                                    <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12"/>
-                                                    <TextBlock Text="{Binding Description}" FontSize="10" Foreground="#6B7280"/>
-                                                </StackPanel>
-                                            </DataTemplate>
-                                        </ListBox.ItemTemplate>
-                                    </ListBox>
-                                    <!-- Role edit form (inline) -->
-                                    <StackPanel Margin="0,8,0,0" Visibility="{Binding IsEditingRole, Converter={StaticResource BoolToVis}}">
-                                        <TextBox Text="{Binding RoleName, UpdateSourceTrigger=PropertyChanged}" FontSize="12" Padding="4" Margin="0,0,0,4" />
-                                        <TextBox Text="{Binding RoleDescription, UpdateSourceTrigger=PropertyChanged}" FontSize="11" Padding="4" Margin="0,0,0,4"/>
-                                        <StackPanel Orientation="Horizontal">
-                                            <Button Style="{StaticResource SmBtn}" Background="#059669" Command="{Binding SaveRoleCommand}" Content="Save" Margin="0,0,4,0"/>
-                                            <Button Style="{StaticResource SmBtn}" Background="#DC2626" Command="{Binding DeleteRoleCommand}" Content="Delete"/>
-                                        </StackPanel>
+                            <!-- Roles list -->
+                            <StackPanel Grid.Column="0">
+                                <Grid Margin="0,0,0,6">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Roles" FontSize="13" FontWeight="Bold" Foreground="#1E293B" VerticalAlignment="Center"/>
+                                    <Button Grid.Column="1" Style="{StaticResource SmBtn}" Background="#2563EB" Content="+" FontSize="14" Width="28" Margin="4,0"
+                                            Command="{Binding NewRoleCommand}"/>
+                                    <Button Grid.Column="2" Style="{StaticResource SmBtn}" Background="#059669" Content="&#xE70F;" FontFamily="Segoe MDL2 Assets" FontSize="10" Width="28"
+                                            Command="{Binding EditRoleCommand}"/>
+                                </Grid>
+                                <ListBox ItemsSource="{Binding Roles}" SelectedItem="{Binding SelectedRole}"
+                                         MaxHeight="160" BorderThickness="1" BorderBrush="#E5E7EB" FontSize="12">
+                                    <ListBox.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Margin="4,3">
+                                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12"/>
+                                                <TextBlock Text="{Binding Description}" FontSize="10" Foreground="#6B7280"/>
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListBox.ItemTemplate>
+                                </ListBox>
+                                <!-- Role edit form (inline) -->
+                                <StackPanel Margin="0,8,0,0" Visibility="{Binding IsEditingRole, Converter={StaticResource BoolToVis}}">
+                                    <TextBox Text="{Binding RoleName, UpdateSourceTrigger=PropertyChanged}" FontSize="12" Padding="4" Margin="0,0,0,4" />
+                                    <TextBox Text="{Binding RoleDescription, UpdateSourceTrigger=PropertyChanged}" FontSize="11" Padding="4" Margin="0,0,0,4"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <Button Style="{StaticResource SmBtn}" Background="#059669" Command="{Binding SaveRoleCommand}" Content="Save" Margin="0,0,4,0"/>
+                                        <Button Style="{StaticResource SmBtn}" Background="#DC2626" Command="{Binding DeleteRoleCommand}" Content="Delete"/>
                                     </StackPanel>
                                 </StackPanel>
-
-                                <!-- Permissions for selected role -->
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="Permissions for selected role" FontSize="13" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,6"/>
-                                    <DataGrid ItemsSource="{Binding RolePermissions}" AutoGenerateColumns="False"
-                                              CanUserAddRows="False" GridLinesVisibility="None"
-                                              HeadersVisibility="Column" RowHeight="32" BorderThickness="0" MaxHeight="200"
-                                              ColumnHeaderStyle="{StaticResource DgHeader}" CellStyle="{StaticResource DgCell}">
-                                        <DataGrid.Columns>
-                                            <DataGridCheckBoxColumn Header="" Binding="{Binding IsGranted, UpdateSourceTrigger=PropertyChanged}" Width="36"/>
-                                            <DataGridTextColumn Header="MODULE" Binding="{Binding Module}" Width="80" IsReadOnly="True"/>
-                                            <DataGridTextColumn Header="PERMISSION" Binding="{Binding PermissionName}" Width="*" IsReadOnly="True"/>
-                                            <DataGridTemplateColumn Header="LEVEL" Width="80">
-                                                <DataGridTemplateColumn.CellTemplate>
-                                                    <DataTemplate>
-                                                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                                                            <Button Content="-" Width="22" Height="22" FontSize="11" FontWeight="Bold" Cursor="Hand" BorderThickness="1" BorderBrush="#D1D5DB" Background="White"
-                                                                    Click="DecrementLevel" Tag="{Binding}"/>
-                                                            <TextBlock Text="{Binding AccessLevel}" Width="24" TextAlignment="Center" FontWeight="Bold" VerticalAlignment="Center" Margin="2,0"/>
-                                                            <Button Content="+" Width="22" Height="22" FontSize="11" FontWeight="Bold" Cursor="Hand" BorderThickness="1" BorderBrush="#D1D5DB" Background="White"
-                                                                    Click="IncrementLevel" Tag="{Binding}"/>
-                                                        </StackPanel>
-                                                    </DataTemplate>
-                                                </DataGridTemplateColumn.CellTemplate>
-                                            </DataGridTemplateColumn>
-                                        </DataGrid.Columns>
-                                    </DataGrid>
-                                </StackPanel>
-                            </Grid>
-                        </Border>
-                    </Grid>
-
-                    <!-- Right: User form -->
-                    <Border Grid.Column="2" Background="#FAFBFC" CornerRadius="8" Padding="16" BorderBrush="#E5E7EB" BorderThickness="1">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto">
-                            <StackPanel>
-                                <TextBlock FontSize="14" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,12">
-                                    <TextBlock.Style><Style TargetType="TextBlock">
-                                        <Setter Property="Text" Value="Create User"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding IsEditingUser}" Value="True">
-                                                <Setter Property="Text" Value="Edit User"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style></TextBlock.Style>
-                                </TextBlock>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="Full Name *"/>
-                                <TextBox Style="{StaticResource FormInput}" Text="{Binding UserFullName, UpdateSourceTrigger=PropertyChanged}"/>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="Username *"/>
-                                <TextBox Style="{StaticResource FormInput}" Text="{Binding UserUsername, UpdateSourceTrigger=PropertyChanged}"/>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="Phone"/>
-                                <TextBox Style="{StaticResource FormInput}" Text="{Binding UserPhone, UpdateSourceTrigger=PropertyChanged}"/>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="Email"/>
-                                <TextBox Style="{StaticResource FormInput}" Text="{Binding UserEmail, UpdateSourceTrigger=PropertyChanged}"/>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="Role *"/>
-                                <ComboBox Style="{StaticResource FormCombo}" ItemsSource="{Binding Roles}" SelectedItem="{Binding UserRole}" DisplayMemberPath="Name"/>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="Password *"/>
-                                <PasswordBox x:Name="PasswordBox" FontSize="13" Padding="8,6" Margin="0,0,0,10" BorderBrush="#D1D5DB" BorderThickness="1" PasswordChanged="PasswordChanged"/>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="Confirm Password *"/>
-                                <PasswordBox x:Name="ConfirmPasswordBox" FontSize="13" Padding="8,6" Margin="0,0,0,10" BorderBrush="#D1D5DB" BorderThickness="1" PasswordChanged="ConfirmPasswordChanged"/>
-                                <TextBlock Style="{StaticResource FormLabel}" Text="PIN (4 digits, for quick login)"/>
-                                <PasswordBox x:Name="PinBox" FontSize="13" Padding="8,6" Margin="0,0,0,16" BorderBrush="#D1D5DB" BorderThickness="1" MaxLength="4" PasswordChanged="PinChanged"/>
                             </StackPanel>
-                        </ScrollViewer>
+
+                            <!-- Permissions for selected role -->
+                            <StackPanel Grid.Column="2">
+                                <TextBlock Text="Permissions for selected role" FontSize="13" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,6"/>
+                                <DataGrid ItemsSource="{Binding RolePermissions}" AutoGenerateColumns="False"
+                                          CanUserAddRows="False" GridLinesVisibility="None"
+                                          HeadersVisibility="Column" RowHeight="32" BorderThickness="0" MaxHeight="200"
+                                          ColumnHeaderStyle="{StaticResource DgHeader}" CellStyle="{StaticResource DgCell}">
+                                    <DataGrid.Columns>
+                                        <DataGridCheckBoxColumn Header="" Binding="{Binding IsGranted, UpdateSourceTrigger=PropertyChanged}" Width="36"/>
+                                        <DataGridTextColumn Header="MODULE" Binding="{Binding Module}" Width="80" IsReadOnly="True"/>
+                                        <DataGridTextColumn Header="PERMISSION" Binding="{Binding PermissionName}" Width="*" IsReadOnly="True"/>
+                                        <DataGridTemplateColumn Header="LEVEL" Width="80">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                        <Button Content="-" Width="22" Height="22" FontSize="11" FontWeight="Bold" Cursor="Hand" BorderThickness="1" BorderBrush="#D1D5DB" Background="White"
+                                                                Click="DecrementLevel" Tag="{Binding}"/>
+                                                        <TextBlock Text="{Binding AccessLevel}" Width="24" TextAlignment="Center" FontWeight="Bold" VerticalAlignment="Center" Margin="2,0"/>
+                                                        <Button Content="+" Width="22" Height="22" FontSize="11" FontWeight="Bold" Cursor="Hand" BorderThickness="1" BorderBrush="#D1D5DB" Background="White"
+                                                                Click="IncrementLevel" Tag="{Binding}"/>
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                        </DataGridTemplateColumn>
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </StackPanel>
+                        </Grid>
                     </Border>
                 </Grid>
 

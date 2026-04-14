@@ -886,10 +886,12 @@ public partial class MainPOSViewModel : BaseViewModel
                 SelectedOrderType, SelectedTable?.Id, _matchedCustomer?.Id, cashierId, activeShiftId);
             OrderNumber = _currentOrder.OrderNumber;
 
-            // For Din-in: open table session (blue highlight handled by MultiBinding converter)
+            // For DineIn: open table session and link it to the order
             if (SelectedOrderType == OrderType.DineIn && SelectedTable != null)
             {
-                await _tableService.OpenTableSessionAsync(SelectedTable.Id, null);
+                var session = await _tableService.OpenTableSessionAsync(SelectedTable.Id, null);
+                _currentOrder.TableSessionId = session.Id;
+                await _db.SaveChangesAsync();
             }
         }
 
@@ -2421,6 +2423,7 @@ public partial class MainPOSViewModel : BaseViewModel
                     { ConfiguredPrinterName = _configuredReceiptPrinter };
                 combinedPreview.ShowDialog();
                 MarkItemsAsKitchenPrinted();
+                await SaveKitchenOrderRecordAsync(kotItems, false);
                 // Table → Green (kitchen printed)
                 if (SelectedTable != null && SelectedOrderType == OrderType.DineIn)
                 {
@@ -2469,8 +2472,9 @@ public partial class MainPOSViewModel : BaseViewModel
             { ConfiguredPrinterName = _configuredKotPrinter ?? _configuredReceiptPrinter };
         kitchenPreview.ShowDialog();
 
-        // After print, mark items as kitchen-printed
+        // After print, mark items as kitchen-printed and save to DB for reports
         MarkItemsAsKitchenPrinted();
+        await SaveKitchenOrderRecordAsync(kotItems, fullReprint);
 
         // Table → Green (Reserved = K-Bill printed, order in kitchen)
         if (SelectedTable != null && SelectedOrderType == OrderType.DineIn)
@@ -2611,6 +2615,85 @@ public partial class MainPOSViewModel : BaseViewModel
         }
         // Clean up multiple spaces
         return System.Text.RegularExpressions.Regex.Replace(sb.ToString().Trim(), @"\s{2,}", " ");
+    }
+
+    /// <summary>
+    /// Saves a KitchenOrder record to DB so Reports → Kitchen tab shows data.
+    /// </summary>
+    private async Task SaveKitchenOrderRecordAsync(List<KitchenPrintItem> kotItems, bool isReprint)
+    {
+        if (_currentOrder == null) return;
+
+        try
+        {
+            // For reprints, don't create duplicate kitchen order records
+            if (isReprint)
+            {
+                System.Diagnostics.Debug.WriteLine($"[KOT] Reprint — skipping kitchen order record for Order #{_currentOrder.OrderNumber}");
+                return;
+            }
+
+            // Get or create a default kitchen station
+            var station = await _db.KitchenStations.FirstOrDefaultAsync();
+            if (station == null)
+            {
+                station = new Domain.Entities.KitchenStation { Name = "Main Kitchen", DisplayOrder = 1 };
+                _db.KitchenStations.Add(station);
+                await _db.SaveChangesAsync();
+            }
+
+            // Collect all OrderItemIds that are already logged for this order
+            var alreadyLoggedList = await _db.KitchenOrderItems
+                .Where(koi => koi.KitchenOrder.OrderId == _currentOrder.Id)
+                .Select(koi => koi.OrderItemId)
+                .ToListAsync();
+            var alreadyLoggedIds = new HashSet<int>(alreadyLoggedList);
+
+            // Build KitchenOrder with only NEW items (not already logged)
+            var kitchenOrder = new Domain.Entities.KitchenOrder
+            {
+                OrderId = _currentOrder.Id,
+                StationId = station.Id,
+                Status = Domain.Enums.KitchenOrderStatus.New,
+                Priority = 0
+            };
+
+            // Collect all printed item names (regular + deal sub-items)
+            var printedNames = kotItems
+                .Where(ki => !ki.IsDealHeader)
+                .Select(ki => ki.Name.Trim())
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var oi in OrderItems)
+            {
+                if (oi.OrderItemId > 0
+                    && printedNames.Contains(oi.Name.Trim())
+                    && !alreadyLoggedIds.Contains(oi.OrderItemId)
+                    && !kitchenOrder.Items.Any(ki => ki.OrderItemId == oi.OrderItemId))
+                {
+                    kitchenOrder.Items.Add(new Domain.Entities.KitchenOrderItem
+                    {
+                        OrderItemId = oi.OrderItemId,
+                        Status = Domain.Enums.KitchenItemStatus.Pending
+                    });
+                }
+            }
+
+            if (kitchenOrder.Items.Count > 0)
+            {
+                _db.KitchenOrders.Add(kitchenOrder);
+                await _db.SaveChangesAsync();
+                System.Diagnostics.Debug.WriteLine($"[KOT] Kitchen order saved: {kitchenOrder.Items.Count} items for Order #{_currentOrder.OrderNumber}");
+            }
+            else
+            {
+                System.Diagnostics.Debug.WriteLine($"[KOT] No new items to log for Order #{_currentOrder.OrderNumber}");
+            }
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[KOT] SaveKitchenOrderRecord error: {ex.Message}");
+        }
     }
 
     private ReceiptData BuildKitchenReceiptData(List<KitchenPrintItem> items, bool isFullReprint)
@@ -2862,7 +2945,7 @@ public class DeliveryOrderViewModel
             if (elapsed.TotalMinutes < 1) return "Just now";
             if (elapsed.TotalMinutes < 60) return $"{(int)elapsed.TotalMinutes} min ago";
             if (elapsed.TotalHours < 24) return $"{(int)elapsed.TotalHours} hr ago";
-            return OrderTime.ToString("dd MMM HH:mm");
+            return OrderTime.ToString("dd MMM hh:mm tt");
         }
     }
 
@@ -2916,7 +2999,7 @@ public class TakeawayOrderViewModel
             if (elapsed.TotalMinutes < 1) return "Just now";
             if (elapsed.TotalMinutes < 60) return $"{(int)elapsed.TotalMinutes} min ago";
             if (elapsed.TotalHours < 24) return $"{(int)elapsed.TotalHours} hr ago";
-            return OrderTime.ToString("dd MMM HH:mm");
+            return OrderTime.ToString("dd MMM hh:mm tt");
         }
     }
 
@@ -2944,5 +3027,5 @@ public class HoldOrderViewModel
     public string CustomerPhone { get; set; } = string.Empty;
     public string KSlipStatus { get; set; } = "Pending";
     public DateTime OrderTime { get; set; }
-    public string OrderTimeDisplay => OrderTime.ToString("HH:mm");
+    public string OrderTimeDisplay => OrderTime.ToString("hh:mm tt");
 }

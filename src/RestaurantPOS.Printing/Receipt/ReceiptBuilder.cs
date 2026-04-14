@@ -60,18 +60,14 @@ public class ReceiptBuilder
 
         Write(ms, EscPos.Init);
 
-        // ═══ RESTAURANT HEADER (centered, bold) ═══
+        // ═══ RESTAURANT NAME — centered, double size ═══
         Write(ms, EscPos.AlignCenter);
-        Write(ms, EscPos.DoubleOn);
+        Write(ms, EscPos.SizeDouble);
         WriteText(ms, d.RestaurantName.ToUpper());
-        Write(ms, EscPos.NormalSize);
+        Write(ms, EscPos.SizeNormal);
 
         if (!string.IsNullOrWhiteSpace(d.RestaurantAddress))
-        {
-            Write(ms, EscPos.BoldOn);
             WriteText(ms, d.RestaurantAddress);
-            Write(ms, EscPos.BoldOff);
-        }
         if (!string.IsNullOrWhiteSpace(d.RestaurantPhone))
             WriteText(ms, d.RestaurantPhone);
 
@@ -83,41 +79,34 @@ public class ReceiptBuilder
         // ═══ ORDER INFO BLOCK ═══
         Write(ms, EscPos.AlignLeft);
 
-        // Order # (bold number)
         Write(ms, EscPos.BoldOn);
         WriteText(ms, $"Order #  {d.OrderNumber}");
         Write(ms, EscPos.BoldOff);
-
-        // Cashier
         WriteText(ms, $"Cashier : {d.CashierName ?? "Admin"}");
 
-        // Waiter
         if (!string.IsNullOrEmpty(d.WaiterName))
             WriteText(ms, $"Waiter  : {d.WaiterName}");
 
-        // Date / Time row
         var datePart = $"Date: {d.DateTime:dd/MM/yyyy}";
-        var timePart = $"Time: {d.DateTime:HH:mm:ss}";
+        var timePart = $"Time: {d.DateTime:hh:mm:ss tt}";
         WriteText(ms, EscPos.PadBetween(datePart, timePart, _width));
 
-        // Type + Payment method
         WriteText(ms, EscPos.PadBetween($"Type : {d.OrderType}", d.PaymentMethod, _width));
 
-        // Table
         if (!string.IsNullOrEmpty(d.TableName))
             WriteText(ms, $"Table   : {d.TableName}");
 
-        // ═══ CUSTOMER / DELIVERY INFO (shown when any customer data exists) ═══
+        // ═══ CUSTOMER / DELIVERY INFO ═══
         bool hasCustomerInfo = !string.IsNullOrWhiteSpace(d.CustomerName) || !string.IsNullOrWhiteSpace(d.CustomerPhone)
                             || !string.IsNullOrWhiteSpace(d.CustomerAddress) || !string.IsNullOrWhiteSpace(d.DriverName)
                             || !string.IsNullOrWhiteSpace(d.DeliveryNote);
         if (hasCustomerInfo)
         {
             WriteText(ms, EscPos.DashLine(_width));
-            Write(ms, EscPos.BoldOn);
             var sectionTitle = d.OrderType == "Delivery" ? "DELIVERY INFO"
                              : d.OrderType == "TakeAway" ? "TAKEAWAY INFO"
                              : "CUSTOMER INFO";
+            Write(ms, EscPos.BoldOn);
             WriteText(ms, sectionTitle);
             Write(ms, EscPos.BoldOff);
 
@@ -148,7 +137,6 @@ public class ReceiptBuilder
             var printName = StripNonPrintable(item.Name);
             if (item.Quantity == 0 && item.UnitPrice == 0)
             {
-                // Deal sub-item
                 WriteText(ms, $"  {printName}");
             }
             else
@@ -167,11 +155,12 @@ public class ReceiptBuilder
 
         WriteText(ms, EscPos.DashLine(_width));
 
-        // ═══ TOTALS (pharmacy-style: Item(s) count + Gross/Disc/Tax) ═══
-        // Item(s) count on left, Gross on right
+        // ═══ TOTALS ═══
+        Write(ms, EscPos.BoldOn);
         var itemsLabel = $"Item(s)  {mainItemCount}";
         var grossLabel = $"Gross : {EscPos.FormatCurrency(d.SubTotal)}";
         WriteText(ms, EscPos.PadBetween(itemsLabel, grossLabel, _width));
+        Write(ms, EscPos.BoldOff);
 
         if (d.DiscountAmount > 0)
         {
@@ -193,11 +182,10 @@ public class ReceiptBuilder
 
         WriteText(ms, EscPos.DashLine(_width));
 
-        // ═══ NET AMOUNT (cashier name on left, Net Amount on right, bold) ═══
+        // ═══ NET AMOUNT ═══
         Write(ms, EscPos.BoldOn);
-        var netRight = $"Net Amount : {EscPos.FormatCurrency(d.GrandTotal)}";
-        var cashierLeft = d.CashierName ?? "Admin";
-        WriteText(ms, EscPos.PadBetween(cashierLeft, netRight, _width));
+        var netLine = $"Net Amount : {EscPos.FormatCurrency(d.GrandTotal)}";
+        WriteText(ms, new string(' ', Math.Max(0, _width - netLine.Length)) + netLine);
         Write(ms, EscPos.BoldOff);
 
         WriteText(ms, EscPos.DashLine(_width));
@@ -224,7 +212,7 @@ public class ReceiptBuilder
         if (!string.IsNullOrWhiteSpace(d.FooterMessage))
             WriteText(ms, d.FooterMessage);
 
-        WriteText(ms, d.DateTime.ToString("dd/MM/yyyy HH:mm:ss"));
+        WriteText(ms, d.DateTime.ToString("dd/MM/yyyy hh:mm:ss tt"));
 
         Write(ms, EscPos.FeedLines5);
         Write(ms, EscPos.PartialCut);
@@ -243,7 +231,7 @@ public class ReceiptBuilder
     private static void Write(MemoryStream ms, byte[] data) => ms.Write(data);
     private static void WriteText(MemoryStream ms, string text)
     {
-        var bytes = Encoding.UTF8.GetBytes(text + "\n");
+        var bytes = Encoding.ASCII.GetBytes(text + "\n");
         ms.Write(bytes);
     }
 

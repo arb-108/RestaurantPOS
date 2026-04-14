@@ -13,6 +13,9 @@ public partial class App : System.Windows.Application
 {
     private IHost? _host;
 
+    /// <summary>Exposes the DI service provider for use by popup windows.</summary>
+    public IServiceProvider Services => _host!.Services;
+
     protected override async void OnStartup(System.Windows.StartupEventArgs e)
     {
         // Configure Serilog

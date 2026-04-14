@@ -41,30 +41,38 @@ public class KotBuilder
 
         Write(ms, EscPos.Init);
 
-        // ═══ HEADER ═══
+        // ═══ HEADER — double size (only thing that's big) ═══
         Write(ms, EscPos.AlignCenter);
-        Write(ms, EscPos.DoubleOn);
+        Write(ms, EscPos.SizeDouble);
         WriteText(ms, "KITCHEN ORDER");
-        Write(ms, EscPos.NormalSize);
+        Write(ms, EscPos.SizeNormal);
         WriteText(ms, "");
 
         // ═══ REPRINT BANNER ═══
         if (!string.IsNullOrEmpty(data.HeaderBanner))
         {
             Write(ms, EscPos.BoldOn);
-            WriteText(ms, data.HeaderBanner);
+            WriteText(ms, $"** {data.HeaderBanner} **");
             Write(ms, EscPos.BoldOff);
             WriteText(ms, "");
         }
 
-        Write(ms, EscPos.AlignLeft);
+        // ═══ ORDER NUMBER — double size ═══
+        WriteText(ms, EscPos.DashLine(_width));
+        Write(ms, EscPos.SizeDouble);
+        WriteText(ms, $"  {data.OrderNumber}");
+        Write(ms, EscPos.SizeNormal);
+        WriteText(ms, EscPos.DashLine(_width));
 
-        // ═══ ORDER INFO (pharmacy-style: label : value) ═══
+        // ═══ ORDER TYPE — bold ═══
+        Write(ms, EscPos.AlignCenter);
         Write(ms, EscPos.BoldOn);
-        WriteText(ms, $"Order #  {data.OrderNumber}");
+        WriteText(ms, data.OrderType.ToUpper());
         Write(ms, EscPos.BoldOff);
+        WriteText(ms, "");
 
-        WriteText(ms, $"Type    : {data.OrderType}");
+        // ═══ ORDER INFO ═══
+        Write(ms, EscPos.AlignLeft);
 
         if (!string.IsNullOrEmpty(data.TableName))
             WriteText(ms, $"Table   : {data.TableName}");
@@ -75,26 +83,24 @@ public class KotBuilder
         if (!string.IsNullOrEmpty(data.WaiterName))
             WriteText(ms, $"Waiter  : {data.WaiterName}");
 
-        // Date / Time row
         var datePart = $"Date: {data.DateTime:dd/MM/yyyy}";
-        var timePart = $"Time: {data.DateTime:HH:mm:ss}";
+        var timePart = $"Time: {data.DateTime:hh:mm:ss tt}";
         WriteText(ms, EscPos.PadBetween(datePart, timePart, _width));
 
         WriteText(ms, EscPos.DashLine(_width));
 
-        // ═══ ITEMS HEADER ═══
+        // ═══ ITEMS HEADER — bold ═══
         Write(ms, EscPos.BoldOn);
         WriteText(ms, FormatKotLine("Qty", "Item", _width));
         Write(ms, EscPos.BoldOff);
         WriteText(ms, EscPos.DashLine(_width));
 
-        // ═══ ITEMS ═══
+        // ═══ ITEMS — bold ═══
         int totalQty = 0;
         foreach (var item in data.Items)
         {
             if (item.IsDealHeader)
             {
-                // Deal header — bold with [DEAL] tag
                 Write(ms, EscPos.BoldOn);
                 WriteText(ms, FormatKotLine(item.Quantity.ToString(), $"[DEAL] {StripNonPrintable(item.Name)}", _width));
                 Write(ms, EscPos.BoldOff);
@@ -102,37 +108,30 @@ public class KotBuilder
             }
             else if (item.IsDealSubItem)
             {
-                // Deal sub-item — indented with qty
                 WriteText(ms, $"     {FormatKotLine(item.Quantity.ToString(), $"- {item.Name}", _width)}");
             }
             else if (item.IsSubItem)
             {
-                // Legacy sub-item
                 WriteText(ms, $"       {item.Name}");
             }
             else
             {
-                // Regular item
                 Write(ms, EscPos.BoldOn);
                 WriteText(ms, FormatKotLine(item.Quantity.ToString(), StripNonPrintable(item.Name), _width));
                 Write(ms, EscPos.BoldOff);
                 totalQty += item.Quantity;
             }
 
-            // Notes (special instructions)
             if (!string.IsNullOrWhiteSpace(item.Notes))
-            {
                 WriteText(ms, $"       >> {item.Notes}");
-            }
 
-            // Modifiers
             foreach (var mod in item.Modifiers)
                 WriteText(ms, $"       + {mod}");
         }
 
         WriteText(ms, EscPos.DashLine(_width));
 
-        // ═══ TOTAL ITEMS ═══
+        // ═══ TOTAL ITEMS — bold ═══
         Write(ms, EscPos.BoldOn);
         WriteText(ms, EscPos.PadBetween("Total Item(s)", totalQty.ToString(), _width));
         Write(ms, EscPos.BoldOff);
@@ -141,7 +140,7 @@ public class KotBuilder
 
         // ═══ FOOTER ═══
         Write(ms, EscPos.AlignCenter);
-        WriteText(ms, $"Printed: {data.DateTime:dd/MM/yyyy HH:mm:ss}");
+        WriteText(ms, $"Printed: {data.DateTime:dd/MM/yyyy hh:mm:ss tt}");
 
         Write(ms, EscPos.FeedLines5);
         Write(ms, EscPos.PartialCut);
@@ -158,7 +157,7 @@ public class KotBuilder
     private static void Write(MemoryStream ms, byte[] data) => ms.Write(data);
     private static void WriteText(MemoryStream ms, string text)
     {
-        var bytes = Encoding.UTF8.GetBytes(text + "\n");
+        var bytes = Encoding.ASCII.GetBytes(text + "\n");
         ms.Write(bytes);
     }
 

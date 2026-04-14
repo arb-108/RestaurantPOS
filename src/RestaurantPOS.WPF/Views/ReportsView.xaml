@@ -751,15 +751,18 @@
                           RowStyle="{StaticResource DgRow}"
                           CellStyle="{StaticResource DgCell}">
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="ORDER #" Width="100">
+                        <DataGridTemplateColumn Header="ORDER #" Width="90">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding OrderNumber}" FontWeight="Bold" Foreground="#1E293B"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="DATE" Binding="{Binding Date}" Width="150"/>
-                        <DataGridTemplateColumn Header="STATION" Width="130">
+                        <DataGridTextColumn Header="TYPE" Binding="{Binding OrderType}" Width="80"/>
+                        <DataGridTextColumn Header="DATE" Binding="{Binding Date}" Width="130"/>
+                        <DataGridTextColumn Header="CASHIER" Binding="{Binding Cashier}" Width="100"/>
+                        <DataGridTextColumn Header="TABLE" Binding="{Binding Table}" Width="70"/>
+                        <DataGridTemplateColumn Header="STATION" Width="110">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Border Background="#E0E7FF" CornerRadius="10" Padding="8,3" HorizontalAlignment="Left">
@@ -769,29 +772,36 @@
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
                         <DataGridTextColumn Header="ITEMS" Binding="{Binding ItemsSummary}" Width="*"/>
-                        <DataGridTemplateColumn Header="ITEM COUNT" Width="100">
+                        <DataGridTemplateColumn Header="ITEMS" Width="60">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <TextBlock Text="{Binding ItemCount}" HorizontalAlignment="Center" FontWeight="SemiBold"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTemplateColumn Header="STATUS" Width="110">
+                        <DataGridTemplateColumn Header="SLIPS" Width="55">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <TextBlock Text="{Binding SlipCount}" HorizontalAlignment="Center" FontWeight="SemiBold" Foreground="#7C3AED"/>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="STATUS" Width="100">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Border CornerRadius="10" Padding="8,3" HorizontalAlignment="Left">
                                         <Border.Style>
                                             <Style TargetType="Border">
-                                                <Setter Property="Background" Value="#F3F4F6"/>
+                                                <Setter Property="Background" Value="#DBEAFE"/>
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                                    <DataTrigger Binding="{Binding Status}" Value="Closed">
                                                         <Setter Property="Background" Value="#DCFCE7"/>
                                                     </DataTrigger>
-                                                    <DataTrigger Binding="{Binding Status}" Value="InProgress">
+                                                    <DataTrigger Binding="{Binding Status}" Value="Open">
                                                         <Setter Property="Background" Value="#FEF3C7"/>
                                                     </DataTrigger>
-                                                    <DataTrigger Binding="{Binding Status}" Value="Pending">
-                                                        <Setter Property="Background" Value="#E0E7FF"/>
+                                                    <DataTrigger Binding="{Binding Status}" Value="Void">
+                                                        <Setter Property="Background" Value="#FEE2E2"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -799,22 +809,32 @@
                                         <TextBlock Text="{Binding Status}" FontSize="10" FontWeight="Bold">
                                             <TextBlock.Style>
                                                 <Style TargetType="TextBlock">
-                                                    <Setter Property="Foreground" Value="#374151"/>
+                                                    <Setter Property="Foreground" Value="#3730A3"/>
                                                     <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding Status}" Value="Completed">
+                                                        <DataTrigger Binding="{Binding Status}" Value="Closed">
                                                             <Setter Property="Foreground" Value="#166534"/>
                                                         </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Status}" Value="InProgress">
+                                                        <DataTrigger Binding="{Binding Status}" Value="Open">
                                                             <Setter Property="Foreground" Value="#92400E"/>
                                                         </DataTrigger>
-                                                        <DataTrigger Binding="{Binding Status}" Value="Pending">
-                                                            <Setter Property="Foreground" Value="#3730A3"/>
+                                                        <DataTrigger Binding="{Binding Status}" Value="Void">
+                                                            <Setter Property="Foreground" Value="#991B1B"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
                                             </TextBlock.Style>
                                         </TextBlock>
                                     </Border>
+                                </DataTemplate>
+                            </DataGridTemplateColumn.CellTemplate>
+                        </DataGridTemplateColumn>
+                        <DataGridTemplateColumn Header="" Width="80">
+                            <DataGridTemplateColumn.CellTemplate>
+                                <DataTemplate>
+                                    <Button Content="View" FontSize="10" FontWeight="Bold" Padding="10,3" Cursor="Hand"
+                                            Background="#3B82F6" Foreground="White" BorderThickness="0"
+                                            Command="{Binding DataContext.ViewKitchenDetailCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            CommandParameter="{Binding}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>

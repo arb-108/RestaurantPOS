@@ -57,24 +57,7 @@ public partial class SettingsView : UserControl
             _ = vm2.RefreshCommand.ExecuteAsync(null);
     }
 
-    // PasswordBox doesn't support binding — forward manually
-    private void PasswordChanged(object sender, RoutedEventArgs e)
-    {
-        if (DataContext is SettingsViewModel vm)
-            vm.UserPassword = PasswordBox.Password;
-    }
-
-    private void ConfirmPasswordChanged(object sender, RoutedEventArgs e)
-    {
-        if (DataContext is SettingsViewModel vm)
-            vm.UserConfirmPassword = ConfirmPasswordBox.Password;
-    }
-
-    private void PinChanged(object sender, RoutedEventArgs e)
-    {
-        if (DataContext is SettingsViewModel vm)
-            vm.UserPin = PinBox.Password;
-    }
+    // User form is now a separate window (UserFormWindow)
 
     private async void StationPrinterChanged(object sender, SelectionChangedEventArgs e)
     {

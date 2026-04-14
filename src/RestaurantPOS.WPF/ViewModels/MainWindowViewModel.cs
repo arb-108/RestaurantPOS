@@ -20,7 +20,7 @@ public partial class MainWindowViewModel : BaseViewModel
     private string _currentDate = DateTime.Now.ToString("dd MMM yyyy");
 
     [ObservableProperty]
-    private string _currentTime = DateTime.Now.ToString("HH:mm:ss");
+    private string _currentTime = DateTime.Now.ToString("hh:mm:ss tt");
 
     [ObservableProperty]
     private string _restaurantName = "KFC Restaurant";
@@ -70,7 +70,7 @@ public partial class MainWindowViewModel : BaseViewModel
         };
         _clockTimer.Tick += (s, e) =>
         {
-            CurrentTime = DateTime.Now.ToString("HH:mm:ss");
+            CurrentTime = DateTime.Now.ToString("hh:mm:ss tt");
             CurrentDate = DateTime.Now.ToString("dd MMM yyyy");
         };
         _clockTimer.Start();
@@ -101,6 +101,7 @@ public partial class MainWindowViewModel : BaseViewModel
     [RelayCommand]
     private void NavigateToOrders()
     {
+        if (!RequirePermission("Issue refunds", "Void / cancel orders")) return;
         NavigateTo<OrderHistoryViewModel>();
     }
 
@@ -119,50 +120,91 @@ public partial class MainWindowViewModel : BaseViewModel
     [RelayCommand]
     private void NavigateToMenu()
     {
+        if (!RequirePermission("Manage menu items")) return;
         NavigateTo<MenuManagementViewModel>();
     }
-
 
     [RelayCommand]
     private void NavigateToExpenses()
     {
+        if (!RequirePermission("Manage expenses", "Manage suppliers")) return;
         NavigateTo<ExpenseManagementViewModel>();
     }
 
     [RelayCommand]
     private void NavigateToReports()
     {
+        if (!RequirePermission("View reports & analytics")) return;
         NavigateTo<ReportsViewModel>();
     }
 
     [RelayCommand]
     private void NavigateToStock()
     {
+        if (!RequirePermission("Manage stock & recipes")) return;
         NavigateTo<StockManagementViewModel>();
     }
 
     [RelayCommand]
     private void NavigateToShift()
     {
+        if (!RequirePermission("Manage employees", "System app settings")) return;
         NavigateTo<ShiftManagementViewModel>();
     }
 
     [RelayCommand]
     private void NavigateToCustomers()
     {
+        if (!RequirePermission("Manage customers & loyalty")) return;
         NavigateTo<CustomerManagementViewModel>();
     }
 
     [RelayCommand]
     private void NavigateToEmployees()
     {
+        if (!RequirePermissionStrict("Manage employees")) return;
         NavigateTo<EmployeeManagementViewModel>();
     }
 
     [RelayCommand]
     private void NavigateToSettings()
     {
+        if (!RequirePermission("System app settings", "Manage printers & terminals", "Manage tax & discounts", "Manage users & roles")) return;
         NavigateTo<SettingsViewModel>();
+    }
+
+    /// <summary>
+    /// Checks if the current user has any of the required permissions (level >= 3).
+    /// If not, shows ManagerAuth popup. Returns true if authorized.
+    /// </summary>
+    private bool RequirePermission(params string[] permissions)
+    {
+        foreach (var perm in permissions)
+        {
+            if (_authService.HasPermission(perm, minimumLevel: 3))
+                return true;
+        }
+
+        // User lacks permission — show admin/manager auth popup
+        var authWindow = new Views.ManagerAuthWindow(_authService);
+        authWindow.Owner = System.Windows.Application.Current.MainWindow;
+        return authWindow.ShowDialog() == true;
+    }
+
+    /// <summary>
+    /// Strict check — requires level 5 (Admin only). Manager and Cashier get auth popup.
+    /// </summary>
+    private bool RequirePermissionStrict(params string[] permissions)
+    {
+        foreach (var perm in permissions)
+        {
+            if (_authService.HasPermission(perm, minimumLevel: 5))
+                return true;
+        }
+
+        var authWindow = new Views.ManagerAuthWindow(_authService);
+        authWindow.Owner = System.Windows.Application.Current.MainWindow;
+        return authWindow.ShowDialog() == true;
     }
 
     [RelayCommand]

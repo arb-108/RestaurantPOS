@@ -1,0 +1,99 @@
+<Window x:Class="RestaurantPOS.WPF.Views.UserFormWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="User" SizeToContent="Height" Width="460"
+        WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Background="#F8FAFC" WindowStyle="SingleBorderWindow">
+
+    <Window.Resources>
+        <Style x:Key="FLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="#374151"/>
+            <Setter Property="Margin" Value="0,10,0,4"/>
+        </Style>
+        <Style x:Key="FInput" TargetType="TextBox">
+            <Setter Property="FontSize" Value="13"/>
+            <Setter Property="Padding" Value="10,8"/>
+            <Setter Property="BorderBrush" Value="#D1D5DB"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Background" Value="White"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Form -->
+        <ScrollViewer Grid.Row="0" Grid.RowSpan="2" VerticalScrollBarVisibility="Auto" Padding="24,12,24,8">
+            <StackPanel>
+                <TextBlock Style="{StaticResource FLabel}" Text="Full Name *"/>
+                <TextBox x:Name="FullNameBox" Style="{StaticResource FInput}"/>
+
+                <TextBlock Style="{StaticResource FLabel}" Text="Username *"/>
+                <TextBox x:Name="UsernameBox" Style="{StaticResource FInput}"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Style="{StaticResource FLabel}" Text="Phone"/>
+                        <TextBox x:Name="PhoneBox" Style="{StaticResource FInput}"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Style="{StaticResource FLabel}" Text="Email"/>
+                        <TextBox x:Name="EmailBox" Style="{StaticResource FInput}"/>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Style="{StaticResource FLabel}" Text="Role *"/>
+                <ComboBox x:Name="RoleCombo" FontSize="13" Padding="8,6"
+                          DisplayMemberPath="Name" BorderBrush="#D1D5DB" BorderThickness="1"/>
+
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="12"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Style="{StaticResource FLabel}" Text="Password *"/>
+                        <PasswordBox x:Name="PasswordBox" FontSize="13" Padding="10,8"
+                                     BorderBrush="#D1D5DB" BorderThickness="1"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Style="{StaticResource FLabel}" Text="Confirm Password *"/>
+                        <PasswordBox x:Name="ConfirmPasswordBox" FontSize="13" Padding="10,8"
+                                     BorderBrush="#D1D5DB" BorderThickness="1"/>
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Style="{StaticResource FLabel}" Text="PIN (4 digits, quick login)"/>
+                <PasswordBox x:Name="PinBox" FontSize="13" Padding="10,8" MaxLength="4"
+                             BorderBrush="#D1D5DB" BorderThickness="1" Width="120" HorizontalAlignment="Left"/>
+
+                <TextBlock x:Name="ErrorText" Foreground="#DC2626" FontSize="11" FontWeight="SemiBold"
+                           Margin="0,10,0,0" TextWrapping="Wrap" Visibility="Collapsed"/>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- Footer buttons -->
+        <Border Grid.Row="2" Background="#F1F5F9" Padding="24,12" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Cancel" FontSize="13" Padding="20,8" Cursor="Hand"
+                        Background="White" BorderBrush="#D1D5DB" BorderThickness="1"
+                        Click="Cancel_Click" Margin="0,0,10,0"/>
+                <Button x:Name="SaveBtn" Content="Save User" FontSize="13" FontWeight="Bold" Padding="20,8" Cursor="Hand"
+                        Background="#1E40AF" Foreground="White" BorderThickness="0"
+                        Click="Save_Click"/>
+            </StackPanel>
+        </Border>
+    </Grid>
+</Window>

@@ -509,7 +509,7 @@ public partial class ReportsViewModel : BaseViewModel
                 {
                     OrderId = o.Id,
                     OrderNumber = o.OrderNumber,
-                    Date = o.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm"),
+                    Date = o.CreatedAt.ToLocalTime().ToString("dd/MM/yy hh:mm tt"),
                     Type = o.OrderType.ToString(),
                     CustomerName = o.Customer?.Name ?? "-",
                     ItemCount = items.Sum(i => i.Quantity),
@@ -792,7 +792,8 @@ public partial class ReportsViewModel : BaseViewModel
             var toUtc = KitchenTo.Date.AddDays(1).ToUniversalTime();
 
             var kitchenOrders = await _db.KitchenOrders
-                .Include(ko => ko.Order)
+                .Include(ko => ko.Order).ThenInclude(o => o.Cashier)
+                .Include(ko => ko.Order).ThenInclude(o => o.TableSession).ThenInclude(ts => ts!.Table)
                 .Include(ko => ko.Station)
                 .Include(ko => ko.Items).ThenInclude(koi => koi.OrderItem).ThenInclude(oi => oi.MenuItem)
                 .Where(ko => ko.Order.CreatedAt >= fromUtc && ko.Order.CreatedAt < toUtc)
@@ -800,34 +801,64 @@ public partial class ReportsViewModel : BaseViewModel
                 .Take(500)
                 .ToListAsync();
 
+            // Group by Order
+            var grouped = kitchenOrders
+                .GroupBy(ko => ko.OrderId)
+                .OrderByDescending(g => g.First().Order?.CreatedAt);
+
             KitchenItems.Clear();
 
-            foreach (var ko in kitchenOrders)
+            foreach (var group in grouped)
             {
-                var itemNames = ko.Items
+                var first = group.First();
+                var order = first.Order;
+                var allItems = group.SelectMany(ko => ko.Items).ToList();
+
+                var itemNames = allItems
                     .Select(koi => koi.OrderItem?.MenuItem?.Name ?? "Item")
+                    .Distinct()
                     .Take(3)
                     .ToList();
                 var summary = string.Join(", ", itemNames);
-                if (ko.Items.Count > 3) summary += $" +{ko.Items.Count - 3} more";
+                var totalDistinct = allItems.Select(koi => koi.OrderItem?.MenuItem?.Name).Distinct().Count();
+                if (totalDistinct > 3) summary += $" +{totalDistinct - 3} more";
+
+                var stations = group.Select(ko => ko.Station?.Name).Distinct().ToList();
 
                 KitchenItems.Add(new KitchenReportRow
                 {
-                    OrderNumber = ko.Order?.OrderNumber ?? "-",
-                    Date = ko.Order?.CreatedAt.ToLocalTime().ToString("dd/MM/yy HH:mm") ?? "-",
-                    Station = ko.Station?.Name ?? "-",
+                    OrderNumber = order?.OrderNumber ?? "-",
+                    OrderType = order?.OrderType.ToString() ?? "-",
+                    Date = order?.CreatedAt.ToLocalTime().ToString("dd/MM/yy hh:mm tt") ?? "-",
+                    Station = string.Join(", ", stations.Where(s => s != null)),
                     ItemsSummary = summary,
-                    ItemCount = ko.Items.Count,
-                    Status = ko.Status.ToString()
+                    ItemCount = allItems.Count,
+                    SlipCount = group.Count(),
+                    Status = order?.Status == Domain.Enums.OrderStatus.Closed ? "Closed"
+                           : order?.Status == Domain.Enums.OrderStatus.Void ? "Void"
+                           : order?.Status == Domain.Enums.OrderStatus.Open ? "Open"
+                           : order?.Status.ToString() ?? "-",
+                    Cashier = order?.Cashier?.FullName ?? "-",
+                    Table = order?.TableSession?.Table?.Name ?? "-",
+                    KitchenOrders = group.ToList()
                 });
             }
 
-            KitchenCount = $"{kitchenOrders.Count} orders";
+            KitchenCount = $"{KitchenItems.Count} orders ({kitchenOrders.Count} slips)";
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Reports] Kitchen error: {ex.Message}");
         }
+    }
+
+    [RelayCommand]
+    private void ViewKitchenDetail(KitchenReportRow? row)
+    {
+        if (row == null || row.KitchenOrders.Count == 0) return;
+        var window = new Views.KitchenOrderDetailWindow(row);
+        window.Owner = System.Windows.Application.Current.MainWindow;
+        window.ShowDialog();
     }
 
     [RelayCommand]
@@ -1463,11 +1494,18 @@ public class DriverPerformanceRow
 public class KitchenReportRow
 {
     public string OrderNumber { get; set; } = string.Empty;
+    public string OrderType { get; set; } = string.Empty;
     public string Date { get; set; } = string.Empty;
     public string Station { get; set; } = string.Empty;
     public string ItemsSummary { get; set; } = string.Empty;
     public int ItemCount { get; set; }
+    public int SlipCount { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string Cashier { get; set; } = string.Empty;
+    public string Table { get; set; } = string.Empty;
+
+    /// <summary>All KitchenOrder records for this order (for detail view).</summary>
+    public List<RestaurantPOS.Domain.Entities.KitchenOrder> KitchenOrders { get; set; } = [];
 }
 
 public class ExpenseReportRow

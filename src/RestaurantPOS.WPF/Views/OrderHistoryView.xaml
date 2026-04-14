@@ -68,7 +68,7 @@
                         <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="80"/>
                         <DataGridTextColumn Header="Items" Binding="{Binding OrderItems.Count}" Width="50"/>
                         <DataGridTextColumn Header="Total" Binding="{Binding GrandTotal, Converter={StaticResource PaisaToCurrency}}" Width="100"/>
-                        <DataGridTextColumn Header="Date" Binding="{Binding CreatedAt, StringFormat='{}{0:dd/MM HH:mm}'}" Width="110"/>
+                        <DataGridTextColumn Header="Date" Binding="{Binding CreatedAt, StringFormat='{}{0:dd/MM hh:mm tt}'}" Width="120"/>
                     </DataGrid.Columns>
                     <DataGrid.RowStyle>
                         <Style TargetType="DataGridRow">
@@ -103,7 +103,7 @@
                         </TextBlock>
                         <TextBlock FontSize="13" Margin="0,0,0,4">
                             <Run Text="Date: " FontWeight="SemiBold"/>
-                            <Run Text="{Binding CreatedAt, Mode=OneWay, StringFormat='{}{0:dd/MM/yyyy HH:mm}'}"/>
+                            <Run Text="{Binding CreatedAt, Mode=OneWay, StringFormat='{}{0:dd/MM/yyyy hh:mm tt}'}"/>
                         </TextBlock>
 
                         <TextBlock Text="Items" FontSize="14" FontWeight="SemiBold"

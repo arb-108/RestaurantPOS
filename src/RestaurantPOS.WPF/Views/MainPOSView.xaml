@@ -859,7 +859,7 @@
                                     </DataGridTextColumn>
                                     <DataGridTextColumn Header="Cashier" Binding="{Binding Cashier.FullName}" Width="80"/>
                                     <DataGridTextColumn Header="Customer" Binding="{Binding Customer.Name}" Width="80"/>
-                                    <DataGridTextColumn Header="Timestamp" Binding="{Binding CreatedAt, Converter={StaticResource UtcToLocal}, StringFormat='dd/MM/yy HH:mm'}" Width="100"/>
+                                    <DataGridTextColumn Header="Timestamp" Binding="{Binding CreatedAt, Converter={StaticResource UtcToLocal}, StringFormat='dd/MM/yy hh:mm tt'}" Width="110"/>
                                     <DataGridTemplateColumn Header="Action" Width="70">
                                         <DataGridTemplateColumn.CellTemplate>
                                             <DataTemplate>
