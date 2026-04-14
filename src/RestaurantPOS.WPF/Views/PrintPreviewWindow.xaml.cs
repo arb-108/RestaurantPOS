@@ -799,41 +799,24 @@ public partial class PrintPreviewWindow : Window
 
     private async void Print_Click(object sender, RoutedEventArgs e)
     {
-        // If a system printer is configured, print directly without any dialog
+        // If a thermal printer is configured, use ESC/POS raw printing only
         if (!string.IsNullOrWhiteSpace(ConfiguredPrinterName))
         {
             try
             {
-                // Try ESC/POS raw printing first (thermal printers)
-                bool rawSuccess = false;
-                try
+                if (_isKitchenSlip)
                 {
-                    if (_isKitchenSlip)
-                    {
-                        await _printService.PrintKotAsync(BuildKotData(_receiptData), ConfiguredPrinterName);
-                    }
-                    else
-                    {
-                        await _printService.PrintReceiptAsync(_receiptData, ConfiguredPrinterName);
-                    }
-
-                    // Combined mode: also print kitchen slip
-                    if (_isCombined && _kitchenData != null)
-                    {
-                        await _printService.PrintKotAsync(BuildKotData(_kitchenData), ConfiguredPrinterName);
-                    }
-                    rawSuccess = true;
+                    await _printService.PrintKotAsync(BuildKotData(_receiptData), ConfiguredPrinterName);
                 }
-                catch
+                else
                 {
-                    // ESC/POS raw failed — fall through to visual print (NOT dialog)
-                    rawSuccess = false;
+                    await _printService.PrintReceiptAsync(_receiptData, ConfiguredPrinterName);
                 }
 
-                if (!rawSuccess)
+                // Combined mode: also print kitchen slip
+                if (_isCombined && _kitchenData != null)
                 {
-                    // Fallback: print visual directly to the configured printer (no dialog)
-                    PrintDirectToConfiguredPrinter();
+                    await _printService.PrintKotAsync(BuildKotData(_kitchenData), ConfiguredPrinterName);
                 }
 
                 Close();
@@ -847,12 +830,12 @@ public partial class PrintPreviewWindow : Window
             }
         }
 
-        // No printer configured: print visual directly to default printer (no dialog)
+        // No thermal printer configured — visual print to default Windows printer
         try
         {
             PrintDirectToConfiguredPrinter();
         }
-        catch (Exception ex)
+        catch
         {
             // Last resort: show print dialog
             var printDialog = new PrintDialog();

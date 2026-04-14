@@ -228,7 +228,11 @@ public partial class MainPOSViewModel : BaseViewModel
     private Order? _currentOrder;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsDineInOrder))]
     private OrderType _selectedOrderType = OrderType.DineIn;
+
+    /// <summary>True only for DineIn — Delivery/Takeaway settle payment in their own sections.</summary>
+    public bool IsDineInOrder => SelectedOrderType == OrderType.DineIn;
 
     [ObservableProperty]
     private string _orderNumber = string.Empty;
@@ -611,7 +615,32 @@ public partial class MainPOSViewModel : BaseViewModel
     {
         var items = await _menuService.GetMenuItemsByCategoryAsync(categoryId);
         MenuItems.Clear();
-        foreach (var item in items)
+
+        // For deal items without a Description, build it from DealItem components
+        var itemList = items.ToList();
+        var needsDesc = itemList.Where(i => string.IsNullOrWhiteSpace(i.Description)
+            && i.Category?.Name == "Deals").ToList();
+
+        if (needsDesc.Count > 0)
+        {
+            var deals = await _db.Deals
+                .Include(d => d.Items).ThenInclude(di => di.MenuItem)
+                .Where(d => d.IsActive)
+                .ToListAsync();
+
+            foreach (var mi in needsDesc)
+            {
+                var deal = deals.FirstOrDefault(d =>
+                    d.Name.Equals(mi.Name, StringComparison.OrdinalIgnoreCase));
+                if (deal != null && deal.Items.Count > 0)
+                {
+                    mi.Description = "Includes: " + string.Join(", ",
+                        deal.Items.Select(di => $"{di.MenuItem.Name} ×{di.Quantity}"));
+                }
+            }
+        }
+
+        foreach (var item in itemList)
             MenuItems.Add(item);
     }
 

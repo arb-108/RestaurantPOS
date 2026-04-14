@@ -20,6 +20,7 @@ public partial class SettingsViewModel : BaseViewModel
     private readonly ISettingsService _settingsService;
     private readonly IAuthService _authService;
     private readonly PosDbContext _db;
+    private readonly IDatabaseMaintenanceService _maintenance;
 
     [ObservableProperty] private int _selectedTab;
 
@@ -165,15 +166,15 @@ public partial class SettingsViewModel : BaseViewModel
     //  CONSTRUCTOR
     // ══════════════════════════════════════════════
 
-    public SettingsViewModel(ISettingsService settingsService, IAuthService authService, PosDbContext db)
+    public SettingsViewModel(ISettingsService settingsService, IAuthService authService, PosDbContext db,
+        IDatabaseMaintenanceService maintenance)
     {
         _settingsService = settingsService;
         _authService = authService;
         _db = db;
+        _maintenance = maintenance;
         Title = "Settings";
-        BackupPath = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "RestaurantPOS", "backups");
+        BackupPath = DatabaseConfig.GetBackupPath();
         ApplyTabPermissions();
     }
 
@@ -437,7 +438,8 @@ public partial class SettingsViewModel : BaseViewModel
         {
             if (!Directory.Exists(BackupPath)) Directory.CreateDirectory(BackupPath);
 
-            var files = Directory.GetFiles(BackupPath, "*.db")
+            var ext = _maintenance.BackupExtension;
+            var files = Directory.GetFiles(BackupPath, $"*{ext}")
                 .OrderByDescending(f => File.GetLastWriteTime(f))
                 .Take(50);
 
@@ -462,16 +464,11 @@ public partial class SettingsViewModel : BaseViewModel
         return Task.CompletedTask;
     }
 
-    private void LoadDatabaseInfo()
+    private async void LoadDatabaseInfo()
     {
         try
         {
-            var dbPath = DatabaseConfig.GetDatabasePath();
-            if (File.Exists(dbPath))
-            {
-                var fi = new FileInfo(dbPath);
-                DatabaseSize = FormatFileSize(fi.Length);
-            }
+            DatabaseSize = await _maintenance.GetDatabaseSizeAsync();
         }
         catch { }
     }
@@ -481,15 +478,7 @@ public partial class SettingsViewModel : BaseViewModel
     {
         try
         {
-            if (!Directory.Exists(BackupPath)) Directory.CreateDirectory(BackupPath);
-
-            var dbPath = DatabaseConfig.GetDatabasePath();
-            var backupFile = Path.Combine(BackupPath, $"posdata-{DateTime.Now:yyyyMMdd-HHmmss}.db");
-
-            // Flush WAL first
-            await _db.Database.ExecuteSqlRawAsync("PRAGMA wal_checkpoint(TRUNCATE);");
-
-            File.Copy(dbPath, backupFile, true);
+            var backupFile = await _maintenance.BackupAsync();
 
             await LoadBackupsAsync();
             BackupStatus = $"Backup created: {Path.GetFileName(backupFile)}";
@@ -514,13 +503,7 @@ public partial class SettingsViewModel : BaseViewModel
 
         try
         {
-            var dbPath = DatabaseConfig.GetDatabasePath();
-
-            // Create a safety backup first
-            var safetyBackup = Path.Combine(BackupPath, $"posdata-pre-restore-{DateTime.Now:yyyyMMdd-HHmmss}.db");
-            File.Copy(dbPath, safetyBackup, true);
-
-            File.Copy(SelectedBackup.FilePath, dbPath, true);
+            await _maintenance.RestoreAsync(SelectedBackup.FilePath);
 
             BackupStatus = "Database restored. Please restart the application.";
             StatusMessage = "Database restored! Please restart application.";
@@ -541,14 +524,12 @@ public partial class SettingsViewModel : BaseViewModel
         {
             var dialog = new SaveFileDialog
             {
-                Filter = "SQLite Database|*.db",
-                FileName = $"posdata-export-{DateTime.Now:yyyyMMdd}.db"
+                Filter = _maintenance.FileFilter,
+                FileName = $"posdata-export-{DateTime.Now:yyyyMMdd}{_maintenance.BackupExtension}"
             };
             if (dialog.ShowDialog() != true) return;
 
-            var dbPath = DatabaseConfig.GetDatabasePath();
-            await _db.Database.ExecuteSqlRawAsync("PRAGMA wal_checkpoint(TRUNCATE);");
-            File.Copy(dbPath, dialog.FileName, true);
+            await _maintenance.ExportAsync(dialog.FileName);
             StatusMessage = "Database exported!";
         }
         catch (Exception ex)
@@ -564,14 +545,12 @@ public partial class SettingsViewModel : BaseViewModel
         {
             var dialog = new OpenFileDialog
             {
-                Filter = "SQLite Database|*.db",
+                Filter = _maintenance.FileFilter,
                 Title = "Select database file to import"
             };
             if (dialog.ShowDialog() != true) return;
 
-            // Copy to backups folder
-            var destFile = Path.Combine(BackupPath, Path.GetFileName(dialog.FileName));
-            File.Copy(dialog.FileName, destFile, true);
+            await _maintenance.ImportAsync(dialog.FileName);
             await LoadBackupsAsync();
             StatusMessage = "Backup imported to backup list!";
         }

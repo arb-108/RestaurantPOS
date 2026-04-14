@@ -2037,7 +2037,8 @@
                         </StackPanel>
                         <Button x:Name="BillPrintBtn" Grid.Column="2" Content="Bill Print"
                                 Style="{StaticResource BillPrintButton}" Height="36"
-                                Command="{Binding BillPrintCommand}"/>
+                                Command="{Binding BillPrintCommand}"
+                                IsEnabled="{Binding IsDineInOrder}"/>
                     </Grid>
 
                     <!-- ── Row 1: New Order | Cash/Card/Online/COD ── -->
@@ -2096,12 +2097,14 @@
                     <Button Grid.Row="4" Grid.Column="0"
                             Content="Un-Paid Bill" Style="{StaticResource UnPaidBillButton}"
                             Height="38" FontSize="12" Margin="0,0,0,0"
-                            Command="{Binding UnPaidBillCommand}"/>
+                            Command="{Binding UnPaidBillCommand}"
+                            IsEnabled="{Binding IsDineInOrder}"/>
 
                     <Button x:Name="CheckoutBtn" Grid.Row="4" Grid.Column="2"
                             Content="Checkout" Style="{StaticResource CheckoutButton}"
                             Height="38" FontSize="16"
-                            Command="{Binding CheckoutCommand}"/>
+                            Command="{Binding CheckoutCommand}"
+                            IsEnabled="{Binding IsDineInOrder}"/>
                 </Grid>
             </Border>
         </Grid>

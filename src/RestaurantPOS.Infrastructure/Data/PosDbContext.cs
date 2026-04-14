@@ -1,4 +1,6 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using RestaurantPOS.Domain.Entities;
 using RestaurantPOS.Domain.Enums;
 
@@ -73,6 +75,16 @@ public class PosDbContext : DbContext
     public DbSet<SyncQueue> SyncQueues => Set<SyncQueue>();
     public DbSet<DailySummary> DailySummaries => Set<DailySummary>();
 
+    /// <summary>
+    /// SQL Server: Register a model-finalizing convention that sets ALL foreign keys
+    /// to NoAction. This runs AFTER the full model is built, catching every FK
+    /// including convention-discovered ones. Prevents Error 1785.
+    /// </summary>
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        configurationBuilder.Conventions.Add(_ => new NoActionDeleteConvention());
+    }
+
     protected override void OnModelCreating(ModelBuilder mb)
     {
         base.OnModelCreating(mb);
@@ -107,26 +119,7 @@ public class PosDbContext : DbContext
             .HasOne(c => c.Parent)
             .WithMany(c => c.Children)
             .HasForeignKey(c => c.ParentId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        // ─── Order relationships ───
-        mb.Entity<Order>()
-            .HasOne(o => o.Waiter)
-            .WithMany()
-            .HasForeignKey(o => o.WaiterId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-        mb.Entity<Order>()
-            .HasOne(o => o.Cashier)
-            .WithMany()
-            .HasForeignKey(o => o.CashierId)
-            .OnDelete(DeleteBehavior.SetNull);
-
-        mb.Entity<Order>()
-            .HasOne(o => o.ApprovedBy)
-            .WithMany()
-            .HasForeignKey(o => o.ApprovedByUserId)
-            .OnDelete(DeleteBehavior.SetNull);
+            .OnDelete(DeleteBehavior.NoAction);
 
         // ─── Enums stored as strings ───
         mb.Entity<Order>().Property(o => o.OrderType).HasConversion<string>();
@@ -427,8 +420,8 @@ public class PosDbContext : DbContext
             new MenuItem { Id = 13, Name = "Coleslaw", CategoryId = 6, BasePrice = 15000, CostPrice = 5000, KitchenStationId = 1, TaxRateId = 1, DisplayOrder = 3, CreatedAt = now, UpdatedAt = now },
             new MenuItem { Id = 14, Name = "Plain Naan", CategoryId = 7, BasePrice = 5000, CostPrice = 2000, KitchenStationId = 7, TaxRateId = 2, DisplayOrder = 1, CreatedAt = now, UpdatedAt = now },
             new MenuItem { Id = 15, Name = "Garlic Naan", CategoryId = 7, BasePrice = 8000, CostPrice = 3000, KitchenStationId = 7, TaxRateId = 2, DisplayOrder = 2, CreatedAt = now, UpdatedAt = now },
-            new MenuItem { Id = 16, Name = "Family Bucket Deal", CategoryId = 8, BasePrice = 250000, CostPrice = 110000, KitchenStationId = 1, TaxRateId = 1, DisplayOrder = 1, CreatedAt = now, UpdatedAt = now },
-            new MenuItem { Id = 17, Name = "Zinger Meal", CategoryId = 8, BasePrice = 85000, CostPrice = 38000, KitchenStationId = 1, TaxRateId = 1, DisplayOrder = 2, CreatedAt = now, UpdatedAt = now },
+            new MenuItem { Id = 16, Name = "Family Bucket Deal", CategoryId = 8, BasePrice = 250000, CostPrice = 110000, KitchenStationId = 1, TaxRateId = 1, DisplayOrder = 1, Description = "Includes: Hot Wings (12pc) ×1, Large Fries ×1, Pepsi 1.5L ×1, Coleslaw ×1", CreatedAt = now, UpdatedAt = now },
+            new MenuItem { Id = 17, Name = "Zinger Meal", CategoryId = 8, BasePrice = 85000, CostPrice = 38000, KitchenStationId = 1, TaxRateId = 1, DisplayOrder = 2, Description = "Includes: Zinger Burger ×1, Regular Fries ×1, Pepsi Regular ×1", CreatedAt = now, UpdatedAt = now },
             new MenuItem { Id = 18, Name = "Pepsi Regular", CategoryId = 9, BasePrice = 12000, CostPrice = 6000, KitchenStationId = 5, TaxRateId = 1, DisplayOrder = 1, CreatedAt = now, UpdatedAt = now },
             new MenuItem { Id = 19, Name = "Pepsi 1.5L", CategoryId = 9, BasePrice = 20000, CostPrice = 10000, KitchenStationId = 5, TaxRateId = 1, DisplayOrder = 2, CreatedAt = now, UpdatedAt = now },
             new MenuItem { Id = 20, Name = "Chocolate Brownie", CategoryId = 10, BasePrice = 25000, CostPrice = 10000, KitchenStationId = 6, TaxRateId = 1, DisplayOrder = 1, CreatedAt = now, UpdatedAt = now }
@@ -553,5 +546,53 @@ public class PosDbContext : DbContext
             new Recipe { MenuItemId = 20, IngredientId = 5,  Quantity = 0.04m },  // Brownie → Sugar
             new Recipe { MenuItemId = 20, IngredientId = 3,  Quantity = 0.03m }   // Brownie → Oil (butter)
         );
+
+        // ── Deals (combo meals) ──
+        mb.Entity<Deal>().HasData(
+            new Deal
+            {
+                Id = 1, Name = "Family Bucket Deal", Description = "8pc Chicken + Large Fries + Pepsi 1.5L + Coleslaw",
+                DealPrice = 250000, OriginalPrice = 305000, DisplayOrder = 1, CategoryId = 8, CreatedAt = now, UpdatedAt = now
+            },
+            new Deal
+            {
+                Id = 2, Name = "Zinger Meal", Description = "Zinger Burger + Regular Fries + Pepsi Regular",
+                DealPrice = 85000, OriginalPrice = 87000, DisplayOrder = 2, CategoryId = 8, CreatedAt = now, UpdatedAt = now
+            }
+        );
+
+        // ── Deal Items (components inside each deal) ──
+        mb.Entity<DealItem>().HasData(
+            // Family Bucket Deal: Hot Wings 12pc + Large Fries + Pepsi 1.5L + Coleslaw
+            new DealItem { Id = 1, DealId = 1, MenuItemId = 8,  Quantity = 1, CreatedAt = now, UpdatedAt = now },  // Hot Wings (12pc)
+            new DealItem { Id = 2, DealId = 1, MenuItemId = 12, Quantity = 1, CreatedAt = now, UpdatedAt = now },  // Large Fries
+            new DealItem { Id = 3, DealId = 1, MenuItemId = 19, Quantity = 1, CreatedAt = now, UpdatedAt = now },  // Pepsi 1.5L
+            new DealItem { Id = 4, DealId = 1, MenuItemId = 13, Quantity = 1, CreatedAt = now, UpdatedAt = now },  // Coleslaw
+
+            // Zinger Meal: Zinger Burger + Regular Fries + Pepsi Regular
+            new DealItem { Id = 5, DealId = 2, MenuItemId = 1,  Quantity = 1, CreatedAt = now, UpdatedAt = now },  // Zinger Burger
+            new DealItem { Id = 6, DealId = 2, MenuItemId = 11, Quantity = 1, CreatedAt = now, UpdatedAt = now },  // Regular Fries
+            new DealItem { Id = 7, DealId = 2, MenuItemId = 18, Quantity = 1, CreatedAt = now, UpdatedAt = now }   // Pepsi Regular
+        );
+    }
+}
+
+/// <summary>
+/// EF Core model-finalizing convention that sets ALL foreign key relationships to NoAction.
+/// This prevents SQL Server Error 1785 (multiple cascade paths) across the entire model.
+/// Runs after all entities and relationships are fully discovered.
+/// </summary>
+internal class NoActionDeleteConvention : IModelFinalizingConvention
+{
+    public void ProcessModelFinalizing(IConventionModelBuilder modelBuilder,
+        IConventionContext<IConventionModelBuilder> context)
+    {
+        foreach (var entityType in modelBuilder.Metadata.GetEntityTypes())
+        {
+            foreach (var fk in entityType.GetForeignKeys())
+            {
+                fk.SetDeleteBehavior(DeleteBehavior.NoAction);
+            }
+        }
     }
 }
