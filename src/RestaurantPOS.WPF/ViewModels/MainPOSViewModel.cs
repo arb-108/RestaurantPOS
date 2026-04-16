@@ -1847,6 +1847,9 @@ public partial class MainPOSViewModel : BaseViewModel
             return;
         }
 
+        // K-Slip must be sent to the kitchen before Checkout
+        if (!ValidateKitchenSlipSent()) return;
+
         IsBusy = true;
         try
         {
@@ -1986,6 +1989,10 @@ public partial class MainPOSViewModel : BaseViewModel
     private async Task UnPaidBillAsync()
     {
         if (OrderItems.Count == 0) return;
+
+        // K-Slip must be sent to the kitchen before Un-Paid Bill
+        // (Un-Paid implies food was prepared — kitchen must have received the order)
+        if (!ValidateKitchenSlipSent()) return;
 
         // Only require admin/manager authorization if current user is Cashier
         if (_authService == null) return;
@@ -2410,6 +2417,32 @@ public partial class MainPOSViewModel : BaseViewModel
     }
 
     /// <summary>
+    /// Validate that ALL current order items have been sent to the kitchen (K-Slip printed).
+    /// Blocks Bill Print / Checkout / Un-Paid Bill until a K-Slip has been sent.
+    /// New items or increased quantities must also be sent before proceeding.
+    /// </summary>
+    private bool ValidateKitchenSlipSent()
+    {
+        if (OrderItems.Count == 0) return true;
+
+        // Any item with zero printed qty OR qty increased since last print = pending kitchen send
+        bool hasUnsent = OrderItems.Any(oi =>
+            !oi.KitchenPrinted || oi.Quantity > oi.KitchenPrintedQty);
+
+        if (hasUnsent)
+        {
+            System.Windows.MessageBox.Show(
+                "Please send the Kitchen Slip (K-Bill) first.\n\nAll items must be sent to the kitchen before Bill Print, Checkout, or Un-Paid Bill.",
+                "Kitchen Slip Required",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
+            return false;
+        }
+
+        return true;
+    }
+
+    /// <summary>
     /// Validate that mobile number is provided and matched for Delivery/Takeaway orders.
     /// </summary>
     private bool ValidateMobileForOrderType()
@@ -2438,6 +2471,9 @@ public partial class MainPOSViewModel : BaseViewModel
         }
 
         if (!ValidateMobileForOrderType()) return;
+
+        // K-Slip must be sent first — unless this IS the combined K-Bill print
+        if (!IsKBill && !ValidateKitchenSlipSent()) return;
 
         var receiptData = BuildReceiptData();
 

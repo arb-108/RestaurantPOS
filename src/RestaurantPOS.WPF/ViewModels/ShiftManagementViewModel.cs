@@ -430,7 +430,7 @@ public partial class ShiftManagementViewModel : BaseViewModel
     {
         if (!HasActiveShift || ActiveShift == null) return;
 
-        var dlg = new CashDrawerEntryWindow("Pay Out — Cash Removed from Drawer")
+        var dlg = new CashDrawerEntryWindow("Pay Out — Cash Removed from Drawer", isPayOut: true)
         {
             Owner = System.Windows.Application.Current.MainWindow
         };
@@ -445,6 +445,21 @@ public partial class ShiftManagementViewModel : BaseViewModel
                 Description = dlg.EntryDescription,
                 UserId = _mainVm.LoggedInUser?.Id
             });
+
+            // Optionally record as expense
+            if (dlg.AddToExpenses)
+            {
+                _db.SupplierExpenses.Add(new SupplierExpense
+                {
+                    Description = dlg.EntryDescription,
+                    Amount = dlg.AmountPaisa,
+                    ExpenseDate = DateTime.UtcNow,
+                    Category = "Cash Payout",
+                    IsPaid = true,
+                    Notes = $"Shift #{ActiveShift.Id} — Pay Out"
+                });
+            }
+
             await _db.SaveChangesAsync();
             await RefreshActiveShiftAsync();
         }

@@ -8,13 +8,24 @@ public partial class CashDrawerEntryWindow : Window
 {
     public long AmountPaisa { get; private set; }
     public string EntryDescription { get; private set; } = string.Empty;
+    public bool AddToExpenses { get; private set; }
 
+    private readonly bool _isPayOut;
     private static readonly Regex NumericRegex = new(@"[^0-9.]", RegexOptions.Compiled);
 
-    public CashDrawerEntryWindow(string title)
+    public CashDrawerEntryWindow(string title, bool isPayOut = false)
     {
         InitializeComponent();
-        TxtTitle.Text = title;
+        Title = title;
+        _isPayOut = isPayOut;
+
+        // Show expense checkbox only for PayOut
+        if (isPayOut)
+        {
+            ChkExpense.Visibility = Visibility.Visible;
+            LblDesc.Text = "DESCRIPTION *";
+        }
+
         TxtAmount.PreviewTextInput += NumericOnly;
         DataObject.AddPastingHandler(TxtAmount, NumericPaste);
         TxtAmount.Focus();
@@ -34,8 +45,18 @@ public partial class CashDrawerEntryWindow : Window
             return;
         }
 
+        // Description is mandatory for PayOut
+        if (_isPayOut && string.IsNullOrWhiteSpace(TxtDesc.Text))
+        {
+            MessageBox.Show("Description is required for Pay Out.", "Validation",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            TxtDesc.Focus();
+            return;
+        }
+
         AmountPaisa = (long)(amount * 100);
         EntryDescription = TxtDesc.Text.Trim();
+        AddToExpenses = _isPayOut && ChkExpense.IsChecked == true;
         DialogResult = true;
     }
 
