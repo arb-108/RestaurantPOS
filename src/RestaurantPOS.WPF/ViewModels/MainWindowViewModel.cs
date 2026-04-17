@@ -208,17 +208,41 @@ public partial class MainWindowViewModel : BaseViewModel
     }
 
     [RelayCommand]
-    private void NavigateToLogin()
-    {
-        IsLoggedIn = false;
-        NavigateTo<LoginViewModel>();
-    }
+    private void NavigateToLogin() => ShowLoginWindow();
 
     [RelayCommand]
-    private void Lock()
+    private void Lock() => ShowLoginWindow();
+
+    /// <summary>
+    /// Hides the MainWindow (POS) and shows the fixed-size LoginWindow.
+    /// Used for both explicit Lock (F12) and Log out flows.
+    /// On cancel → app shuts down. On success → MainWindow re-shown.
+    /// </summary>
+    private void ShowLoginWindow()
     {
         IsLoggedIn = false;
-        NavigateTo<LoginViewModel>();
+
+        // Hide the POS MainWindow so it doesn't sit visible in the background
+        var mainWin = System.Windows.Application.Current.MainWindow;
+        mainWin?.Hide();
+
+        var loginVm = (LoginViewModel)_serviceProvider.GetService(typeof(LoginViewModel))!;
+        var loginWin = new Views.LoginWindow(loginVm)
+        {
+            WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
+        };
+        var ok = loginWin.ShowDialog();
+
+        if (ok != true)
+        {
+            // User dismissed without logging in — shut the app down
+            System.Windows.Application.Current.Shutdown();
+            return;
+        }
+
+        // Login succeeded — re-show the MainWindow (maximized state is preserved)
+        mainWin?.Show();
+        mainWin?.Activate();
     }
 
     public async void OnUserLoggedIn(Domain.Entities.User user)

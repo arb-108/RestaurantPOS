@@ -16,6 +16,7 @@ public partial class LoginViewModel : BaseViewModel
     private string _password = string.Empty;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(PinMask))]
     private string _pinEntry = string.Empty;
 
     [ObservableProperty]
@@ -26,6 +27,12 @@ public partial class LoginViewModel : BaseViewModel
 
     [ObservableProperty]
     private bool _showPasswordLogin;
+
+    /// <summary>Raised after a successful login so the host window can close itself.</summary>
+    public event Action? LoginSucceeded;
+
+    /// <summary>Masked PIN display (one '*' per entered digit) used by the PIN display TextBlock.</summary>
+    public string PinMask => new string('*', PinEntry?.Length ?? 0);
 
     public LoginViewModel(IAuthService authService, MainWindowViewModel mainWindow)
     {
@@ -72,7 +79,10 @@ public partial class LoginViewModel : BaseViewModel
             var user = await _authService.LoginWithPinAsync(PinEntry);
             if (user != null)
             {
+                // Clear fields on success so the window is clean next time
+                PinEntry = string.Empty;
                 _mainWindow.OnUserLoggedIn(user);
+                LoginSucceeded?.Invoke();
             }
             else
             {
@@ -83,6 +93,7 @@ public partial class LoginViewModel : BaseViewModel
         catch (Exception ex)
         {
             ErrorMessage = $"Login failed: {ex.Message}";
+            PinEntry = string.Empty;
         }
         finally
         {
@@ -107,16 +118,22 @@ public partial class LoginViewModel : BaseViewModel
             var user = await _authService.LoginAsync(Username, Password);
             if (user != null)
             {
+                // Clear fields on success
+                Username = string.Empty;
+                Password = string.Empty;
                 _mainWindow.OnUserLoggedIn(user);
+                LoginSucceeded?.Invoke();
             }
             else
             {
                 ErrorMessage = "Invalid username or password.";
+                Password = string.Empty;
             }
         }
         catch (Exception ex)
         {
             ErrorMessage = $"Login failed: {ex.Message}";
+            Password = string.Empty;
         }
         finally
         {
@@ -130,5 +147,8 @@ public partial class LoginViewModel : BaseViewModel
         ShowPinPad = !ShowPinPad;
         ShowPasswordLogin = !ShowPasswordLogin;
         ErrorMessage = string.Empty;
+        PinEntry = string.Empty;
+        Username = string.Empty;
+        Password = string.Empty;
     }
 }

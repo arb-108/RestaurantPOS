@@ -92,6 +92,7 @@ public partial class App : System.Windows.Application
 
                 // ── Main Window ──
                 services.AddSingleton<MainWindow>();
+                services.AddTransient<Views.LoginWindow>();
             })
             .Build();
 
@@ -122,7 +123,19 @@ public partial class App : System.Windows.Application
         var mainVm = _host.Services.GetRequiredService<MainWindowViewModel>();
         mainWindow.DataContext = mainVm;
 
-        mainVm.NavigateTo<LoginViewModel>();
+        // ── Show dedicated LoginWindow first (fixed-size, centered, NOT maximized) ──
+        var loginVm = _host.Services.GetRequiredService<LoginViewModel>();
+        var loginWin = new Views.LoginWindow(loginVm);
+        var ok = loginWin.ShowDialog();
+
+        if (ok != true)
+        {
+            // User closed the login window — exit
+            Shutdown();
+            return;
+        }
+
+        // Login succeeded — mainVm is already in logged-in state; show the MainWindow maximized
         mainWindow.Show();
         base.OnStartup(e);
     }
