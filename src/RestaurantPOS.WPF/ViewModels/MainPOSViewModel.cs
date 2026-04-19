@@ -141,6 +141,55 @@ public partial class MainPOSViewModel : BaseViewModel
         ApplyPermissions();
     }
 
+    /// <summary>
+    /// Clears in-memory POS state (orders, billing list, current cart, table status cache)
+    /// and re-loads open orders + tables from the database.
+    /// MUST be called whenever the logged-in user changes so that a different user does
+    /// not see stale data (e.g. admin billing rows bleeding into cashier session, or tables
+    /// showing "Occupied" after their session was closed in a different login).
+    /// </summary>
+    public async Task ResetUserSessionStateAsync()
+    {
+        try
+        {
+            // 1) Drop all in-memory order state (hold/delivery/takeaway/dine-in caches)
+            _orderStates.Clear();
+            HoldOrders.Clear();
+            DeliveryOrders.Clear();
+            TakeawayOrders.Clear();
+
+            // 2) Clear current cart / billing grid so cashier doesn't see admin's rows
+            OrderItems.Clear();
+            BillingHistory.Clear();
+            SelectedBillingOrder = null;
+            _currentOrder = null;
+
+            // 3) Force-refresh tables from the DB — status might have changed in another
+            //    session (or an order might still be open). ReloadOpenOrders then re-applies
+            //    occupied state only for tables with a live TableSession.
+            var freshTables = (await _tableService.GetTablesAsync())
+                .OrderBy(t => t.Name.Contains("Family", StringComparison.OrdinalIgnoreCase) ? 1 : 0)
+                .ThenBy(t => t.DisplayOrder)
+                .ToList();
+            Tables.Clear();
+            foreach (var t in freshTables)
+            {
+                // Start every table as Available; ReloadOpenOrders will re-mark the
+                // ones that actually have an open session.
+                t.Status = TableStatus.Available;
+                Tables.Add(t);
+            }
+            SelectedTable = null;
+
+            // 4) Re-load open/on-hold orders from DB (includes those created by other users)
+            await ReloadOpenOrdersFromDbAsync();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[ResetUserSessionState] {ex.Message}");
+        }
+    }
+
     // ═══════════════════════════════════════════════
     //  PERMISSION-BASED UI GUARDS
     // ═══════════════════════════════════════════════
@@ -1305,11 +1354,12 @@ public partial class MainPOSViewModel : BaseViewModel
                         noteInfo.AppendLine($"Mobile: {state.CustomerPhone}");
 
                     var notes = noteInfo.ToString().TrimEnd();
-                    if (!string.IsNullOrEmpty(notes) || custId.HasValue)
-                        await _orderService.UpdateOrderNotesAsync(state.Order.Id, string.IsNullOrEmpty(notes) ? null : notes, custId);
-
-                    await _orderService.CalculateTotalsAsync(state.Order.Id, state.DiscountPercent, state.TaxPercent);
-                    await _orderService.CheckoutAsync(state.Order.Id, settleWindow.SelectedPaymentMethodId, takeaway.TotalAmount);
+                    await _orderService.CheckoutFastAsync(
+                        state.Order.Id,
+                        settleWindow.SelectedPaymentMethodId,
+                        takeaway.TotalAmount,
+                        state.DiscountPercent, state.TaxPercent,
+                        custId, string.IsNullOrEmpty(notes) ? null : notes);
                 }
 
                 _orderStates.Remove(takeaway.StateKey);
@@ -1322,7 +1372,7 @@ public partial class MainPOSViewModel : BaseViewModel
 
                 RefreshTakeawayOrders();
                 RefreshHoldOrders();
-                await LoadBillingHistoryAsync();
+                _ = LoadBillingHistoryAsync();
             }
             catch (Exception ex)
             {
@@ -1352,6 +1402,7 @@ public partial class MainPOSViewModel : BaseViewModel
             RestaurantAddress = _receiptAddress,
             RestaurantPhone = _receiptPhone,
             OrderNumber = state.OrderNumber,
+            DateTime = DateTime.Now,
             OrderType = state.OrderType.ToString(),
             CashierName = _loggedInUser?.FullName ?? "Admin",
             SubTotal = subTotal,
@@ -1498,12 +1549,13 @@ public partial class MainPOSViewModel : BaseViewModel
                     if (!string.IsNullOrEmpty(state.CustomerAddress))
                         deliveryInfo.AppendLine($"Address: {state.CustomerAddress}");
 
-                    // Link customer to order (so it shows in Customer Management)
                     int? custId = state.MatchedCustomer?.Id;
-                    await _orderService.UpdateOrderNotesAsync(state.Order.Id, deliveryInfo.ToString().TrimEnd(), custId);
-
-                    await _orderService.CalculateTotalsAsync(state.Order.Id, state.DiscountPercent, state.TaxPercent);
-                    await _orderService.CheckoutAsync(state.Order.Id, settleWindow.SelectedPaymentMethodId, grandTotal);
+                    await _orderService.CheckoutFastAsync(
+                        state.Order.Id,
+                        settleWindow.SelectedPaymentMethodId,
+                        grandTotal,
+                        state.DiscountPercent, state.TaxPercent,
+                        custId, deliveryInfo.ToString().TrimEnd());
                 }
 
                 // Remove from state store (fully closed)
@@ -1518,8 +1570,8 @@ public partial class MainPOSViewModel : BaseViewModel
                 RefreshDeliveryOrders();
                 RefreshHoldOrders();
 
-                // Refresh billing history so the settled order appears immediately
-                await LoadBillingHistoryAsync();
+                // Refresh billing history in the background so UI returns immediately
+                _ = LoadBillingHistoryAsync();
             }
             catch (Exception ex)
             {
@@ -1551,6 +1603,7 @@ public partial class MainPOSViewModel : BaseViewModel
                 RestaurantAddress = _receiptAddress,
                 RestaurantPhone = _receiptPhone,
                 OrderNumber = state.OrderNumber,
+                DateTime = DateTime.Now,
                 OrderType = state.OrderType.ToString(),
                 CashierName = _loggedInUser?.FullName ?? "Admin",
                 SubTotal = subTotal,
@@ -1714,7 +1767,7 @@ public partial class MainPOSViewModel : BaseViewModel
     //  TOTALS CALCULATION
     // ══════════════════════════════════════════════════════════
 
-    private void RecalculateTotals()
+    public void RecalculateTotals()
     {
         SubTotal = OrderItems.Sum(oi => oi.LineTotal);
 
@@ -1853,13 +1906,12 @@ public partial class MainPOSViewModel : BaseViewModel
         IsBusy = true;
         try
         {
-            // Link customer to order for ALL order types (so it shows in Customer Management)
-            if (_matchedCustomer != null)
-            {
-                await _orderService.UpdateOrderNotesAsync(_currentOrder.Id, null, _matchedCustomer.Id);
-            }
+            // Build notes / customerId in-memory — these used to be two
+            // separate round-trips via UpdateOrderNotesAsync but are now
+            // folded into CheckoutFastAsync.
+            string? notes = null;
+            int? custId = _matchedCustomer?.Id;
 
-            // For delivery orders, save delivery info to Order.Notes before checkout
             if (SelectedOrderType == OrderType.Delivery)
             {
                 var stKey = $"{SelectedOrderType}-{OrderNumber}";
@@ -1874,15 +1926,18 @@ public partial class MainPOSViewModel : BaseViewModel
                         dInfo.AppendLine($"Customer: {CustomerName}");
                     if (!string.IsNullOrEmpty(CustomerPhone))
                         dInfo.AppendLine($"Mobile: {CustomerPhone}");
-
-                    int? custId = _matchedCustomer?.Id;
-                    await _orderService.UpdateOrderNotesAsync(_currentOrder.Id, dInfo.ToString().TrimEnd(), custId);
+                    notes = dInfo.ToString().TrimEnd();
                 }
             }
 
-            await _orderService.CalculateTotalsAsync(_currentOrder.Id, DiscountPercent, TaxPercent);
             var tendered = CashTendered > 0 ? CashTendered : GrandTotal;
-            await _orderService.CheckoutAsync(_currentOrder.Id, 1, tendered);
+
+            // ONE DB round-trip: notes, totals, payment, stock, kitchen,
+            // table, cash drawer — all in a single SaveChangesAsync.
+            await _orderService.CheckoutFastAsync(
+                _currentOrder.Id, 1, tendered,
+                DiscountPercent, TaxPercent,
+                custId, notes);
 
             // Remove from state store
             var stateKey = SelectedOrderType == OrderType.DineIn
@@ -1908,8 +1963,10 @@ public partial class MainPOSViewModel : BaseViewModel
             ClearBillingSection();
             RefreshHoldOrders();
 
-            // Refresh billing history so the closed order appears immediately
-            await LoadBillingHistoryAsync();
+            // Refresh billing history in the background so UI returns
+            // immediately — awaiting this blocked the cashier for several
+            // seconds on every checkout.
+            _ = LoadBillingHistoryAsync();
         }
         finally
         {
@@ -1994,17 +2051,73 @@ public partial class MainPOSViewModel : BaseViewModel
         // (Un-Paid implies food was prepared — kitchen must have received the order)
         if (!ValidateKitchenSlipSent()) return;
 
-        // Only require admin/manager authorization if current user is Cashier
+        await PerformUnPaidBillCoreAsync(isCardAction: false);
+    }
+
+    /// <summary>
+    /// Un-Paid Bill triggered from a Delivery card. Restores the target order first,
+    /// then executes the standard Un-Paid flow.
+    /// </summary>
+    [RelayCommand]
+    private async Task UnPaidDeliveryAsync(DeliveryOrderViewModel? order)
+    {
+        if (order == null) return;
+        if (!_orderStates.TryGetValue(order.StateKey, out var state)) return;
+
+        // Swap the currently edited order out, then load the target delivery order so
+        // _currentOrder / OrderItems reflect it when the Un-Paid helper runs.
+        SaveCurrentOrderState();
+        RestoreOrderState(state);
+
+        if (OrderItems.Count == 0) return;
+        await PerformUnPaidBillCoreAsync(isCardAction: true);
+    }
+
+    /// <summary>
+    /// Un-Paid Bill triggered from a Takeaway card. Restores the target order first,
+    /// then executes the standard Un-Paid flow.
+    /// </summary>
+    [RelayCommand]
+    private async Task UnPaidTakeawayAsync(TakeawayOrderViewModel? order)
+    {
+        if (order == null) return;
+        if (!_orderStates.TryGetValue(order.StateKey, out var state)) return;
+
+        SaveCurrentOrderState();
+        RestoreOrderState(state);
+
+        if (OrderItems.Count == 0) return;
+        await PerformUnPaidBillCoreAsync(isCardAction: true);
+    }
+
+    /// <summary>
+    /// Shared Un-Paid Bill logic. Runs auth + reason prompts, then performs the DB update and
+    /// state cleanup. Nested modal dialogs are sequenced via the dispatcher to avoid the stacked
+    /// modal-pump deadlock that could freeze the app when invoked from card actions.
+    /// </summary>
+    private async Task PerformUnPaidBillCoreAsync(bool isCardAction)
+    {
         if (_authService == null) return;
+
+        // Only require admin/manager authorization if current user is Cashier
         bool isCashier = !_authService.HasPermission("Void / cancel orders", minimumLevel: 5);
         string authorizedBy;
         if (isCashier)
         {
-            var authWindow = new Views.ManagerAuthWindow(_authService);
-            authWindow.Owner = System.Windows.Application.Current.MainWindow;
-            if (authWindow.ShowDialog() != true)
-                return;
+            var authWindow = new Views.ManagerAuthWindow(_authService)
+            {
+                Owner = System.Windows.Application.Current.MainWindow
+            };
+            var authOk = authWindow.ShowDialog();
+            if (authOk != true) return;
             authorizedBy = authWindow.AuthorizedBy;
+
+            // Yield to let the auth window's dispatcher frame fully unwind BEFORE we
+            // open the reason dialog. Stacking two ShowDialog() calls back-to-back after
+            // an async-void Authorize click handler can leave the dispatcher in a stuck
+            // state on some machines (observed as "app stuck" on hold orders).
+            await System.Windows.Threading.Dispatcher.Yield(
+                System.Windows.Threading.DispatcherPriority.Background);
         }
         else
         {
@@ -2012,35 +2125,61 @@ public partial class MainPOSViewModel : BaseViewModel
         }
 
         // Open the UnPaid Bill reason window
-        var reasonWindow = new Views.UnPaidBillWindow();
-        reasonWindow.Owner = System.Windows.Application.Current.MainWindow;
+        var reasonWindow = new Views.UnPaidBillWindow
+        {
+            Owner = System.Windows.Application.Current.MainWindow
+        };
         var result = reasonWindow.ShowDialog();
 
         if (result != true || string.IsNullOrWhiteSpace(reasonWindow.Reason))
             return;
 
+        // Yield again so the reason dialog is fully torn down before we start
+        // awaiting a DB call (prevents dispatcher-frame re-entry issues).
+        await System.Windows.Threading.Dispatcher.Yield(
+            System.Windows.Threading.DispatcherPriority.Background);
+
         var reason = $"{reasonWindow.Reason} [Authorized by: {authorizedBy}]";
 
-        // Mark as Void in database with reason
-        if (_currentOrder != null)
+        // Capture state BEFORE awaiting so we can clean up deterministically afterwards,
+        // regardless of what happens to _currentOrder during the async gap.
+        var orderIdToVoid = _currentOrder?.Id ?? 0;
+        var tableToClear = SelectedTable;
+        var orderNumberSnapshot = OrderNumber;
+        var orderTypeSnapshot = SelectedOrderType;
+
+        // Mark as Void in database with reason (wrapped so a DB failure doesn't freeze the UI)
+        if (orderIdToVoid > 0)
         {
-            await _orderService.VoidOrderAsync(_currentOrder.Id, $"Un-Paid: {reason}", _loggedInUser?.Id ?? 1);
+            try
+            {
+                await _orderService.VoidOrderAsync(orderIdToVoid, $"Un-Paid: {reason}", _loggedInUser?.Id ?? 1);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"[UnPaidBill] VoidOrderAsync failed: {ex.Message}");
+                System.Windows.MessageBox.Show(
+                    $"Failed to mark order as Un-Paid in database:\n{ex.Message}",
+                    "Un-Paid Bill",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
+                return;
+            }
         }
 
         // Remove saved order state
-        if (SelectedTable != null)
+        if (tableToClear != null)
         {
-            var key = $"table-{SelectedTable.Id}";
+            var key = $"table-{tableToClear.Id}";
             _orderStates.Remove(key);
 
-            SelectedTable.Status = TableStatus.Available;
-            var tbl = SelectedTable;
+            tableToClear.Status = TableStatus.Available;
             SelectedTable = null;
-            RefreshTableInList(tbl);
+            RefreshTableInList(tableToClear);
         }
-        else if (!string.IsNullOrEmpty(OrderNumber))
+        else if (!string.IsNullOrEmpty(orderNumberSnapshot))
         {
-            var key = $"{SelectedOrderType}-{OrderNumber}";
+            var key = $"{orderTypeSnapshot}-{orderNumberSnapshot}";
             _orderStates.Remove(key);
         }
 
@@ -2208,10 +2347,14 @@ public partial class MainPOSViewModel : BaseViewModel
 
     /// <summary>
     /// Select a customer from the dropdown list.
+    /// Opens the details window pre-filled with caret on the Address field so the
+    /// cashier can quickly correct/confirm the address. Enter in Address → Save → closes.
     /// </summary>
     [RelayCommand]
-    private void SelectCustomerFromSearch(Customer customer)
+    private async Task SelectCustomerFromSearchAsync(Customer? customer)
     {
+        if (customer == null) return;
+
         _matchedCustomer = customer;
         CustomerPhone = customer.Phone;
         CustomerName = customer.Name;
@@ -2224,7 +2367,46 @@ public partial class MainPOSViewModel : BaseViewModel
         if (_currentOrder != null && _currentOrder.CustomerId != customer.Id)
         {
             _currentOrder.CustomerId = customer.Id;
-            _ = _orderService.UpdateOrderNotesAsync(_currentOrder.Id, _currentOrder.Notes, customer.Id);
+            await _orderService.UpdateOrderNotesAsync(_currentOrder.Id, _currentOrder.Notes, customer.Id);
+        }
+
+        // Open the details window so cashier can review/edit (cursor starts in Address).
+        var addr = customer.Addresses?.FirstOrDefault(a => a.IsDefault)?.AddressLine1
+                   ?? customer.Addresses?.FirstOrDefault()?.AddressLine1 ?? string.Empty;
+
+        var detailWindow = new Views.AddCustomerWindow(
+            customer.Name, customer.Phone,
+            customer.Email ?? string.Empty, addr,
+            focusAddress: true);
+        detailWindow.Owner = System.Windows.Application.Current.MainWindow;
+
+        if (detailWindow.ShowDialog() == true)
+        {
+            // Persist any edits the cashier made (primarily the address)
+            customer.Name = detailWindow.CustomerName;
+            customer.Phone = detailWindow.CustomerPhone;
+            customer.Email = string.IsNullOrWhiteSpace(detailWindow.CustomerEmail) ? null : detailWindow.CustomerEmail;
+
+            var existingAddr = customer.Addresses?.FirstOrDefault(a => a.IsDefault)
+                               ?? customer.Addresses?.FirstOrDefault();
+            if (existingAddr != null)
+                existingAddr.AddressLine1 = detailWindow.CustomerAddress;
+            else if (!string.IsNullOrWhiteSpace(detailWindow.CustomerAddress))
+            {
+                customer.Addresses ??= [];
+                customer.Addresses.Add(new CustomerAddress
+                {
+                    Label = "Primary",
+                    AddressLine1 = detailWindow.CustomerAddress,
+                    IsDefault = true
+                });
+            }
+
+            try { await _customerService.UpdateCustomerAsync(customer); }
+            catch { /* ignore – cashier may lack permission; in-memory copy still updated */ }
+
+            CustomerName = customer.Name;
+            CustomerPhone = customer.Phone;
         }
     }
 
@@ -2403,11 +2585,12 @@ public partial class MainPOSViewModel : BaseViewModel
                 {
                     data.Items.Add(new ReceiptItem
                     {
-                        Name = $"   {dc.ItemName} ×{dc.Qty}",
-                        Quantity = 0,      // 0 = sub-item, no separate qty column
+                        Name = dc.ItemName,
+                        Quantity = dc.Qty,
                         UnitPrice = 0,
                         LineTotal = 0,
-                        Notes = null
+                        Notes = null,
+                        IsDealSubItem = true
                     });
                 }
             }
@@ -2832,30 +3015,15 @@ public partial class MainPOSViewModel : BaseViewModel
                 ).ToList();
             }
 
-            // Retroactively link orders that have customer phone in notes but no CustomerId
-            var unlinked = list.Where(o => o.CustomerId == null && !string.IsNullOrEmpty(o.Notes) && o.Notes.Contains("Mobile:")).ToList();
-            if (unlinked.Count > 0)
-            {
-                foreach (var order in unlinked)
-                {
-                    // Extract phone from "Mobile: xxx" line in notes
-                    var mobileLine = order.Notes!.Split('\n').FirstOrDefault(l => l.TrimStart().StartsWith("Mobile:"));
-                    if (mobileLine != null)
-                    {
-                        var phone = mobileLine.Substring(mobileLine.IndexOf(':') + 1).Trim();
-                        if (!string.IsNullOrEmpty(phone))
-                        {
-                            var customer = await _db.Customers.FirstOrDefaultAsync(c => c.Phone == phone);
-                            if (customer != null)
-                            {
-                                order.CustomerId = customer.Id;
-                                order.Customer = customer;
-                            }
-                        }
-                    }
-                }
-                await _db.SaveChangesAsync();
-            }
+            // ── Retroactive customer linking removed from hot-path ──
+            // Previously: for EACH unlinked order we ran a separate
+            //   _db.Customers.FirstOrDefaultAsync(c => c.Phone == phone)
+            // query + a SaveChangesAsync at the end. That made checkout
+            // visibly slow (several seconds) because CheckoutAsync awaits
+            // LoadBillingHistoryAsync(). Linking is already done at the
+            // moment an order is created (UpdateOrderNotesAsync links
+            // CustomerId directly), so this one-time cleanup is no longer
+            // needed during normal billing history refresh.
 
             BillingHistory.Clear();
             foreach (var order in list)
@@ -3030,6 +3198,8 @@ public class DeliveryOrderViewModel
     public bool CanComplete => DeliveryStatus == "Dispatched";
     public bool CanPay => DeliveryStatus == "Dispatched" || DeliveryStatus == "Completed";
     public bool CanPrint => true;  // Always available
+    // Un-Paid is permitted as long as the order hasn't been settled yet.
+    public bool CanMarkUnpaid => !IsSettled;
 }
 
 public class TakeawayOrderViewModel
@@ -3078,6 +3248,8 @@ public class TakeawayOrderViewModel
     public bool CanMarkReady => TakeawayStatus == "Preparing";
     public bool CanComplete => TakeawayStatus == "Ready";
     public bool CanPay => TakeawayStatus == "Ready" || TakeawayStatus == "Completed";
+    // Un-Paid is permitted as long as the order hasn't been settled yet.
+    public bool CanMarkUnpaid => !IsSettled;
 }
 
 public class HoldOrderViewModel

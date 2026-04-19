@@ -271,14 +271,14 @@
                                                     Margin="0,0,4,0"
                                                     Command="{Binding DataContext.SelectCustomerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}"
-                                                    Visibility="{Binding DataContext.CanManageCustomers, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"/>
+                                                    Visibility="{Binding DataContext.CanDeleteCustomers, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"/>
                                             <Button Style="{StaticResource SmallBtn}" Content="Edit" Background="#FF8F00"
                                                     Margin="0,0,4,0"
                                                     Command="{Binding DataContext.EditCustomerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     Visibility="{Binding DataContext.CanManageCustomers, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"/>
                                             <Button Style="{StaticResource SmallBtn}" Content="Delete" Background="#E53935"
                                                     Command="{Binding DataContext.DeleteCustomerCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                                    Visibility="{Binding DataContext.CanManageCustomers, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"/>
+                                                    Visibility="{Binding DataContext.CanDeleteCustomers, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BoolToVis}}"/>
                                         </StackPanel>
                                     </DataTemplate>
                                 </DataGridTemplateColumn.CellTemplate>

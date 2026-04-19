@@ -35,6 +35,14 @@ public partial class AddCustomerWindow : Window
     /// Used when phone is matched and user presses Enter.
     /// </summary>
     public AddCustomerWindow(string name, string phone, string email, string address)
+        : this(name, phone, email, address, focusAddress: false) { }
+
+    /// <summary>
+    /// Edit mode with explicit focus choice.
+    /// When focusAddress=true the caret lands in the Address field (ready to edit);
+    /// Enter in Address → Save button → Save.
+    /// </summary>
+    public AddCustomerWindow(string name, string phone, string email, string address, bool focusAddress)
     {
         InitializeComponent();
         IsEditMode = true;
@@ -47,8 +55,20 @@ public partial class AddCustomerWindow : Window
 
         _fields = [TxtName, TxtMobile, TxtEmail, TxtAddress];
 
-        // Focus Save button on load so Enter immediately closes
-        Loaded += (_, _) => BtnSave.Focus();
+        if (focusAddress)
+        {
+            Loaded += (_, _) =>
+            {
+                TxtAddress.Focus();
+                TxtAddress.CaretIndex = TxtAddress.Text?.Length ?? 0;
+                TxtAddress.SelectAll();
+            };
+        }
+        else
+        {
+            // Focus Save button on load so Enter immediately closes
+            Loaded += (_, _) => BtnSave.Focus();
+        }
 
         PreviewKeyDown += OnFormKeyDown;
     }

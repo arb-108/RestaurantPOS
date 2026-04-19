@@ -1121,9 +1121,9 @@
                                                     </Grid>
 
                                                     <!-- Row 3: Action Buttons (step-wise enabled per phase) -->
-                                                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,2,0,0">
+                                                    <WrapPanel Grid.Row="2" Orientation="Horizontal" Margin="0,2,0,0">
                                                         <!-- Edit Order (Preparing only) -->
-                                                        <Button Cursor="Hand" Margin="0,0,4,0" ToolTip="Edit Order"
+                                                        <Button Cursor="Hand" Margin="0,0,4,4" ToolTip="Edit Order"
                                                                 IsEnabled="{Binding CanEdit}"
                                                                 Command="{Binding DataContext.EditDeliveryOrderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                 CommandParameter="{Binding}">
@@ -1263,7 +1263,7 @@
                                                         </Button>
 
                                                         <!-- Print (Always enabled) -->
-                                                        <Button Cursor="Hand" Margin="0,0,0,0" ToolTip="Print Receipt"
+                                                        <Button Cursor="Hand" Margin="0,0,4,4" ToolTip="Print Receipt"
                                                                 Command="{Binding DataContext.PrintDeliveryOrderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                 CommandParameter="{Binding}">
                                                             <Button.Template>
@@ -1285,7 +1285,35 @@
                                                                 </ControlTemplate>
                                                             </Button.Template>
                                                         </Button>
-                                                    </StackPanel>
+
+                                                        <!-- Un-Paid (only when not yet settled) -->
+                                                        <Button Cursor="Hand" Margin="0,0,0,4" ToolTip="Mark Un-Paid"
+                                                                IsEnabled="{Binding CanMarkUnpaid}"
+                                                                Command="{Binding DataContext.UnPaidDeliveryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding}">
+                                                            <Button.Template>
+                                                                <ControlTemplate TargetType="Button">
+                                                                    <Border x:Name="Bb" Background="#FFCDD2" CornerRadius="4" Padding="8,4">
+                                                                        <StackPanel Orientation="Horizontal">
+                                                                            <TextBlock Text="&#xE71D;" FontFamily="Segoe MDL2 Assets"
+                                                                                       FontSize="11" Foreground="#C62828" Margin="0,0,4,0"
+                                                                                       VerticalAlignment="Center"/>
+                                                                            <TextBlock Text="Un-Paid" FontSize="10" FontWeight="SemiBold"
+                                                                                       Foreground="#C62828" VerticalAlignment="Center"/>
+                                                                        </StackPanel>
+                                                                    </Border>
+                                                                    <ControlTemplate.Triggers>
+                                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                                            <Setter TargetName="Bb" Property="Background" Value="#EF9A9A"/>
+                                                                        </Trigger>
+                                                                        <Trigger Property="IsEnabled" Value="False">
+                                                                            <Setter TargetName="Bb" Property="Opacity" Value="0.4"/>
+                                                                        </Trigger>
+                                                                    </ControlTemplate.Triggers>
+                                                                </ControlTemplate>
+                                                            </Button.Template>
+                                                        </Button>
+                                                    </WrapPanel>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
@@ -1504,9 +1532,9 @@
                                                     </Grid>
 
                                                     <!-- Row 3: Action Buttons -->
-                                                    <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,2,0,0">
+                                                    <WrapPanel Grid.Row="2" Orientation="Horizontal" Margin="0,2,0,0">
                                                         <!-- Edit (Preparing only) -->
-                                                        <Button Cursor="Hand" Margin="0,0,4,0" ToolTip="Edit Order"
+                                                        <Button Cursor="Hand" Margin="0,0,4,4" ToolTip="Edit Order"
                                                                 IsEnabled="{Binding CanEdit}"
                                                                 Command="{Binding DataContext.EditTakeawayOrderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                 CommandParameter="{Binding}">
@@ -1646,7 +1674,7 @@
                                                         </Button>
 
                                                         <!-- Print (Always) -->
-                                                        <Button Cursor="Hand" Margin="0,0,0,0" ToolTip="Print Receipt"
+                                                        <Button Cursor="Hand" Margin="0,0,4,4" ToolTip="Print Receipt"
                                                                 Command="{Binding DataContext.PrintTakeawayOrderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                                 CommandParameter="{Binding}">
                                                             <Button.Template>
@@ -1668,7 +1696,35 @@
                                                                 </ControlTemplate>
                                                             </Button.Template>
                                                         </Button>
-                                                    </StackPanel>
+
+                                                        <!-- Un-Paid (only when not yet settled) -->
+                                                        <Button Cursor="Hand" Margin="0,0,0,4" ToolTip="Mark Un-Paid"
+                                                                IsEnabled="{Binding CanMarkUnpaid}"
+                                                                Command="{Binding DataContext.UnPaidTakeawayCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                CommandParameter="{Binding}">
+                                                            <Button.Template>
+                                                                <ControlTemplate TargetType="Button">
+                                                                    <Border x:Name="Bb" Background="#FFCDD2" CornerRadius="4" Padding="8,4">
+                                                                        <StackPanel Orientation="Horizontal">
+                                                                            <TextBlock Text="&#xE71D;" FontFamily="Segoe MDL2 Assets"
+                                                                                       FontSize="11" Foreground="#C62828" Margin="0,0,4,0"
+                                                                                       VerticalAlignment="Center"/>
+                                                                            <TextBlock Text="Un-Paid" FontSize="10" FontWeight="SemiBold"
+                                                                                       Foreground="#C62828" VerticalAlignment="Center"/>
+                                                                        </StackPanel>
+                                                                    </Border>
+                                                                    <ControlTemplate.Triggers>
+                                                                        <Trigger Property="IsMouseOver" Value="True">
+                                                                            <Setter TargetName="Bb" Property="Background" Value="#EF9A9A"/>
+                                                                        </Trigger>
+                                                                        <Trigger Property="IsEnabled" Value="False">
+                                                                            <Setter TargetName="Bb" Property="Opacity" Value="0.4"/>
+                                                                        </Trigger>
+                                                                    </ControlTemplate.Triggers>
+                                                                </ControlTemplate>
+                                                            </Button.Template>
+                                                        </Button>
+                                                    </WrapPanel>
                                                 </Grid>
                                             </Border>
                                         </DataTemplate>
@@ -1760,7 +1816,8 @@
                           IsReadOnly="False"
                           VirtualizingPanel.IsVirtualizing="True"
                           Background="White"
-                          KeyboardNavigation.TabNavigation="None">
+                          KeyboardNavigation.TabNavigation="None"
+                          CellEditEnding="OrderGrid_CellEditEnding">
                     <DataGrid.ColumnHeaderStyle>
                         <Style TargetType="DataGridColumnHeader">
                             <Setter Property="Background" Value="{StaticResource GridHeaderBrush}"/>
@@ -1799,10 +1856,10 @@
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Qty" Binding="{Binding Quantity}" Width="50"/>
+                        <DataGridTextColumn x:Name="QtyColumn" Header="Qty" Binding="{Binding Quantity}" Width="50"/>
                         <DataGridTextColumn Header="Rate" Binding="{Binding PriceDisplay}" Width="75" IsReadOnly="True"/>
                         <DataGridTextColumn Header="Total" Binding="{Binding LineTotalDisplay}" Width="75" IsReadOnly="True"/>
-                        <DataGridTextColumn Header="Remarks" Binding="{Binding Remarks}" Width="*"/>
+                        <DataGridTextColumn x:Name="RemarksColumn" Header="Remarks" Binding="{Binding Remarks, UpdateSourceTrigger=PropertyChanged}" Width="*"/>
                     </DataGrid.Columns>
                 </DataGrid>
             </Border>
@@ -2232,7 +2289,7 @@
                             <DataTemplate>
                                 <Border Background="White" CornerRadius="6" Margin="4,4"
                                         BorderBrush="#E0E0E0" BorderThickness="1" Padding="12,10"
-                                        Width="420">
+                                        Width="560">
                                     <Grid>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -2433,7 +2490,7 @@
                                                     </ControlTemplate>
                                                 </Button.Template>
                                             </Button>
-                                            <Button Cursor="Hand" ToolTip="Print Receipt"
+                                            <Button Cursor="Hand" Margin="0,0,4,0" ToolTip="Print Receipt"
                                                     Command="{Binding DataContext.PrintDeliveryOrderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}">
                                                 <Button.Template>
@@ -2449,6 +2506,31 @@
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
                                                                 <Setter TargetName="Bb" Property="Background" Value="#E1BEE7"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                            <Button Cursor="Hand" ToolTip="Mark Un-Paid"
+                                                    IsEnabled="{Binding CanMarkUnpaid}"
+                                                    Command="{Binding DataContext.UnPaidDeliveryCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="Bb" Background="#FFCDD2" CornerRadius="4" Padding="8,4">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="&#xE71D;" FontFamily="Segoe MDL2 Assets"
+                                                                           FontSize="11" Foreground="#C62828" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                                <TextBlock Text="Un-Paid" FontSize="10" FontWeight="SemiBold"
+                                                                           Foreground="#C62828" VerticalAlignment="Center"/>
+                                                            </StackPanel>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="Bb" Property="Background" Value="#EF9A9A"/>
+                                                            </Trigger>
+                                                            <Trigger Property="IsEnabled" Value="False">
+                                                                <Setter TargetName="Bb" Property="Opacity" Value="0.4"/>
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>
@@ -2586,7 +2668,7 @@
                             <DataTemplate>
                                 <Border Background="White" CornerRadius="6" Margin="4,4"
                                         BorderBrush="#E0E0E0" BorderThickness="1" Padding="12,10"
-                                        Width="420">
+                                        Width="560">
                                     <Grid>
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="Auto"/>
@@ -2776,7 +2858,7 @@
                                                     </ControlTemplate>
                                                 </Button.Template>
                                             </Button>
-                                            <Button Cursor="Hand" ToolTip="Print Receipt"
+                                            <Button Cursor="Hand" Margin="0,0,4,0" ToolTip="Print Receipt"
                                                     Command="{Binding DataContext.PrintTakeawayOrderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
                                                     CommandParameter="{Binding}">
                                                 <Button.Template>
@@ -2792,6 +2874,31 @@
                                                         <ControlTemplate.Triggers>
                                                             <Trigger Property="IsMouseOver" Value="True">
                                                                 <Setter TargetName="Bb" Property="Background" Value="#E1BEE7"/>
+                                                            </Trigger>
+                                                        </ControlTemplate.Triggers>
+                                                    </ControlTemplate>
+                                                </Button.Template>
+                                            </Button>
+                                            <Button Cursor="Hand" ToolTip="Mark Un-Paid"
+                                                    IsEnabled="{Binding CanMarkUnpaid}"
+                                                    Command="{Binding DataContext.UnPaidTakeawayCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                    CommandParameter="{Binding}">
+                                                <Button.Template>
+                                                    <ControlTemplate TargetType="Button">
+                                                        <Border x:Name="Bb" Background="#FFCDD2" CornerRadius="4" Padding="8,4">
+                                                            <StackPanel Orientation="Horizontal">
+                                                                <TextBlock Text="&#xE71D;" FontFamily="Segoe MDL2 Assets"
+                                                                           FontSize="11" Foreground="#C62828" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                                                <TextBlock Text="Un-Paid" FontSize="10" FontWeight="SemiBold"
+                                                                           Foreground="#C62828" VerticalAlignment="Center"/>
+                                                            </StackPanel>
+                                                        </Border>
+                                                        <ControlTemplate.Triggers>
+                                                            <Trigger Property="IsMouseOver" Value="True">
+                                                                <Setter TargetName="Bb" Property="Background" Value="#EF9A9A"/>
+                                                            </Trigger>
+                                                            <Trigger Property="IsEnabled" Value="False">
+                                                                <Setter TargetName="Bb" Property="Opacity" Value="0.4"/>
                                                             </Trigger>
                                                         </ControlTemplate.Triggers>
                                                     </ControlTemplate>

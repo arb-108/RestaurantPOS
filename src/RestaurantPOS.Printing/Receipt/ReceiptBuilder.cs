@@ -135,8 +135,17 @@ public class ReceiptBuilder
         foreach (var item in d.Items)
         {
             var printName = StripNonPrintable(item.Name);
-            if (item.Quantity == 0 && item.UnitPrice == 0)
+
+            if (item.IsDealSubItem)
             {
+                // Indented deal component — mirrors kitchen slip style
+                // e.g. "     1  - Pepsi Regular"
+                var qtyStr = item.Quantity > 0 ? item.Quantity.ToString() : "1";
+                WriteText(ms, $"     {qtyStr.PadLeft(2)}  - {printName}");
+            }
+            else if (item.Quantity == 0 && item.UnitPrice == 0)
+            {
+                // Legacy plain sub-line fallback
                 WriteText(ms, $"  {printName}");
             }
             else

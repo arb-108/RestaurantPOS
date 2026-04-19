@@ -43,8 +43,9 @@ public partial class CustomerManagementViewModel : BaseViewModel
     [ObservableProperty] private int _goldPlatinumCount;
 
     // ── Role-based visibility ──
-    [ObservableProperty] private bool _canSeeStats;        // admin/manager only
-    [ObservableProperty] private bool _canManageCustomers;  // admin/manager only (level >= 5)
+    [ObservableProperty] private bool _canSeeStats;          // admin/manager only (level >= 5)
+    [ObservableProperty] private bool _canManageCustomers;   // view/add/edit — cashier + admin/manager (level >= 2)
+    [ObservableProperty] private bool _canDeleteCustomers;   // delete — admin/manager only (level >= 5)
 
     // ── Selected customer detail ──
     [ObservableProperty] private CustomerRowViewModel? _selectedCustomer;
@@ -67,10 +68,13 @@ public partial class CustomerManagementViewModel : BaseViewModel
         _authService = authService;
         Title = "Customer Management";
 
-        // Role-based: level >= 5 = admin/manager full control, level 2 = cashier read-only
+        // Role-based:
+        //   level >= 5 → admin/manager: full control incl. delete + stats
+        //   level >= 2 → cashier: view, add, edit (no delete, no stats)
         var level = _authService.GetAccessLevel("Manage customers & loyalty");
         CanSeeStats = level >= 5;
-        CanManageCustomers = level >= 5;
+        CanManageCustomers = level >= 2;
+        CanDeleteCustomers = level >= 5;
     }
 
     [RelayCommand]

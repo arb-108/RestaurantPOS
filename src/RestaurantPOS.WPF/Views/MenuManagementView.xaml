@@ -171,6 +171,13 @@
                     <Button Background="#2196F3" Style="{StaticResource Btn}" Command="{Binding AddCategoryCommand}" Margin="0,0,6,0">
                         <TextBlock Text="Add Category"/>
                     </Button>
+                    <Button Background="#DC2626" Style="{StaticResource Btn}" Command="{Binding DeleteCategoryCommand}" Margin="0,0,6,0"
+                            ToolTip="Permanently delete the category selected in the Category filter">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE74D;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/>
+                            <TextBlock Text="Delete Category"/>
+                        </StackPanel>
+                    </Button>
                     <Button Background="#7B1FA2" Style="{StaticResource Btn}" Command="{Binding SetCategoryImageCommand}" Margin="0,0,6,0"
                             ToolTip="Upload image for the selected category filter">
                         <StackPanel Orientation="Horizontal">

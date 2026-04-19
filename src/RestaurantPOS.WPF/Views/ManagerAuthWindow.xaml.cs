@@ -17,8 +17,15 @@ public partial class ManagerAuthWindow : Window
         TxtUsername.Focus();
     }
 
+    // Guards against re-entrant clicks while an auth request is in flight. Double-clicking
+    // the Authorize button can launch two overlapping LoginAsync awaits which, combined with
+    // the modal ShowDialog pump in the caller, was observed as the app freezing.
+    private bool _isAuthorizing;
+
     private async void Authorize_Click(object sender, RoutedEventArgs e)
     {
+        if (_isAuthorizing) return;
+
         TxtError.Text = "";
 
         var username = TxtUsername.Text?.Trim();
@@ -35,6 +42,10 @@ public partial class ManagerAuthWindow : Window
             TxtError.Text = "Please enter a password or PIN.";
             return;
         }
+
+        _isAuthorizing = true;
+        var senderButton = sender as System.Windows.Controls.Button;
+        if (senderButton != null) senderButton.IsEnabled = false;
 
         try
         {
@@ -65,6 +76,11 @@ public partial class ManagerAuthWindow : Window
         catch (Exception ex)
         {
             TxtError.Text = $"Authentication error: {ex.Message}";
+        }
+        finally
+        {
+            _isAuthorizing = false;
+            if (senderButton != null) senderButton.IsEnabled = true;
         }
     }
 

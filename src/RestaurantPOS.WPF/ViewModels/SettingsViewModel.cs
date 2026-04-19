@@ -476,17 +476,21 @@ public partial class SettingsViewModel : BaseViewModel
     [RelayCommand]
     private async Task BackupDatabaseAsync()
     {
-        try
+        // Open the dedicated Backup & Restore dialog
+        var dlg = new Views.BackupDialog(_maintenance)
         {
-            var backupFile = await _maintenance.BackupAsync();
+            Owner = System.Windows.Application.Current.Windows
+                .OfType<System.Windows.Window>()
+                .FirstOrDefault(w => w.IsActive) ?? System.Windows.Application.Current.MainWindow
+        };
+        dlg.ShowDialog();
 
-            await LoadBackupsAsync();
-            BackupStatus = $"Backup created: {Path.GetFileName(backupFile)}";
-            StatusMessage = "Database backup completed!";
-        }
-        catch (Exception ex)
+        if (dlg.BackupListChanged)
         {
-            BackupStatus = $"Backup failed: {ex.Message}";
+            await LoadBackupsAsync();
+            LoadDatabaseInfo();
+            BackupStatus = "Backup list refreshed.";
+            StatusMessage = "Backup list refreshed.";
         }
     }
 
@@ -541,22 +545,21 @@ public partial class SettingsViewModel : BaseViewModel
     [RelayCommand]
     private async Task ImportBackupAsync()
     {
-        try
+        // Same dedicated dialog — user can import, backup, or export in one place
+        var dlg = new Views.BackupDialog(_maintenance)
         {
-            var dialog = new OpenFileDialog
-            {
-                Filter = _maintenance.FileFilter,
-                Title = "Select database file to import"
-            };
-            if (dialog.ShowDialog() != true) return;
+            Owner = System.Windows.Application.Current.Windows
+                .OfType<System.Windows.Window>()
+                .FirstOrDefault(w => w.IsActive) ?? System.Windows.Application.Current.MainWindow
+        };
+        dlg.ShowDialog();
 
-            await _maintenance.ImportAsync(dialog.FileName);
-            await LoadBackupsAsync();
-            StatusMessage = "Backup imported to backup list!";
-        }
-        catch (Exception ex)
+        if (dlg.BackupListChanged)
         {
-            StatusMessage = $"Import failed: {ex.Message}";
+            await LoadBackupsAsync();
+            LoadDatabaseInfo();
+            StatusMessage = "Backup list refreshed.";
+            BackupStatus = "Backup list refreshed.";
         }
     }
 

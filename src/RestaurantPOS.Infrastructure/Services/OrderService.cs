@@ -134,6 +134,145 @@ public class OrderService : IOrderService
         return order;
     }
 
+    public async Task<Order> CheckoutFastAsync(int orderId, int paymentMethodId, long tenderedAmount,
+        decimal discountPercent, decimal taxPercent,
+        int? customerId, string? notes)
+    {
+        // Single load with every navigation we'll touch — avoids the extra
+        // UpdateOrderNotesAsync + CalculateTotalsAsync round-trips that the
+        // legacy CheckoutAsync relied on.
+        var order = await _db.Orders
+            .Include(o => o.OrderItems.Where(oi => oi.Status != OrderStatus.Void))
+                .ThenInclude(oi => oi.MenuItem)
+            .Include(o => o.TableSession)
+                .ThenInclude(ts => ts!.Table)
+            .FirstOrDefaultAsync(o => o.Id == orderId)
+            ?? throw new InvalidOperationException("Order not found");
+
+        // ── Notes / customer link (was UpdateOrderNotesAsync) ──
+        if (notes != null) order.Notes = notes;
+        if (customerId.HasValue) order.CustomerId = customerId;
+
+        // ── Totals (was CalculateTotalsAsync) ──
+        order.SubTotal = order.OrderItems.Sum(oi => oi.LineTotal);
+        order.DiscountAmount = discountPercent > 0
+            ? (long)(order.SubTotal * (long)discountPercent / 100m)
+            : order.DiscountAmount;
+        var taxable = order.SubTotal - order.DiscountAmount;
+        order.TaxAmount = taxPercent > 0 ? (long)(taxable * (long)taxPercent / 100m) : 0;
+        order.GrandTotal = taxable + order.TaxAmount + order.ServiceCharge + order.Adjustment;
+
+        // ── Payment ──
+        _db.Payments.Add(new Payment
+        {
+            OrderId = orderId,
+            PaymentMethodId = paymentMethodId,
+            Amount = order.GrandTotal,
+            TenderedAmount = tenderedAmount,
+            ChangeAmount = tenderedAmount - order.GrandTotal,
+            Status = PaymentStatus.Paid
+        });
+
+        order.Status = OrderStatus.Closed;
+        order.UpdatedAt = DateTime.UtcNow;
+
+        // ── Stock deduction (batch: one Recipes query, in-memory aggregate) ──
+        var menuItemIds = order.OrderItems.Select(oi => oi.MenuItemId).Distinct().ToList();
+        if (menuItemIds.Count > 0)
+        {
+            var recipes = await _db.Recipes
+                .Include(r => r.Ingredient)
+                .Where(r => menuItemIds.Contains(r.MenuItemId))
+                .ToListAsync();
+
+            if (recipes.Count > 0)
+            {
+                var deductions = new Dictionary<int, decimal>();
+                foreach (var oi in order.OrderItems)
+                {
+                    foreach (var r in recipes.Where(rr => rr.MenuItemId == oi.MenuItemId))
+                    {
+                        var q = r.Quantity * oi.Quantity;
+                        deductions[r.IngredientId] = deductions.TryGetValue(r.IngredientId, out var cur) ? cur + q : q;
+                    }
+                }
+                foreach (var (ingId, qty) in deductions)
+                {
+                    var ing = recipes.First(r => r.IngredientId == ingId).Ingredient;
+                    ing.CurrentStock -= qty;
+                    _db.StockMovements.Add(new StockMovement
+                    {
+                        IngredientId = ingId,
+                        Type = StockMovementType.Consumption,
+                        Quantity = -qty,
+                        CostAmount = (long)(qty * ing.CostPerUnit),
+                        Reference = order.OrderNumber,
+                        Notes = $"Auto-deducted on checkout ({order.OrderNumber})"
+                    });
+                }
+            }
+        }
+
+        // ── Customer total spent (no extra FindAsync — use tracked nav) ──
+        if (order.CustomerId.HasValue)
+        {
+            // Attach or update customer.TotalSpent via change tracker without
+            // an extra round-trip: run a targeted ExecuteUpdate-style add.
+            // EF Core 10: use tracked Customer if loaded, else a tiny query.
+            var customer = order.Customer ?? await _db.Customers.FindAsync(order.CustomerId.Value);
+            if (customer != null)
+            {
+                customer.TotalSpent += order.GrandTotal;
+                customer.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        // ── Close table session if dine-in (already included) ──
+        if (order.TableSession != null)
+        {
+            order.TableSession.ClosedAt = DateTime.UtcNow;
+            order.TableSession.Status = TableStatus.Available;
+            if (order.TableSession.Table != null)
+                order.TableSession.Table.Status = TableStatus.Available;
+        }
+
+        // ── Mark kitchen orders/items completed (one query) ──
+        var kitchenOrders = await _db.KitchenOrders
+            .Include(ko => ko.Items)
+            .Where(ko => ko.OrderId == orderId)
+            .ToListAsync();
+        foreach (var ko in kitchenOrders)
+        {
+            ko.Status = KitchenOrderStatus.Ready;
+            ko.UpdatedAt = DateTime.UtcNow;
+            foreach (var koi in ko.Items)
+            {
+                koi.Status = KitchenItemStatus.Done;
+                koi.CompletedAt ??= DateTime.UtcNow;
+            }
+        }
+
+        // ── Cash drawer log ──
+        if (order.ShiftId.HasValue)
+        {
+            var payMethod = await _db.PaymentMethods.FindAsync(paymentMethodId);
+            var isCash = payMethod?.Name?.Contains("Cash", StringComparison.OrdinalIgnoreCase) == true;
+            _db.CashDrawerLogs.Add(new CashDrawerLog
+            {
+                ShiftId = order.ShiftId.Value,
+                Type = CashDrawerLogType.Sale,
+                Amount = order.GrandTotal,
+                Description = $"{order.OrderNumber} ({(isCash ? "Cash" : payMethod?.Name ?? "Other")})",
+                OrderId = order.Id,
+                UserId = order.CashierId
+            });
+        }
+
+        // ── ONE SaveChangesAsync for the entire checkout ──
+        await _db.SaveChangesAsync();
+        return order;
+    }
+
     public async Task<Order> CheckoutAsync(int orderId, int paymentMethodId, long tenderedAmount)
     {
         var order = await GetOrderByIdAsync(orderId)

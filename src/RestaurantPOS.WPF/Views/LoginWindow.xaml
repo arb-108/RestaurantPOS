@@ -219,6 +219,8 @@
                                VerticalAlignment="Center" Margin="10,0,0,0"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal">
                         <Button Style="{StaticResource CaptionButton}"
+                                Content="&#xE968;" Click="DbSettings_Click" ToolTip="Database Settings"/>
+                        <Button Style="{StaticResource CaptionButton}"
                                 Content="&#xE921;" Click="Minimize_Click" ToolTip="Minimize"/>
                         <Button Style="{StaticResource CaptionCloseButton}"
                                 Content="&#xE8BB;" Click="Close_Click" ToolTip="Close"/>

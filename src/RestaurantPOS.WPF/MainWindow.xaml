@@ -7,7 +7,7 @@
         xmlns:views="clr-namespace:RestaurantPOS.WPF.Views"
         xmlns:conv="clr-namespace:RestaurantPOS.WPF.Converters"
         mc:Ignorable="d"
-        Title="KFC Restaurant POS"
+        Title="Restaurant POS"
         WindowState="Maximized"
         WindowStyle="SingleBorderWindow"
         ResizeMode="CanResize"
@@ -147,14 +147,14 @@
                                        Foreground="#555" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Button>
-                    <!-- Returns -->
+                    <!-- Orders -->
                     <Button Style="{StaticResource ToolbarButton}"
-                            Command="{Binding NavigateToOrdersCommand}" ToolTip="Returns"
+                            Command="{Binding NavigateToOrdersCommand}" ToolTip="Orders"
                             Visibility="{Binding CanAccessReturns, Converter={StaticResource BoolToVis}}">
                         <StackPanel HorizontalAlignment="Center">
                             <TextBlock Text="&#xE7A7;" FontFamily="Segoe MDL2 Assets" FontSize="22"
                                        HorizontalAlignment="Center" Foreground="#333"/>
-                            <TextBlock Text="Returns" FontSize="9" HorizontalAlignment="Center"
+                            <TextBlock Text="Orders" FontSize="9" HorizontalAlignment="Center"
                                        Foreground="#555" Margin="0,2,0,0"/>
                         </StackPanel>
                     </Button>

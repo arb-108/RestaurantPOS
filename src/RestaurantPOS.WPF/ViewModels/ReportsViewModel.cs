@@ -27,6 +27,8 @@ public partial class ReportsViewModel : BaseViewModel
     private readonly IPrintService _printService;
     private readonly ISettingsService _settingsService;
     private string _restaurantName = "KFC Restaurant";
+    private string _restaurantAddress = string.Empty;
+    private string _restaurantPhone = string.Empty;
     private string? _configuredPrinter;
 
     // ══════════════════════════════════════════════
@@ -283,6 +285,8 @@ public partial class ReportsViewModel : BaseViewModel
             _restaurantName = await _settingsService.GetSettingAsync("ReceiptRestaurantName")
                               ?? await _settingsService.GetSettingAsync("RestaurantName")
                               ?? "KFC Restaurant";
+            _restaurantAddress = await _settingsService.GetSettingAsync("ReceiptAddress") ?? string.Empty;
+            _restaurantPhone = await _settingsService.GetSettingAsync("ReceiptPhone") ?? string.Empty;
             var printer = await _db.Printers
                 .Where(p => p.IsActive && p.Type == Domain.Enums.PrinterType.Report && p.SystemPrinterName != null)
                 .FirstOrDefaultAsync()
@@ -1267,47 +1271,39 @@ public partial class ReportsViewModel : BaseViewModel
     {
         try
         {
-            var data = new ReceiptData
+            var subtitle = SalesReportMode == "Bill Wise"
+                ? "Bill Wise Sales"
+                : (SalesReportCategory != "All" ? $"Category: {SalesReportCategory}" : "All Items");
+
+            var report = new Views.ReportDocument
             {
+                Title = "Sales Report",
+                Subtitle = $"{subtitle}    |    Period: {SalesReportFrom:dd/MM/yyyy} - {SalesReportTo:dd/MM/yyyy}",
                 RestaurantName = _restaurantName,
-                OrderNumber = "Sales Report",
-                OrderType = SalesReportMode == "Bill Wise" ? "Bill Wise Sales" : (SalesReportCategory != "All" ? $"Category: {SalesReportCategory}" : "All Items"),
-                DateTime = DateTime.Now,
-                SubTotal = 0,
-                TaxAmount = 0,
-                DiscountAmount = 0,
-                GrandTotal = 0,
-                PaymentMethod = "-",
-                Items = []
+                RestaurantAddress = _restaurantAddress,
+                RestaurantPhone = _restaurantPhone,
+                Columns = new List<string> { "Item", "Qty", "Unit Price", "Total" },
+                Rows = SalesReportItems.Select(i => new List<string>
+                {
+                    i.ItemName,
+                    i.Qty.ToString(),
+                    $"Rs. {(i.Qty > 0 ? i.RawTotal / i.Qty : 0) / 100m:N2}",
+                    $"Rs. {i.RawTotal / 100m:N2}"
+                }).ToList(),
+                Summary = new List<(string, string)>
+                {
+                    ("Sale",         SaleTotal),
+                    ("Discount",     SaleDiscount),
+                    ("Grand Total",  SaleGrandTotal),
+                    ("Expenses",     SaleExpenses),
+                    ("Cash In Hand", SaleCashInHand)
+                }
             };
 
-            // Header info
-            data.Items.Add(new ReceiptItem { Name = $"Period: {SalesReportFrom:dd/MM/yy} - {SalesReportTo:dd/MM/yy}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
-            data.Items.Add(new ReceiptItem { Name = "─────────────────────────────", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
-
-            // Items
-            foreach (var item in SalesReportItems)
+            var preview = new Views.ReportPreviewWindow(report)
             {
-                data.Items.Add(new ReceiptItem
-                {
-                    Name = item.ItemName,
-                    Quantity = item.Qty,
-                    UnitPrice = item.Qty > 0 ? item.RawTotal / item.Qty : 0,
-                    LineTotal = item.RawTotal
-                });
-            }
-
-            // Summary
-            data.Items.Add(new ReceiptItem { Name = "─────────────────────────────", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
-            data.Items.Add(new ReceiptItem { Name = $"Sale: {SaleTotal}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
-            data.Items.Add(new ReceiptItem { Name = $"Discount: {SaleDiscount}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
-            data.Items.Add(new ReceiptItem { Name = $"Grand Total: {SaleGrandTotal}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
-            data.Items.Add(new ReceiptItem { Name = $"Expenses: {SaleExpenses}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
-            data.Items.Add(new ReceiptItem { Name = $"Cash In Hand: {SaleCashInHand}", Quantity = 0, UnitPrice = 0, LineTotal = 0 });
-
-            var preview = new Views.PrintPreviewWindow(data, _printService)
-                { ConfiguredPrinterName = _configuredPrinter };
-            preview.Owner = AppWindow.Current.MainWindow;
+                Owner = AppWindow.Current.MainWindow
+            };
             preview.ShowDialog();
         }
         catch (Exception ex)
@@ -1417,41 +1413,24 @@ public partial class ReportsViewModel : BaseViewModel
 
     private void OpenReportPreview(string title, List<(string label, string value)> lines)
     {
-        var data = BuildReportReceipt(title, lines);
-        var preview = new Views.PrintPreviewWindow(data, _printService)
-            { ConfiguredPrinterName = _configuredPrinter };
-        preview.Owner = AppWindow.Current.MainWindow;
-        preview.ShowDialog();
-    }
-
-    private ReceiptData BuildReportReceipt(string title, List<(string label, string value)> lines)
-    {
-        var data = new ReceiptData
+        var report = new Views.ReportDocument
         {
+            Title = title,
             RestaurantName = _restaurantName,
-            OrderNumber = "Report",
-            OrderType = title,
-            DateTime = DateTime.Now,
-            SubTotal = 0,
-            TaxAmount = 0,
-            DiscountAmount = 0,
-            GrandTotal = 0,
-            PaymentMethod = "-",
-            Items = []
+            RestaurantAddress = _restaurantAddress,
+            RestaurantPhone = _restaurantPhone,
+            Columns = new List<string> { "Description", "Value" },
+            Rows = lines
+                .Where(l => !string.IsNullOrWhiteSpace(l.value))
+                .Select(l => new List<string> { l.label, l.value })
+                .ToList()
         };
 
-        foreach (var (label, value) in lines)
+        var preview = new Views.ReportPreviewWindow(report)
         {
-            data.Items.Add(new ReceiptItem
-            {
-                Name = string.IsNullOrEmpty(value) ? label : $"{label}: {value}",
-                Quantity = 0,
-                UnitPrice = 0,
-                LineTotal = 0
-            });
-        }
-
-        return data;
+            Owner = AppWindow.Current.MainWindow
+        };
+        preview.ShowDialog();
     }
 }
 

@@ -261,15 +261,65 @@ public partial class MenuManagementViewModel : BaseViewModel
     private async Task DeleteProductAsync(MenuItem? item)
     {
         if (item == null) return;
-        var r = System.Windows.MessageBox.Show($"Delete \"{item.Name}\"?", "Confirm",
-            System.Windows.MessageBoxButton.YesNo, System.Windows.MessageBoxImage.Warning);
-        if (r == System.Windows.MessageBoxResult.Yes)
+
+        // Check whether this menu item is referenced by any historical orders.
+        // We cannot hard-delete while OrderItems still reference it (FK is NoAction),
+        // because that would break billing history.
+        var orderRefCount = await _db.OrderItems.CountAsync(oi => oi.MenuItemId == item.Id);
+        var dealRefCount = await _db.DealItems.CountAsync(di => di.MenuItemId == item.Id);
+
+        if (orderRefCount > 0 || dealRefCount > 0)
         {
-            item.IsActive = false;
-            item.UpdatedAt = DateTime.UtcNow;
+            var parts = new List<string>();
+            if (orderRefCount > 0) parts.Add($"{orderRefCount} order line(s)");
+            if (dealRefCount > 0) parts.Add($"{dealRefCount} deal component(s)");
+            var refs = string.Join(" and ", parts);
+
+            var fallback = System.Windows.MessageBox.Show(
+                $"\"{item.Name}\" is referenced by {refs} and cannot be permanently deleted " +
+                "without losing that history.\n\n" +
+                "Would you like to deactivate it instead? It will disappear from the POS " +
+                "menu but remain intact for historical reports.",
+                "Cannot Delete Permanently",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning);
+
+            if (fallback == System.Windows.MessageBoxResult.Yes)
+            {
+                item.IsActive = false;
+                item.UpdatedAt = DateTime.UtcNow;
+                await _db.SaveChangesAsync();
+                await LoadDataAsync();
+                StatusMessage = $"Deactivated: {item.Name}";
+            }
+            return;
+        }
+
+        var confirm = System.Windows.MessageBox.Show(
+            $"Permanently delete \"{item.Name}\"?\n\nThis cannot be undone.",
+            "Confirm Permanent Delete",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Warning);
+        if (confirm != System.Windows.MessageBoxResult.Yes) return;
+
+        try
+        {
+            // Remove dependent recipe rows first (no cascade).
+            var recipes = await _db.Recipes.Where(r => r.MenuItemId == item.Id).ToListAsync();
+            if (recipes.Count > 0) _db.Recipes.RemoveRange(recipes);
+
+            _db.MenuItems.Remove(item);
             await _db.SaveChangesAsync();
             await LoadDataAsync();
-            StatusMessage = $"Deleted: {item.Name}";
+            StatusMessage = $"Deleted permanently: {item.Name}";
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                $"Could not delete \"{item.Name}\":\n\n{ex.Message}",
+                "Delete Failed",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
         }
     }
 
@@ -282,6 +332,68 @@ public partial class MenuManagementViewModel : BaseViewModel
         await _db.SaveChangesAsync();
         await LoadDataAsync();
         StatusMessage = $"Category added: {dlg.InputText.Trim()}";
+    }
+
+    [RelayCommand]
+    private async Task DeleteCategoryAsync()
+    {
+        // Resolve the category the user wants to delete from the filter dropdown.
+        var target = FilterCategory;
+        if (target == null || target.Id == 0)
+        {
+            System.Windows.MessageBox.Show(
+                "Please choose the category you want to delete in the Category filter first " +
+                "(it must not be '-- None --').",
+                "Select a Category",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
+            return;
+        }
+
+        // Block deletion when the category still owns menu items or deals.
+        var itemRefCount = await _db.MenuItems.CountAsync(m => m.CategoryId == target.Id);
+        var dealRefCount = await _db.Deals.CountAsync(d => d.CategoryId == target.Id);
+        if (itemRefCount > 0 || dealRefCount > 0)
+        {
+            var parts = new List<string>();
+            if (itemRefCount > 0) parts.Add($"{itemRefCount} menu item(s)");
+            if (dealRefCount > 0) parts.Add($"{dealRefCount} deal(s)");
+
+            System.Windows.MessageBox.Show(
+                $"Category \"{target.Name}\" still contains {string.Join(" and ", parts)}.\n\n" +
+                "Delete or reassign them first, then try again.",
+                "Cannot Delete Category",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
+            return;
+        }
+
+        var confirm = System.Windows.MessageBox.Show(
+            $"Permanently delete category \"{target.Name}\"?\n\nThis cannot be undone.",
+            "Confirm Permanent Delete",
+            System.Windows.MessageBoxButton.YesNo,
+            System.Windows.MessageBoxImage.Warning);
+        if (confirm != System.Windows.MessageBoxResult.Yes) return;
+
+        try
+        {
+            var tracked = await _db.Categories.FindAsync(target.Id);
+            if (tracked != null)
+            {
+                _db.Categories.Remove(tracked);
+                await _db.SaveChangesAsync();
+            }
+            await LoadDataAsync();
+            StatusMessage = $"Category deleted permanently: {target.Name}";
+        }
+        catch (Exception ex)
+        {
+            System.Windows.MessageBox.Show(
+                $"Could not delete category \"{target.Name}\":\n\n{ex.Message}",
+                "Delete Failed",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
+        }
     }
 
     [RelayCommand]

@@ -155,7 +155,10 @@ public partial class MainWindowViewModel : BaseViewModel
     [RelayCommand]
     private void NavigateToCustomers()
     {
-        if (!RequirePermission("Manage customers & loyalty")) return;
+        // Cashier has level 2 access (view/edit, no delete) — allow direct entry.
+        // Admin/manager pass RequirePermission (level >= 3).
+        var isCashier = LoggedInUser?.Role?.Name?.ToLowerInvariant() == "cashier";
+        if (!isCashier && !RequirePermission("Manage customers & loyalty")) return;
         NavigateTo<CustomerManagementViewModel>();
     }
 
@@ -261,6 +264,13 @@ public partial class MainWindowViewModel : BaseViewModel
         var posVm = (MainPOSViewModel)_serviceProvider.GetService(typeof(MainPOSViewModel))!;
         posVm.SetCurrentUser(user, _authService);
 
+        // Clear any state left over from the previous user (billing rows, cart, table
+        // statuses, hold orders) and pull a fresh snapshot from the database. This fixes:
+        //  • admin's billing rows leaking into cashier's view until Load is clicked
+        //  • tables still painted Occupied even though the session was closed elsewhere
+        //  • hold orders missing until the view is rebuilt
+        await posVm.ResetUserSessionStateAsync();
+
         // Check if there's an active shift
         CheckActiveShiftAsync();
 
@@ -281,8 +291,9 @@ public partial class MainWindowViewModel : BaseViewModel
         // Reports — requires View reports & analytics
         CanAccessReports = _authService.HasPermission("View reports & analytics");
 
-        // Customers — requires Manage customers & loyalty
-        CanAccessCustomers = _authService.HasPermission("Manage customers & loyalty");
+        // Customers — requires Manage customers & loyalty, OR cashier role (view/edit only, no delete)
+        var isCashier = LoggedInUser?.Role?.Name?.ToLowerInvariant() == "cashier";
+        CanAccessCustomers = _authService.HasPermission("Manage customers & loyalty") || isCashier;
 
         // Returns (Order History) — requires Issue refunds or Void / cancel orders
         CanAccessReturns = _authService.HasPermission("Issue refunds") || _authService.HasPermission("Void / cancel orders");

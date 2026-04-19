@@ -29,12 +29,18 @@ public partial class MainPOSView : UserControl
         // Detect mouse clicks in zones to auto-activate them
         CategoryList.PreviewMouseLeftButtonDown += (_, _) => SetZone(PosZone.Categories);
         MenuItemList.PreviewMouseLeftButtonDown += (_, _) => SetZone(PosZone.MenuItems);
-        OrderGrid.PreviewMouseLeftButtonDown += (_, _) => SetZone(PosZone.OrderGrid);
+        // The Order Grid is intentionally OUTSIDE the zone-navigation flow.
+        // Cashier can freely click cells, type, and edit — nothing here
+        // drags focus back to the grid or cycles into it via Tab/arrows.
+        // Only the inline edit hook below is needed so a single click on
+        // Qty / Remarks drops the caret directly into the editing TextBox.
+        OrderGrid.AddHandler(DataGridCell.GotFocusEvent, new RoutedEventHandler(OrderGridCell_GotFocus));
 
         // Detect when zones get focus (mouse click or tab)
         CategoryList.GotFocus += (_, _) => { _currentZone = PosZone.Categories; UpdateZoneIndicator(); };
         MenuItemList.GotFocus += (_, _) => { _currentZone = PosZone.MenuItems; UpdateZoneIndicator(); };
-        OrderGrid.GotFocus += (_, _) => { _currentZone = PosZone.OrderGrid; UpdateZoneIndicator(); };
+        // NOTE: OrderGrid is deliberately NOT wired to the zone system —
+        // its focus / clicks must not affect keyboard-navigation state.
         KBillBtn.GotFocus += (_, _) => { _currentZone = PosZone.BillingFields; UpdateZoneIndicator(); };
         BillPrintBtn.GotFocus += (_, _) => { _currentZone = PosZone.BillingFields; UpdateZoneIndicator(); };
         CheckoutBtn.GotFocus += (_, _) => { _currentZone = PosZone.BillingFields; UpdateZoneIndicator(); };
@@ -54,6 +60,14 @@ public partial class MainPOSView : UserControl
 
         if (DataContext is MainPOSViewModel vm)
         {
+            // The MainPOSViewModel is a cached singleton — when the user navigates
+            // away to e.g. Menu Settings while a Delivery/Takeaway full-screen overlay
+            // was open and then comes back, the IsDeliveryMaximized/IsTakeawayMaximized
+            // flags would still be true and the stale overlay would obscure everything.
+            // Reset these flags so the standard POS layout is shown on every (re)load.
+            vm.IsDeliveryMaximized = false;
+            vm.IsTakeawayMaximized = false;
+
             await vm.LoadDataCommand.ExecuteAsync(null);
         }
 
@@ -82,8 +96,10 @@ public partial class MainPOSView : UserControl
             return;
         }
 
-        // F key → focus search product field (only when not typing in a TextBox)
-        if (e.Key == Key.F && Keyboard.FocusedElement is not TextBox)
+        // Ctrl+F → focus search product field (works even from TextBoxes).
+        // Plain "F" was stealing the letter whenever the cashier typed in
+        // any TextBox that wasn't marked as billing field (e.g. Remarks).
+        if (e.Key == Key.F && (Keyboard.Modifiers & ModifierKeys.Control) != 0)
         {
             _isSearchBoxActive = true;
             SearchProductBox.Focus();
@@ -179,9 +195,9 @@ public partial class MainPOSView : UserControl
             case PosZone.Tables:
                 HandleTableKeys(e);
                 break;
-            case PosZone.OrderGrid:
-                HandleOrderGridKeys(e);
-                break;
+            // PosZone.OrderGrid intentionally not handled here — the grid
+            // is outside the Enter/Tab flow. Clicking any cell enters free
+            // edit mode; keystrokes go straight to the editing TextBox.
             case PosZone.BillingFields:
                 HandleBillingKeys(e);
                 break;
@@ -223,7 +239,8 @@ public partial class MainPOSView : UserControl
                 break;
 
             case Key.Left:
-                SetZone(PosZone.OrderGrid);
+                // Wrap back to Billing — grid is out of navigation.
+                SetZone(PosZone.BillingFields);
                 e.Handled = true;
                 break;
         }
@@ -271,11 +288,7 @@ public partial class MainPOSView : UserControl
                 {
                     SelectMenuItem(idx + 1);
                 }
-                else
-                {
-                    // At last item, Right goes to Order Grid
-                    SetZone(PosZone.OrderGrid);
-                }
+                // else: stay at last item — grid is out of the nav flow.
                 e.Handled = true;
                 break;
 
@@ -292,20 +305,17 @@ public partial class MainPOSView : UserControl
                 break;
 
             case Key.Enter:
-                // Add item to order AND jump cursor to Order Grid on that item
+                // Add item to order and then jump DIRECTLY to the Mobile
+                // number field — the Order Grid is no longer in the
+                // Enter-Enter flow (cashier edits it freely with the mouse).
                 if (MenuItemList.SelectedItem is Domain.Entities.MenuItem menuItem)
                 {
                     _ = vm.AddMenuItemCommand.ExecuteAsync(menuItem);
-                    // Jump to Order Grid — select the last (newly added) row
                     Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
                     {
-                        int lastRow = vm.OrderItems.Count - 1;
-                        if (lastRow >= 0)
-                        {
-                            OrderGrid.SelectedIndex = lastRow;
-                            OrderGrid.ScrollIntoView(OrderGrid.SelectedItem);
-                        }
-                        SetZone(PosZone.OrderGrid);
+                        MobileTextBox.Focus();
+                        MobileTextBox.SelectAll();
+                        SetZone(PosZone.BillingFields);
                     });
                 }
                 e.Handled = true;
@@ -314,71 +324,20 @@ public partial class MainPOSView : UserControl
     }
 
     // ═══════════════════════════════════════════════════════════
-    //  ZONE: Order Grid (Up/Down rows, Enter=edit Qty, Left=MenuItems)
+    //  [REMOVED] HandleOrderGridKeys — the Order Grid has been taken
+    //  OUT of the zone-navigation flow. The cashier interacts with it
+    //  purely via mouse: click a Qty/Remarks cell → edit freely. No
+    //  keystroke from outside the editing TextBox is redirected here.
+    //  Leaving an empty stub so the old Delete/SelectedItem logic
+    //  doesn't regress when callers are wired up elsewhere.
     // ═══════════════════════════════════════════════════════════
-    private void HandleOrderGridKeys(KeyEventArgs e)
+    private void HandleOrderGridKeys_Unused(KeyEventArgs e)
     {
         var vm = DataContext as MainPOSViewModel;
         if (vm == null) return;
-        int count = vm.OrderItems.Count;
-        if (count == 0)
-        {
-            if (e.Key is Key.Left or Key.Up)
-                SetZone(PosZone.MenuItems);
-            else if (e.Key is Key.Down or Key.Right)
-                SetZone(PosZone.BillingFields);
-            e.Handled = true;
-            return;
-        }
-
-        int idx = OrderGrid.SelectedIndex;
-        if (idx < 0) idx = 0;
 
         switch (e.Key)
         {
-            case Key.Up:
-                if (idx > 0)
-                {
-                    OrderGrid.SelectedIndex = idx - 1;
-                    OrderGrid.ScrollIntoView(OrderGrid.SelectedItem);
-                }
-                e.Handled = true;
-                break;
-
-            case Key.Down:
-                if (idx < count - 1)
-                {
-                    OrderGrid.SelectedIndex = idx + 1;
-                    OrderGrid.ScrollIntoView(OrderGrid.SelectedItem);
-                }
-                else
-                {
-                    SetZone(PosZone.BillingFields);
-                }
-                e.Handled = true;
-                break;
-
-            case Key.Left:
-                SetZone(PosZone.MenuItems);
-                e.Handled = true;
-                break;
-
-            case Key.Right:
-                SetZone(PosZone.BillingFields);
-                e.Handled = true;
-                break;
-
-            case Key.Enter:
-                if (OrderGrid.SelectedItem != null)
-                {
-                    OrderGrid.Focus();
-                    OrderGrid.CurrentCell = new DataGridCellInfo(
-                        OrderGrid.SelectedItem, OrderGrid.Columns[2]); // Qty column
-                    OrderGrid.BeginEdit();
-                }
-                e.Handled = true;
-                break;
-
             case Key.Delete:
                 if (vm.DeleteOrderCommand.CanExecute(null))
                     vm.DeleteOrderCommand.Execute(null);
@@ -469,14 +428,15 @@ public partial class MainPOSView : UserControl
 
         if (e.Key == Key.Escape)
         {
-            SetZone(PosZone.OrderGrid);
+            // Grid is out of nav — escape from billing goes back to Menu Items.
+            SetZone(PosZone.MenuItems);
             e.Handled = true;
             return;
         }
 
         if (e.Key == Key.Up && !IsBillingFieldFocused())
         {
-            SetZone(PosZone.OrderGrid);
+            SetZone(PosZone.MenuItems);
             e.Handled = true;
         }
     }
@@ -515,7 +475,8 @@ public partial class MainPOSView : UserControl
                 break;
 
             case Key.Down:
-                SetZone(PosZone.OrderGrid);
+                // Grid is out of nav — go straight to Billing fields.
+                SetZone(PosZone.BillingFields);
                 e.Handled = true;
                 break;
         }
@@ -649,8 +610,7 @@ public partial class MainPOSView : UserControl
         {
             PosZone.Categories => PosZone.MenuItems,
             PosZone.MenuItems => PosZone.Tables,
-            PosZone.Tables => PosZone.OrderGrid,
-            PosZone.OrderGrid => PosZone.BillingFields,
+            PosZone.Tables => PosZone.BillingFields,
             PosZone.BillingFields => PosZone.Categories,
             _ => PosZone.Categories
         };
@@ -664,8 +624,7 @@ public partial class MainPOSView : UserControl
             PosZone.Categories => PosZone.BillingFields,
             PosZone.MenuItems => PosZone.Categories,
             PosZone.Tables => PosZone.MenuItems,
-            PosZone.OrderGrid => PosZone.Tables,
-            PosZone.BillingFields => PosZone.OrderGrid,
+            PosZone.BillingFields => PosZone.Tables,
             _ => PosZone.Categories
         };
         SetZone(prev);
@@ -738,6 +697,167 @@ public partial class MainPOSView : UserControl
         return false;
     }
 
+    // ───────────────────────────────────────────────────────────
+    //  Order Grid single-click-to-edit for Qty + Remarks columns.
+    //  A normal DataGridTextColumn needs a second click / F2 to enter
+    //  edit mode. We use two handlers:
+    //   1. PreviewMouseLeftButtonDown → set current cell + focus it
+    //      (without swallowing the event, so the DataGrid still
+    //       runs its normal focus logic).
+    //   2. DataGridCell.GotFocus → once the cell has focus, call
+    //      BeginEdit so the inline TextBox is spawned and receives
+    //      keystrokes directly.
+    // ───────────────────────────────────────────────────────────
+    private void OrderGrid_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        SetZone(PosZone.OrderGrid);
+    }
+
+    private void OrderGridCell_GotFocus(object sender, RoutedEventArgs e)
+    {
+        if (e.OriginalSource is not DataGridCell cell) return;
+        if (cell.IsEditing || cell.IsReadOnly) return;
+
+        var header = cell.Column?.Header?.ToString();
+        if (header != "Qty" && header != "Remarks") return;
+
+        // Select the row so Delete/keyboard ops still target it
+        DependencyObject? rowParent = cell;
+        while (rowParent != null && rowParent is not DataGridRow)
+            rowParent = VisualTreeHelper.GetParent(rowParent);
+        if (rowParent is DataGridRow row)
+            row.IsSelected = true;
+
+        // Enter edit mode on the focused cell, then put caret into
+        // the editing TextBox and select its text for easy overwrite.
+        OrderGrid.BeginEdit();
+
+        Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+        {
+            var tb = FindCellTextBox(cell);
+            if (tb != null)
+            {
+                tb.Focus();
+                tb.SelectAll();
+            }
+        });
+    }
+
+    private static TextBox? FindCellTextBox(DependencyObject parent)
+    {
+        int count = VisualTreeHelper.GetChildrenCount(parent);
+        for (int i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(parent, i);
+            if (child is TextBox tb) return tb;
+            var inner = FindCellTextBox(child);
+            if (inner != null) return inner;
+        }
+        return null;
+    }
+
+    // ───────────────────────────────────────────────────────────
+    //  Validate edits when the cashier commits a cell.
+    //  Rules:
+    //   • Qty must be a whole number ≥ 0.
+    //   • If Qty = 0 AND the K-Slip has NOT been sent for this item
+    //     → drop the line from the cart (cashier's shortcut for
+    //       "I added this by mistake").
+    //   • If the K-Slip has already been sent, Qty is locked — show
+    //     a warning and revert. (Same rule applies for Dine-In,
+    //     Delivery, and Take-Away because they all share this grid.)
+    // ───────────────────────────────────────────────────────────
+    private void OrderGrid_CellEditEnding(object sender, DataGridCellEditEndingEventArgs e)
+    {
+        if (_cellEditReverting) return;            // guard against re-entry
+        if (e.EditAction != DataGridEditAction.Commit) return;
+        if (e.Row.Item is not ViewModels.OrderItemViewModel item) return;
+
+        var header = e.Column?.Header?.ToString();
+        if (e.EditingElement is not TextBox tb) return;
+
+        // ── Qty column ─────────────────────────────────────────
+        if (header == "Qty")
+        {
+            var raw = tb.Text?.Trim() ?? string.Empty;
+
+            if (!int.TryParse(raw, out int newQty) || newQty < 0)
+            {
+                RevertCellEdit(e, tb, item.Quantity.ToString(),
+                    "Please enter a valid whole-number quantity (0 or more).",
+                    "Invalid Quantity");
+                return;
+            }
+
+            // K-Slip already sent → cannot change qty anymore
+            if (item.KitchenPrinted && newQty != item.Quantity)
+            {
+                RevertCellEdit(e, tb, item.Quantity.ToString(),
+                    "You can't edit the quantity after the Kitchen Slip has been sent.",
+                    "K-Slip Already Sent");
+                return;
+            }
+
+            // Qty = 0 and K-Slip NOT yet sent → delete line after commit
+            if (newQty == 0)
+            {
+                Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+                {
+                    if (DataContext is MainPOSViewModel vm && vm.OrderItems.Contains(item))
+                    {
+                        vm.OrderItems.Remove(item);
+                        // Re-serial & recompute totals
+                        for (int i = 0; i < vm.OrderItems.Count; i++)
+                            vm.OrderItems[i].SerialNumber = i + 1;
+                        vm.RecalculateTotals();
+                    }
+                });
+                return;
+            }
+
+            // Valid qty change → recompute SubTotal / Discount / GST after commit
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
+            {
+                if (DataContext is MainPOSViewModel vm)
+                    vm.RecalculateTotals();
+            });
+        }
+
+        // ── Remarks column ─────────────────────────────────────
+        // Remarks are free-form; but if the K-Slip has been sent
+        // we still block edits so the kitchen slip and the bill
+        // don't disagree.
+        if (header == "Remarks" && item.KitchenPrinted)
+        {
+            RevertCellEdit(e, tb, item.Remarks ?? string.Empty,
+                "You can't edit remarks after the Kitchen Slip has been sent.",
+                "K-Slip Already Sent");
+            return;
+        }
+    }
+
+    private bool _cellEditReverting;
+
+    private void RevertCellEdit(DataGridCellEditEndingEventArgs e, TextBox tb,
+                                string originalText, string message, string title)
+    {
+        _cellEditReverting = true;
+        try
+        {
+            tb.Text = originalText;
+            e.Cancel = true;
+            OrderGrid.CancelEdit(DataGridEditingUnit.Cell);
+            OrderGrid.CancelEdit(DataGridEditingUnit.Row);
+            System.Windows.MessageBox.Show(message, title,
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Warning);
+        }
+        finally
+        {
+            _cellEditReverting = false;
+        }
+    }
+
     // ═══════════════════════════════════════════════════════════
     //  EXISTING EVENT HANDLERS
     // ═══════════════════════════════════════════════════════════
@@ -783,17 +903,8 @@ public partial class MainPOSView : UserControl
             }
             else if (!vm.IsPhoneSearchActive)
             {
-                // Up from Mobile (no dropdown) → last row of DataGrid
-                if (vm.OrderItems.Count > 0)
-                {
-                    OrderGrid.SelectedIndex = vm.OrderItems.Count - 1;
-                    OrderGrid.ScrollIntoView(OrderGrid.SelectedItem);
-                    SetZone(PosZone.OrderGrid);
-                }
-                else
-                {
-                    SetZone(PosZone.MenuItems);
-                }
+                // Up from Mobile → Menu Items (grid is out of the nav flow).
+                SetZone(PosZone.MenuItems);
                 e.Handled = true;
                 return;
             }
@@ -816,7 +927,7 @@ public partial class MainPOSView : UserControl
                 && vm.SelectedPhoneSearchIndex < vm.PhoneSearchResults.Count)
             {
                 var selected = vm.PhoneSearchResults[vm.SelectedPhoneSearchIndex];
-                vm.SelectCustomerFromSearchCommand.Execute(selected);
+                await vm.SelectCustomerFromSearchCommand.ExecuteAsync(selected);
                 vm.SelectedPhoneSearchIndex = -1;
                 DiscPercentBox.Focus();
                 DiscPercentBox.SelectAll();
@@ -866,16 +977,18 @@ public partial class MainPOSView : UserControl
         }
     }
 
-    private void CustomerSearchItem_Click(object sender, MouseButtonEventArgs e)
+    private async void CustomerSearchItem_Click(object sender, MouseButtonEventArgs e)
     {
         if (sender is FrameworkElement fe && fe.DataContext is Customer customer
             && DataContext is MainPOSViewModel vm)
         {
-            vm.SelectCustomerFromSearchCommand.Execute(customer);
+            await vm.SelectCustomerFromSearchCommand.ExecuteAsync(customer);
+            DiscPercentBox.Focus();
+            DiscPercentBox.SelectAll();
         }
     }
 
-    private void CustomerSearchListItem_Click(object sender, MouseButtonEventArgs e)
+    private async void CustomerSearchListItem_Click(object sender, MouseButtonEventArgs e)
     {
         // Find the ListBoxItem that was clicked
         // Note: e.OriginalSource can be a Run (not a Visual), so walk up via LogicalTree first
@@ -893,8 +1006,10 @@ public partial class MainPOSView : UserControl
         if (current is ListBoxItem lbi && lbi.DataContext is Customer customer
             && DataContext is MainPOSViewModel vm)
         {
-            vm.SelectCustomerFromSearchCommand.Execute(customer);
+            await vm.SelectCustomerFromSearchCommand.ExecuteAsync(customer);
             vm.SelectedPhoneSearchIndex = -1;
+            DiscPercentBox.Focus();
+            DiscPercentBox.SelectAll();
         }
     }
 }

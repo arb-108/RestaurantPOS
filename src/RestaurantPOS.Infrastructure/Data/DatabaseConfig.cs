@@ -19,6 +19,12 @@ public static class DatabaseConfig
         Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
         "RestaurantPOS");
 
+    // Backups live in ProgramData so the folder is machine-wide AND we can grant
+    // the SQL Server service account write-access without touching %LOCALAPPDATA%.
+    private static readonly string BackupRootPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+        "RestaurantPOS", "Backups");
+
     private static readonly string ConfigFilePath = Path.Combine(AppDataPath, "dbconfig.json");
 
     private static DbConfigSettings? _cached;
@@ -48,8 +54,8 @@ public static class DatabaseConfig
         options.EnableThreadSafetyChecks(false);
     }
 
-    /// <summary>Get the backup directory path.</summary>
-    public static string GetBackupPath() => Path.Combine(AppDataPath, "backups");
+    /// <summary>Get the backup directory path. Uses C:\ProgramData\RestaurantPOS\Backups.</summary>
+    public static string GetBackupPath() => BackupRootPath;
 
     /// <summary>Get a copy of the current settings.</summary>
     public static DbConfigSettings GetSettings()

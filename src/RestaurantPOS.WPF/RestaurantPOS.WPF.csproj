@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
+    <!-- Windows taskbar + Explorer exe icon -->
+    <ApplicationIcon>Assets\Images\Rlogo.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

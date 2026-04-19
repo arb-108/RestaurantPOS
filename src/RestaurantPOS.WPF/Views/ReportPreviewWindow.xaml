@@ -1,0 +1,53 @@
+<Window x:Class="RestaurantPOS.WPF.Views.ReportPreviewWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Report Preview"
+        Height="800" Width="1000"
+        WindowStartupLocation="CenterOwner"
+        Background="#F5F5F5">
+
+    <DockPanel LastChildFill="True">
+
+        <!-- ═══ TOP TOOLBAR ═══ -->
+        <Border DockPanel.Dock="Top" Background="#2C3E50" Padding="14,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Grid.Column="0" Text="{Binding WindowHeading, RelativeSource={RelativeSource AncestorType=Window}}"
+                           Foreground="White" FontSize="16" FontWeight="SemiBold"
+                           VerticalAlignment="Center"/>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal">
+                    <Button Content="Print (A4)"
+                            Click="Print_Click"
+                            Padding="16,6" Margin="0,0,8,0"
+                            Background="#27AE60" Foreground="White"
+                            BorderThickness="0" FontWeight="SemiBold"
+                            Cursor="Hand"/>
+                    <Button Content="Save as PDF"
+                            Click="SavePdf_Click"
+                            Padding="16,6" Margin="0,0,8,0"
+                            Background="#C0392B" Foreground="White"
+                            BorderThickness="0" FontWeight="SemiBold"
+                            Cursor="Hand"/>
+                    <Button Content="Close"
+                            Click="Close_Click"
+                            Padding="16,6"
+                            Background="#7F8C8D" Foreground="White"
+                            BorderThickness="0" FontWeight="SemiBold"
+                            Cursor="Hand"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- ═══ DOCUMENT VIEWER ═══ -->
+        <FlowDocumentScrollViewer x:Name="Viewer"
+                                  Background="#E0E0E0"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Auto"
+                                  IsToolBarVisible="True"/>
+    </DockPanel>
+</Window>

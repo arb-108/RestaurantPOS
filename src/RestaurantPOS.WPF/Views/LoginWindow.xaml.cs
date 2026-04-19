@@ -199,4 +199,11 @@ public partial class LoginWindow : System.Windows.Window
 
     private void Close_Click(object sender, RoutedEventArgs e)
         => Close();
+
+    // Opens the Database Settings dialog (accessible before login).
+    private void DbSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var dlg = new DatabaseSettingsDialog { Owner = this };
+        dlg.ShowDialog();
+    }
 }
