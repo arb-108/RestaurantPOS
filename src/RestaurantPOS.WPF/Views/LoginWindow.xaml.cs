@@ -203,7 +203,11 @@ public partial class LoginWindow : System.Windows.Window
     // Opens the Database Settings dialog (accessible before login).
     private void DbSettings_Click(object sender, RoutedEventArgs e)
     {
-        var dlg = new DatabaseSettingsDialog { Owner = this };
-        dlg.ShowDialog();
+        var pwd = new PasswordDialog { Owner = this };
+        if (pwd.ShowDialog() == true)
+        {
+            var dlg = new DatabaseSettingsDialog { Owner = this };
+            dlg.ShowDialog();
+        }
     }
 }

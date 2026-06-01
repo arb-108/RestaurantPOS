@@ -34,6 +34,7 @@ public partial class ReportPreviewWindow : System.Windows.Window
 
         _flowDoc = BuildFlowDocument(_report);
         Viewer.Document = _flowDoc;
+        this.Loaded += (s, e) => Viewer.Zoom = 120;
     }
 
     // ══════════════════════════════════════════════════════════

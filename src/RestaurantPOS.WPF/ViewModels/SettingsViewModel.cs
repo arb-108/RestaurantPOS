@@ -765,10 +765,10 @@ public partial class SettingsViewModel : BaseViewModel
 
     private async Task SaveUserFromWindow(Views.UserFormWindow w)
     {
-        // Check username uniqueness
+        // Check username uniqueness against ACTIVE users
         var checkId = w.IsEditing ? w.EditUserId : 0;
-        var existing = await _db.Users.FirstOrDefaultAsync(u => u.Username == w.UserUsername && u.Id != checkId && u.IsActive);
-        if (existing != null)
+        var existingActive = await _db.Users.FirstOrDefaultAsync(u => u.Username == w.UserUsername && u.Id != checkId && u.IsActive);
+        if (existingActive != null)
         {
             MessageBox.Show("Username already taken.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
@@ -790,17 +790,43 @@ public partial class SettingsViewModel : BaseViewModel
         }
         else
         {
-            var user = new User
+            // Username has a plain UNIQUE index (no IsActive filter) — a soft-deleted
+            // user with the same username will still trip the SQL Server constraint.
+            // Detect that case and offer to reactivate instead of inserting a duplicate.
+            var existingInactive = await _db.Users
+                .FirstOrDefaultAsync(u => u.Username == w.UserUsername && !u.IsActive);
+
+            if (existingInactive != null)
             {
-                FullName = w.UserFullName,
-                Username = w.UserUsername,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(w.UserPassword),
-                Pin = string.IsNullOrWhiteSpace(w.UserPin) ? null : HashPin(w.UserPin),
-                RoleId = w.SelectedRole!.Id,
-                Phone = string.IsNullOrWhiteSpace(w.UserPhone) ? null : w.UserPhone,
-                Email = string.IsNullOrWhiteSpace(w.UserEmail) ? null : w.UserEmail
-            };
-            _db.Users.Add(user);
+                var reactivate = MessageBox.Show(
+                    $"A deleted user with username '{w.UserUsername}' already exists.\n\nReactivate it with the new role/password?",
+                    "Reactivate User?", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                if (reactivate != MessageBoxResult.Yes) return;
+
+                existingInactive.IsActive = true;
+                existingInactive.FullName = w.UserFullName;
+                existingInactive.Phone = string.IsNullOrWhiteSpace(w.UserPhone) ? null : w.UserPhone;
+                existingInactive.Email = string.IsNullOrWhiteSpace(w.UserEmail) ? null : w.UserEmail;
+                existingInactive.RoleId = w.SelectedRole!.Id;
+                if (!string.IsNullOrWhiteSpace(w.UserPassword))
+                    existingInactive.PasswordHash = BCrypt.Net.BCrypt.HashPassword(w.UserPassword);
+                if (!string.IsNullOrWhiteSpace(w.UserPin))
+                    existingInactive.Pin = HashPin(w.UserPin);
+            }
+            else
+            {
+                var user = new User
+                {
+                    FullName = w.UserFullName,
+                    Username = w.UserUsername,
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(w.UserPassword),
+                    Pin = string.IsNullOrWhiteSpace(w.UserPin) ? null : HashPin(w.UserPin),
+                    RoleId = w.SelectedRole!.Id,
+                    Phone = string.IsNullOrWhiteSpace(w.UserPhone) ? null : w.UserPhone,
+                    Email = string.IsNullOrWhiteSpace(w.UserEmail) ? null : w.UserEmail
+                };
+                _db.Users.Add(user);
+            }
         }
 
         await _db.SaveChangesAsync();

@@ -267,8 +267,12 @@
 
                     <!-- Tab 1: Order History buttons -->
                     <StackPanel x:Name="BtnOrders" Orientation="Horizontal" Visibility="Collapsed">
-                        <Button Style="{StaticResource Btn}" Background="#2563EB" Command="{Binding LoadOrderHistoryCommand}">
+                        <Button Style="{StaticResource Btn}" Background="#2563EB" Command="{Binding LoadOrderHistoryCommand}" Margin="0,0,6,0">
                             <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE721;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Load"/></StackPanel>
+                        </Button>
+                        <Button Style="{StaticResource Btn}" Background="#6366F1" Command="{Binding PrintOrderHistoryReportCommand}"
+                                ToolTip="Generate A4 report (Print or Save as PDF)">
+                            <StackPanel Orientation="Horizontal"><TextBlock Text="&#xE749;" FontFamily="Segoe MDL2 Assets" FontSize="11" VerticalAlignment="Center" Margin="0,0,5,0"/><TextBlock Text="Print Report"/></StackPanel>
                         </Button>
                     </StackPanel>
 
@@ -1228,8 +1232,14 @@
                     </TextBlock>
                     <Border Width="1" Background="#D1D5DB" Margin="16,2"/>
                     <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center">
-                        <Run Text="Total:"/>
+                        <Run Text="Grand Total:"/>
                         <Run Text="{Binding OrderHistoryTotal, Mode=OneWay}" FontWeight="SemiBold" Foreground="#059669"/>
+                    </TextBlock>
+                    <Border Width="1" Background="#D1D5DB" Margin="16,2"/>
+                    <TextBlock FontSize="11" Foreground="#6B7280" VerticalAlignment="Center"
+                               ToolTip="Sum of voided orders — NOT included in Grand Total">
+                        <Run Text="Void Total:"/>
+                        <Run Text="{Binding OrderHistoryVoidTotal, Mode=OneWay}" FontWeight="SemiBold" Foreground="#DC2626"/>
                     </TextBlock>
                 </StackPanel>
 

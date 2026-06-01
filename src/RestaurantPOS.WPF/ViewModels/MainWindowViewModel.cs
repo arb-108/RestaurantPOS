@@ -257,6 +257,14 @@ public partial class MainWindowViewModel : BaseViewModel
         // Load permissions for the logged-in user
         await _authService.LoadPermissionsForUserAsync(user);
 
+        // Drop cached ViewModels from the previous session — their role-based
+        // flags (CanDelete*, CanSeeStats, etc.) were captured in constructors
+        // against the previous user's access level and would otherwise leak
+        // admin buttons into a cashier session (and vice-versa).
+        // Singleton VMs (MainPOSViewModel) are not in this cache, so their
+        // state is untouched.
+        _viewModelCache.Clear();
+
         // Set nav button visibility based on permissions
         ApplyNavPermissions();
 

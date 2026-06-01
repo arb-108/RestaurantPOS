@@ -121,34 +121,54 @@ public class SqlServerMaintenanceService : IDatabaseMaintenanceService
         if (!string.IsNullOrEmpty(destDir) && !Directory.Exists(destDir))
             Directory.CreateDirectory(destDir);
 
+        // ── 1) Try direct backup to the user's chosen path ──────────
+        //    This only works if SQL Server's service account can
+        //    write there (typically: ProgramData, a UNC share with
+        //    explicit grant, etc. — NOT a user's Desktop / OneDrive).
         try
         {
             await ExecuteBackupToPathAsync(dbName, destinationPath);
-            Log($"Export OK: {destinationPath}");
+            Log($"Export OK (direct): {destinationPath}");
             return;
         }
         catch (SqlException ex) when (IsAccessDenied(ex))
         {
-            // Fall back via SQL's default folder + OPENROWSET stream back
-            var sqlDir = await GetSqlServerDefaultBackupDirectoryAsync();
-            if (string.IsNullOrWhiteSpace(sqlDir))
-                throw new InvalidOperationException(
-                    $"Export failed: SQL Server cannot write to '{destinationPath}' (Access denied).", ex);
-
-            var intermediate = Path.Combine(sqlDir, Path.GetFileName(destinationPath));
-            await ExecuteBackupToPathAsync(dbName, intermediate);
+            // ── 2) Fallback: write to our managed ProgramData backup ──
+            //    folder (both SQL service AND the current user have
+            //    NTFS access there), then plain-copy to the chosen
+            //    destination via the Windows API. No OPENROWSET — so
+            //    no bulk-load impersonation surprises.
+            if (!Directory.Exists(_backupPath)) Directory.CreateDirectory(_backupPath);
+            var intermediate = Path.Combine(_backupPath,
+                $"export-{DateTime.Now:yyyyMMdd-HHmmss}-{Path.GetFileName(destinationPath)}");
 
             try
             {
-                await StreamFileFromSqlAsync(intermediate, destinationPath);
-                await TryDeleteFileViaSqlAsync(intermediate);
-                Log($"Export OK (via intermediate): {destinationPath}");
+                await ExecuteBackupToPathAsync(dbName, intermediate);
             }
-            catch (Exception moveEx)
+            catch (SqlException innerEx)
+            {
+                throw new InvalidOperationException(
+                    $"Export failed: SQL Server could not write the backup to '{_backupPath}'. " +
+                    $"Check that the SQL service account has write access to that folder.\n\n{innerEx.Message}",
+                    innerEx);
+            }
+
+            try
+            {
+                File.Copy(intermediate, destinationPath, overwrite: true);
+                Log($"Export OK (via ProgramData): {destinationPath}");
+            }
+            catch (Exception copyEx)
             {
                 throw new InvalidOperationException(
                     $"The backup was created at '{intermediate}' but could not be copied to " +
-                    $"'{destinationPath}'. Reason: {moveEx.Message}", moveEx);
+                    $"'{destinationPath}'. Reason: {copyEx.Message}", copyEx);
+            }
+            finally
+            {
+                // Best-effort cleanup — harmless if it fails (rotation will eventually sweep it).
+                try { File.Delete(intermediate); } catch { /* ignore */ }
             }
         }
     }
@@ -287,7 +307,10 @@ public class SqlServerMaintenanceService : IDatabaseMaintenanceService
             Log($"Access denied on direct BACKUP to '{preferredPath}' — trying SQL's default backup dir.");
         }
 
-        // Fall back via SQL's default backup folder + OPENROWSET stream back
+        // Fall back via SQL's default backup folder + plain File.Copy back.
+        // We explicitly avoid OPENROWSET(BULK) because it impersonates the
+        // connecting Windows user, which typically has NO read access to
+        // C:\Program Files\Microsoft SQL Server\...\Backup\ (OS error 5).
         var sqlDir = await GetSqlServerDefaultBackupDirectoryAsync();
         if (string.IsNullOrWhiteSpace(sqlDir))
             throw new InvalidOperationException(
@@ -302,14 +325,14 @@ public class SqlServerMaintenanceService : IDatabaseMaintenanceService
 
         try
         {
-            await StreamFileFromSqlAsync(intermediate, preferredPath);
-            await TryDeleteFileViaSqlAsync(intermediate);
+            File.Copy(intermediate, preferredPath, overwrite: true);
+            try { File.Delete(intermediate); } catch { /* best effort */ }
             return preferredPath;
         }
-        catch
+        catch (Exception ex)
         {
             // Couldn't copy — return the SQL-side path so at least the backup is usable
-            Log($"WARNING: Backup created at '{intermediate}' but could not be copied to '{preferredPath}'.");
+            Log($"WARNING: Backup created at '{intermediate}' but could not be copied to '{preferredPath}'. Reason: {ex.Message}");
             return intermediate;
         }
     }

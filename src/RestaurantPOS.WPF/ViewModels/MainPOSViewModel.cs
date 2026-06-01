@@ -320,6 +320,11 @@ public partial class MainPOSViewModel : BaseViewModel
     [ObservableProperty]
     private decimal _taxPercent = 16;
 
+    // Default tax percent resolved from the DefaultTaxRateId AppSetting.
+    // Used to seed new orders and reset after checkout. Falls back to 16 until
+    // ResolveDefaultTaxPercentAsync runs on the first LoadDataAsync.
+    private decimal _defaultTaxPercent = 16;
+
     [ObservableProperty]
     private decimal _gstRs;
 
@@ -500,6 +505,11 @@ public partial class MainPOSViewModel : BaseViewModel
             if (Categories.Count > 0)
                 SelectedCategory = Categories[0];
 
+            // ── Resolve default tax rate from settings BEFORE reloading open orders,
+            //    so newly-restored states inherit the configured default. ──
+            await ResolveDefaultTaxPercentAsync();
+            TaxPercent = _defaultTaxPercent;
+
             // ── Reload open orders from DB (persists across app restarts) ──
             await ReloadOpenOrdersFromDbAsync();
 
@@ -511,6 +521,32 @@ public partial class MainPOSViewModel : BaseViewModel
         finally
         {
             IsBusy = false;
+        }
+    }
+
+    // Reads the DefaultTaxRateId AppSetting, looks up the matching TaxRate,
+    // and caches its Rate in _defaultTaxPercent. Safe to call repeatedly.
+    private async Task ResolveDefaultTaxPercentAsync()
+    {
+        try
+        {
+            var idStr = await _settingsService.GetSettingAsync("DefaultTaxRateId");
+            if (int.TryParse(idStr, out var id))
+            {
+                var rate = await _db.TaxRates.AsNoTracking().FirstOrDefaultAsync(t => t.Id == id && t.IsActive);
+                if (rate != null)
+                {
+                    _defaultTaxPercent = rate.Rate;
+                    return;
+                }
+            }
+            // Fallback: any active rate, or keep current value if none
+            var fallback = await _db.TaxRates.AsNoTracking().OrderBy(t => t.Id).FirstOrDefaultAsync(t => t.IsActive);
+            if (fallback != null) _defaultTaxPercent = fallback.Rate;
+        }
+        catch
+        {
+            // Non-fatal: keep existing _defaultTaxPercent value
         }
     }
 
@@ -633,7 +669,7 @@ public partial class MainPOSViewModel : BaseViewModel
                     CustomerAddress = order.Customer?.Addresses?.FirstOrDefault(a => a.IsDefault)?.AddressLine1
                                      ?? order.Customer?.Addresses?.FirstOrDefault()?.AddressLine1
                                      ?? string.Empty,
-                    TaxPercent = 16,
+                    TaxPercent = _defaultTaxPercent,
                     DeliveryStatus = order.OrderType == OrderType.Delivery ? "Preparing" : "Preparing",
                     KSlipPrinted = true  // Orders in DB already had K-slip printed
                 };
@@ -849,8 +885,11 @@ public partial class MainPOSViewModel : BaseViewModel
         ChangeAmount = 0;
         DiscountPercent = 0;
         DiscountRs = 0;
-        TaxPercent = 16;
+        TaxPercent = _defaultTaxPercent;
         GstRs = 0;
+        // Fire-and-forget refresh: pick up any tax-rate change made in Settings
+        // since the last order. Affects the NEXT new order, not this clear cycle.
+        _ = ResolveDefaultTaxPercentAsync();
         CustomerPhone = string.Empty;
         CustomerName = string.Empty;
         IsPhoneMatched = false;
@@ -1114,7 +1153,17 @@ public partial class MainPOSViewModel : BaseViewModel
                 _ => ""
             };
 
-            var total = state.Items.Sum(i => i.LineTotal);
+            // Match RecalculateTotals so the hold list shows the same Grand Total
+            // the cashier sees in the cart (subtotal − discount + GST).
+            var subTotal = state.Items.Sum(i => i.LineTotal);
+            var discountAmount = state.DiscountPercent > 0
+                ? (long)(subTotal * (long)state.DiscountPercent / 100m)
+                : (long)(state.DiscountRs * 100);
+            var taxable = subTotal - discountAmount;
+            var taxAmount = state.TaxPercent > 0
+                ? (long)(taxable * (long)state.TaxPercent / 100m)
+                : (long)(state.GstRs * 100);
+            var total = taxable + taxAmount;
             var itemCount = state.Items.Count;
             var hasKSlip = state.Items.Any(i => i.KitchenPrinted);
 
@@ -1676,7 +1725,8 @@ public partial class MainPOSViewModel : BaseViewModel
 
         if (SelectedOrderItem.Quantity <= 1)
         {
-            await _orderService.RemoveItemFromOrderAsync(SelectedOrderItem.OrderItemId, null);
+            // Pre-K-Slip: hard-delete so the line stays out of receipts and history.
+            await _orderService.DeleteItemFromOrderAsync(SelectedOrderItem.OrderItemId);
             OrderItems.Remove(SelectedOrderItem);
             RenumberItems();
         }
@@ -1709,7 +1759,8 @@ public partial class MainPOSViewModel : BaseViewModel
             return;
         }
 
-        await _orderService.RemoveItemFromOrderAsync(SelectedOrderItem.OrderItemId, "Removed by user");
+        // Pre-K-Slip: hard-delete (handler above blocks this for kitchen-printed items).
+        await _orderService.DeleteItemFromOrderAsync(SelectedOrderItem.OrderItemId);
         OrderItems.Remove(SelectedOrderItem);
         RenumberItems();
         RecalculateTotals();
@@ -1729,6 +1780,40 @@ public partial class MainPOSViewModel : BaseViewModel
         {
             await RemoveItemAsync();
         }
+    }
+
+    // Persists a direct quantity edit from the cart grid (inline cell edit).
+    // Mirrors increment/decrement: updates backend, recalculates totals, saves order state.
+    // Caller must already have parsed newQty and verified K-Slip lock.
+    public async Task ApplyQuantityEditAsync(OrderItemViewModel item, int newQty)
+    {
+        if (item == null) return;
+
+        if (newQty <= 0)
+        {
+            // Hard-delete: cell-edit handler already blocks this path when
+            // KitchenPrinted is true, so removing the row is safe and keeps
+            // it out of receipts and billing-history detail views.
+            if (item.OrderItemId > 0)
+                await _orderService.DeleteItemFromOrderAsync(item.OrderItemId);
+            OrderItems.Remove(item);
+            RenumberItems();
+        }
+        else
+        {
+            item.Quantity = newQty;
+            if (item.OrderItemId > 0)
+                await _orderService.UpdateItemQuantityAsync(item.OrderItemId, newQty);
+        }
+
+        RecalculateTotals();
+
+        if (OrderItems.Count == 0)
+            CleanupEmptyOrder();
+        else
+            SaveCurrentOrderState();
+
+        RefreshHoldOrders();
     }
 
     /// <summary>

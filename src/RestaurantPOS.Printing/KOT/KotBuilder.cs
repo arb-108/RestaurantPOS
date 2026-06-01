@@ -40,6 +40,7 @@ public class KotBuilder
         var ms = new MemoryStream();
 
         Write(ms, EscPos.Init);
+        Write(ms, EscPos.FontA);   // Lock Font A — some printers (Speed X) boot in Font B
 
         // ═══ HEADER — double size (only thing that's big) ═══
         Write(ms, EscPos.AlignCenter);

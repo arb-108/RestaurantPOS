@@ -137,6 +137,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Date -->
@@ -182,7 +183,17 @@
                 <Button Grid.Column="5" Content="Refresh"
                         Style="{StaticResource PrimarySolidButton}"
                         Command="{Binding SearchOrdersCommand}"
-                        Width="100" Height="30" VerticalAlignment="Bottom"/>
+                        Width="100" Height="30" VerticalAlignment="Bottom"
+                        Margin="0,0,8,0"/>
+
+                <!-- Print A4 Report -->
+                <Button Grid.Column="6" Content="Print Report"
+                        Command="{Binding PrintOrderHistoryReportCommand}"
+                        Width="120" Height="30" VerticalAlignment="Bottom"
+                        Background="#27AE60" Foreground="White"
+                        BorderThickness="0" FontWeight="SemiBold"
+                        Cursor="Hand"
+                        ToolTip="Generate A4 report of the listed orders (Print or Save as PDF)"/>
             </Grid>
         </Border>
 

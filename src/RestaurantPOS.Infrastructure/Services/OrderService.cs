@@ -110,6 +110,15 @@ public class OrderService : IOrderService
         await _db.SaveChangesAsync();
     }
 
+    public async Task DeleteItemFromOrderAsync(int orderItemId)
+    {
+        var item = await _db.OrderItems.FindAsync(orderItemId);
+        if (item == null) return;
+
+        _db.OrderItems.Remove(item);
+        await _db.SaveChangesAsync();
+    }
+
     public async Task<Order> CalculateTotalsAsync(int orderId, decimal discountPercent = 0, decimal taxPercent = 0)
     {
         var order = await _db.Orders

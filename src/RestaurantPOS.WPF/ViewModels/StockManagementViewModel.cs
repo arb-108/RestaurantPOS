@@ -55,6 +55,12 @@ public partial class StockManagementViewModel : BaseViewModel
     [RelayCommand]
     private async Task LoadDataAsync()
     {
+        // Drop tracker state so we re-read fresh values from DB.
+        // Other DbContexts (OrderService on checkout) mutate ingredient
+        // CurrentStock — without this, the tracker keeps stale values
+        // and refresh appears to do nothing.
+        _db.ChangeTracker.Clear();
+
         // Stock items
         _allItems = await _db.Ingredients
             .Include(i => i.Supplier)

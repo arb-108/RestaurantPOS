@@ -10,6 +10,13 @@ public interface IOrderService
     Task<OrderItem> AddItemToOrderAsync(int orderId, int menuItemId, int? variantId, int quantity, string? notes);
     Task UpdateItemQuantityAsync(int orderItemId, int quantity);
     Task RemoveItemFromOrderAsync(int orderItemId, string? voidReason);
+    /// <summary>
+    /// Hard-deletes an order item from the database. Use only for items that
+    /// have NOT been kitchen-printed — call sites must enforce that. For
+    /// kitchen-printed items, use RemoveItemFromOrderAsync (soft-void) so the
+    /// audit trail is preserved.
+    /// </summary>
+    Task DeleteItemFromOrderAsync(int orderItemId);
     Task<Order> CalculateTotalsAsync(int orderId, decimal discountPercent = 0, decimal taxPercent = 0);
     Task<Order> CheckoutAsync(int orderId, int paymentMethodId, long tenderedAmount);
 

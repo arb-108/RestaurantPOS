@@ -140,6 +140,15 @@ public static class DatabaseConfig
 //  CONFIGURATION MODEL
 // ═══════════════════════════════════════════════════════════
 
+//public class DbConfigSettings
+//{
+//    public string Server { get; set; } = ".\\SQLEXPRESS";
+//    public string Database { get; set; } = "RestaurantPOS";
+//    public bool IntegratedSecurity { get; set; } = true;
+//    public string? Username { get; set; }
+//    public string? Password { get; set; }
+//}
+
 public class DbConfigSettings
 {
     public string Server { get; set; } = ".";

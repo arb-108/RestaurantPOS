@@ -102,6 +102,10 @@ public partial class ReportsViewModel : BaseViewModel
     [ObservableProperty]
     private string _orderHistoryTotal = "Rs. 0";
 
+    /// <summary>Sum of voided orders (shown separately — NOT part of Grand Total).</summary>
+    [ObservableProperty]
+    private string _orderHistoryVoidTotal = "Rs. 0";
+
     // ══════════════════════════════════════════════
     //  TAB 2: MENU PERFORMANCE
     // ══════════════════════════════════════════════
@@ -499,6 +503,7 @@ public partial class ReportsViewModel : BaseViewModel
 
             OrderHistoryItems.Clear();
             long runningTotal = 0;
+            long voidTotal = 0;
 
             foreach (var o in orders)
             {
@@ -508,6 +513,13 @@ public partial class ReportsViewModel : BaseViewModel
                 if (items.Count > 3) summary += $" +{items.Count - 3} more";
 
                 var paymentMethod = o.Payments.FirstOrDefault()?.PaymentMethod?.Name ?? "-";
+
+                // Void orders may have GrandTotal = 0 in the DB when they were voided
+                // before settle (CalculateTotalsAsync never ran). Fall back to the
+                // raw line-item sum so the cashier can see what the voided order was worth.
+                long rowTotal = o.GrandTotal;
+                if (rowTotal == 0 && o.Status == OrderStatus.Void)
+                    rowTotal = items.Sum(i => (long)i.Quantity * i.UnitPrice);
 
                 OrderHistoryItems.Add(new OrderHistoryRow
                 {
@@ -519,20 +531,75 @@ public partial class ReportsViewModel : BaseViewModel
                     ItemCount = items.Sum(i => i.Quantity),
                     ItemsSummary = summary,
                     Status = o.Status.ToString(),
-                    Total = $"Rs. {o.GrandTotal / 100m:N0}",
+                    Total = $"Rs. {rowTotal / 100m:N0}",
                     PaymentMethod = paymentMethod
                 });
 
                 if (o.Status == OrderStatus.Closed)
                     runningTotal += o.GrandTotal;
+                else if (o.Status == OrderStatus.Void)
+                    voidTotal += rowTotal;
             }
 
             OrderHistoryCount = $"{orders.Count} orders";
             OrderHistoryTotal = $"Rs. {runningTotal / 100m:N0}";
+            OrderHistoryVoidTotal = $"Rs. {voidTotal / 100m:N0}";
         }
         catch (Exception ex)
         {
             System.Diagnostics.Debug.WriteLine($"[Reports] OrderHistory error: {ex.Message}");
+        }
+    }
+
+    [RelayCommand]
+    private void PrintOrderHistoryReport()
+    {
+        try
+        {
+            var subtitle =
+                $"Period: {OrdersFrom:dd/MM/yyyy} - {OrdersTo:dd/MM/yyyy}  |  " +
+                $"Type: {OrderTypeFilter}  |  Status: {OrderStatusFilter}";
+
+            var report = new Views.ReportDocument
+            {
+                Title = "Order History Report",
+                Subtitle = subtitle,
+                RestaurantName = _restaurantName,
+                RestaurantAddress = _restaurantAddress,
+                RestaurantPhone = _restaurantPhone,
+                Columns = new List<string>
+                {
+                    "Order #", "Date / Time", "Type", "Status", "Customer", "Items", "Total (Rs.)"
+                },
+                Rows = OrderHistoryItems.Select(r => new List<string>
+                {
+                    r.OrderNumber,
+                    r.Date,
+                    r.Type,
+                    r.Status,
+                    r.CustomerName,
+                    r.ItemCount.ToString(),
+                    // strip "Rs. " prefix so the column stays aligned
+                    r.Total.Replace("Rs.", "").Trim()
+                }).ToList(),
+                Summary = new List<(string, string)>
+                {
+                    ("Total Orders",            OrderHistoryCount),
+                    ("Grand Total (Closed)",    OrderHistoryTotal),
+                    ("Void Total (Not Counted)", OrderHistoryVoidTotal)
+                },
+                Footer = "Void totals are listed for reference only — they are NOT part of the Grand Total."
+            };
+
+            var preview = new Views.ReportPreviewWindow(report)
+            {
+                Owner = AppWindow.Current.MainWindow
+            };
+            preview.ShowDialog();
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"[Reports] PrintOrderHistoryReport error: {ex.Message}");
         }
     }
 

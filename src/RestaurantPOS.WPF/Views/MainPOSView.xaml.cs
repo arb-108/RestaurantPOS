@@ -798,28 +798,14 @@ public partial class MainPOSView : UserControl
                 return;
             }
 
-            // Qty = 0 and K-Slip NOT yet sent → delete line after commit
-            if (newQty == 0)
+            // Persist the quantity edit (or delete if newQty == 0) AFTER the
+            // binding commit, so item.Quantity reflects the new value before
+            // we recompute totals. Without this, the DB never sees the new
+            // qty and reloaded orders show stale amounts.
+            Dispatcher.BeginInvoke(DispatcherPriority.Input, async () =>
             {
-                Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
-                {
-                    if (DataContext is MainPOSViewModel vm && vm.OrderItems.Contains(item))
-                    {
-                        vm.OrderItems.Remove(item);
-                        // Re-serial & recompute totals
-                        for (int i = 0; i < vm.OrderItems.Count; i++)
-                            vm.OrderItems[i].SerialNumber = i + 1;
-                        vm.RecalculateTotals();
-                    }
-                });
-                return;
-            }
-
-            // Valid qty change → recompute SubTotal / Discount / GST after commit
-            Dispatcher.BeginInvoke(DispatcherPriority.Input, () =>
-            {
-                if (DataContext is MainPOSViewModel vm)
-                    vm.RecalculateTotals();
+                if (DataContext is MainPOSViewModel vm && vm.OrderItems.Contains(item))
+                    await vm.ApplyQuantityEditAsync(item, newQty);
             });
         }
 

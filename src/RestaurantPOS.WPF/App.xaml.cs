@@ -42,6 +42,16 @@ public partial class App : System.Windows.Application
             args.Handled = true;
         };
 
+        // ── Pre-flight: make sure SQL Server is reachable BEFORE building the host.
+        //    AddDbContextFactory captures the connection string once; if we let
+        //    the host build with bad settings we'd have to tear it down to retry.
+        //    Looping with a SqlConnection here keeps it simple.
+        if (!await EnsureDatabaseReachableAsync())
+        {
+            Shutdown(1);
+            return;
+        }
+
         _host = Host.CreateDefaultBuilder()
             .UseSerilog()
             .ConfigureServices((context, services) =>
@@ -108,13 +118,14 @@ public partial class App : System.Windows.Application
 
             // Run seed/migration logic (idempotent)
             await MigratePermissionSystemAsync(initDb);
+            await SeedRecipesAsync(initDb);
         }
         catch (Exception ex)
         {
-            Log.Fatal(ex, "Failed to initialize SQL Server database");
+            Log.Fatal(ex, "Failed to initialize SQL Server database after pre-flight succeeded");
             System.Windows.MessageBox.Show(
-                $"Failed to connect to SQL Server:\n{ex.Message}\n\nCheck dbconfig.json in:\n{Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData)}\\RestaurantPOS",
-                "Database Connection Failed", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                $"Failed to initialize database:\n{ex.Message}",
+                "Database Initialization Failed", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             Shutdown(1);
             return;
         }
@@ -143,6 +154,57 @@ public partial class App : System.Windows.Application
     // ═══════════════════════════════════════════════
     //  PERMISSION SYSTEM MIGRATION (idempotent)
     // ═══════════════════════════════════════════════
+
+    // Verifies the configured SQL Server is reachable. On failure, opens the
+    // DatabaseSettingsDialog so the user can fix the server / instance / auth
+    // without editing dbconfig.json by hand. Returns true on success, false if
+    // the user closed the dialog without resolving the connection.
+    private static async Task<bool> EnsureDatabaseReachableAsync()
+    {
+        const int maxAttempts = 5;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                var connStr = DatabaseConfig.GetConnectionString();
+                // Connect to master so a missing target DB doesn't mask a real
+                // server/instance/auth problem — we only need to prove the
+                // instance accepts logins.
+                var masterConn = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connStr) { InitialCatalog = "master" }.ToString();
+                await using var conn = new Microsoft.Data.SqlClient.SqlConnection(masterConn);
+                await conn.OpenAsync();
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Warning(ex, "SQL Server pre-flight failed (attempt {Attempt}/{Max})", attempt, maxAttempts);
+
+                var dlg = new Views.DatabaseSettingsDialog
+                {
+                    WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
+                };
+
+                // Show the failure reason on the dialog title so the user has context.
+                dlg.Title = $"Database Connection Failed — {(ex.InnerException?.Message ?? ex.Message)}";
+
+                var result = dlg.ShowDialog();
+                if (result != true || !dlg.SettingsSaved)
+                {
+                    // User cancelled / closed without saving — give up.
+                    System.Windows.MessageBox.Show(
+                        "Database connection not configured. The application will exit.",
+                        "Setup Required", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                    return false;
+                }
+
+                // Saved settings — flush cache and retry the loop.
+                DatabaseConfig.ResetCache();
+            }
+        }
+
+        Log.Fatal("Exceeded SQL Server pre-flight retry budget");
+        return false;
+    }
 
     /// <summary>
     /// Migrates existing databases to the 3-role, 27-permission system.
@@ -277,6 +339,75 @@ public partial class App : System.Windows.Application
         catch (Exception ex)
         {
             Log.Warning(ex, "Permission migration warning (non-fatal)");
+        }
+    }
+
+    // Seeds recipe (MenuItem → Ingredient mapping) rows for deployments that
+    // were created via custom SQL scripts and never received the EF HasData
+    // recipe seed. Without recipes, OrderService.CheckoutFastAsync runs the
+    // deduction loop but exits early because Recipes is empty, so stock
+    // never moves. Idempotent: only inserts if Recipes table is empty AND
+    // both the source MenuItem and target Ingredient exist.
+    private static async Task SeedRecipesAsync(PosDbContext db)
+    {
+        try
+        {
+            if (await db.Recipes.AnyAsync()) return;
+
+            var menuItemIds = (await db.MenuItems.Select(m => m.Id).ToListAsync()).ToHashSet();
+            var ingredientIds = (await db.Ingredients.Select(i => i.Id).ToListAsync()).ToHashSet();
+
+            if (menuItemIds.Count == 0 || ingredientIds.Count == 0)
+            {
+                Log.Information("Recipe seeder skipped — no menu items or ingredients to link");
+                return;
+            }
+
+            var seed = new (int MenuItemId, int IngredientId, decimal Quantity)[]
+            {
+                (1,11,0.20m),(1,1,0.08m),(1,3,0.05m),(1,9,0.03m),(1,10,0.03m),(1,14,0.02m),(1,16,0.02m),
+                (2,11,0.25m),(2,1,0.10m),(2,3,0.06m),(2,14,0.02m),(2,16,0.03m),
+                (3,11,0.30m),(3,1,0.10m),(3,3,0.07m),(3,9,0.03m),(3,10,0.03m),(3,16,0.03m),
+                (4,11,0.18m),(4,1,0.08m),(4,3,0.05m),(4,14,0.02m),
+                (5,11,0.15m),(5,1,0.06m),(5,9,0.03m),(5,10,0.03m),(5,16,0.02m),
+                (6,11,0.18m),(6,1,0.06m),(6,9,0.03m),(6,15,0.02m),(6,16,0.02m),
+                (7,11,0.35m),(7,3,0.10m),(7,15,0.03m),(7,12,0.01m),(7,6,0.005m),
+                (8,11,0.70m),(8,3,0.20m),(8,15,0.05m),(8,12,0.02m),(8,6,0.01m),
+                (9,1,0.10m),(9,3,0.08m),(9,4,0.005m),(9,14,0.03m),
+                (10,11,0.12m),(10,1,0.06m),(10,9,0.03m),(10,10,0.03m),(10,16,0.02m),(10,14,0.02m),
+                (11,8,0.15m),(11,3,0.08m),(11,4,0.003m),
+                (12,8,0.25m),(12,3,0.12m),(12,4,0.005m),
+                (13,9,0.05m),(13,16,0.04m),(13,18,0.01m),(13,5,0.005m),
+                (14,1,0.12m),(14,4,0.003m),(14,3,0.01m),
+                (15,1,0.12m),(15,12,0.01m),(15,4,0.003m),(15,3,0.02m),
+                (16,11,1.50m),(16,3,0.40m),(16,1,0.30m),(16,8,0.30m),(16,14,0.05m),(16,19,1m),
+                (17,11,0.20m),(17,1,0.08m),(17,3,0.10m),(17,8,0.15m),(17,20,1m),(17,14,0.02m),
+                (18,20,1m),
+                (19,19,1m),
+                (20,1,0.05m),(20,5,0.04m),(20,3,0.03m),
+            };
+
+            var inserted = 0;
+            foreach (var (mid, iid, qty) in seed)
+            {
+                if (!menuItemIds.Contains(mid) || !ingredientIds.Contains(iid)) continue;
+                db.Recipes.Add(new RestaurantPOS.Domain.Entities.Recipe { MenuItemId = mid, IngredientId = iid, Quantity = qty });
+                inserted++;
+            }
+
+            if (inserted > 0)
+            {
+                await db.SaveChangesAsync();
+                Log.Information("Recipe seeder inserted {Count} recipe rows", inserted);
+            }
+            else
+            {
+                Log.Information("Recipe seeder: no matching MenuItem/Ingredient IDs to link");
+            }
+        }
+        catch (Exception ex)
+        {
+            Log.Warning(ex, "Recipe seeder failed (non-fatal)");
         }
     }
 

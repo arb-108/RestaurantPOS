@@ -5,6 +5,13 @@ public static class EscPos
     // Initialize printer
     public static readonly byte[] Init = [0x1B, 0x40];
 
+    // Font selection (ESC M n) — 0 = Font A (12x24, ~48 chars/80mm),
+    // 1 = Font B (9x17, ~64 chars/80mm). Some printers (e.g. Speed X)
+    // default to Font B; ESC @ Init does NOT reset this. Send FontA
+    // right after Init so we get consistent 48-char layout everywhere.
+    public static readonly byte[] FontA = [0x1B, 0x4D, 0x00];
+    public static readonly byte[] FontB = [0x1B, 0x4D, 0x01];
+
     // Text alignment (ESC a n)
     public static readonly byte[] AlignLeft = [0x1B, 0x61, 0x00];
     public static readonly byte[] AlignCenter = [0x1B, 0x61, 0x01];

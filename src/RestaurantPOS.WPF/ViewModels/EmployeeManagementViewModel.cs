@@ -331,6 +331,9 @@ public partial class EmployeeManagementViewModel : BaseViewModel
 
         if (window.ShowDialog() == true)
         {
+            var paidAt = DateTime.UtcNow;
+            var pendingPayrolls = new List<(Payroll payroll, SupplierExpense expense)>();
+
             foreach (var item in window.PayrollItems)
             {
                 // Check if already exists
@@ -338,7 +341,12 @@ public partial class EmployeeManagementViewModel : BaseViewModel
                     p.EmployeeId == item.EmployeeId && p.Month == item.Month && p.Year == item.Year);
                 if (existing != null) continue;
 
-                _db.Payrolls.Add(new Payroll
+                var employee = await _db.Employees.FindAsync(item.EmployeeId);
+                if (employee == null) continue;
+
+                var net = item.BasicSalary + item.Allowances - item.Deductions + item.Bonus - item.Advance;
+
+                var payroll = new Payroll
                 {
                     EmployeeId = item.EmployeeId,
                     Month = item.Month,
@@ -348,11 +356,37 @@ public partial class EmployeeManagementViewModel : BaseViewModel
                     Deductions = item.Deductions,
                     Bonus = item.Bonus,
                     Advance = item.Advance,
-                    NetSalary = item.BasicSalary + item.Allowances - item.Deductions + item.Bonus - item.Advance,
-                    Status = PayrollStatus.Pending,
-                });
+                    NetSalary = net,
+                    Status = PayrollStatus.Paid,
+                    PaidAt = paidAt,
+                };
+
+                var expense = new SupplierExpense
+                {
+                    Description = $"Salary - {employee.Name} ({new DateTime(item.Year, item.Month, 1):MMM yyyy})",
+                    Amount = net,
+                    ExpenseDate = paidAt,
+                    Category = "Salary",
+                    IsPaid = true,
+                    Notes = "Auto-created on payroll generation"
+                };
+
+                _db.Payrolls.Add(payroll);
+                _db.SupplierExpenses.Add(expense);
+                pendingPayrolls.Add((payroll, expense));
             }
+
             await _db.SaveChangesAsync();
+
+            // Link payroll → expense after IDs are generated
+            foreach (var (payroll, expense) in pendingPayrolls)
+            {
+                payroll.ExpenseId = expense.Id;
+                expense.Notes = $"Payroll #{payroll.Id}";
+            }
+            if (pendingPayrolls.Count > 0)
+                await _db.SaveChangesAsync();
+
             await LoadPayrollsAsync();
         }
     }

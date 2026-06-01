@@ -8,6 +8,7 @@ using RestaurantPOS.Domain.Enums;
 using RestaurantPOS.Infrastructure.Data;
 using RestaurantPOS.Printing;
 using RestaurantPOS.Printing.Receipt;
+using RestaurantPOS.WPF.Views;
 
 namespace RestaurantPOS.WPF.ViewModels;
 
@@ -237,5 +238,59 @@ public partial class OrderHistoryViewModel : BaseViewModel
         { ConfiguredPrinterName = printerName };
         previewWindow.Owner = System.Windows.Application.Current.MainWindow;
         previewWindow.ShowDialog();
+    }
+
+    /// <summary>
+    /// Builds an A4 Order-History summary report from the CURRENT filtered list
+    /// and opens it in the A4 preview window (Print / Save-as-PDF).
+    /// </summary>
+    [RelayCommand]
+    private async Task PrintOrderHistoryReportAsync()
+    {
+        // Make sure the list matches the filters the cashier is looking at right now.
+        await SearchOrdersAsync();
+
+        var restaurantName = await _settingsService.GetSettingAsync("ReceiptRestaurantName") ?? "Restaurant";
+        var address = await _settingsService.GetSettingAsync("ReceiptAddress") ?? string.Empty;
+        var phone = await _settingsService.GetSettingAsync("ReceiptPhone") ?? string.Empty;
+
+        var scopeLine = ShowAllOrders
+            ? "All Dates"
+            : $"Date: {FromDate:dd/MM/yyyy}";
+        var typeLine = SelectedOrderTypeFilter == "All" ? "All Types" : SelectedOrderTypeFilter;
+        var statusLine = SelectedStatusFilter == "All" ? "All Statuses" : SelectedStatusFilter;
+        var searchLine = string.IsNullOrWhiteSpace(SearchText) ? "" : $"  |  Search: \"{SearchText}\"";
+
+        var report = new ReportDocument
+        {
+            Title = "Order History Report",
+            Subtitle = $"{scopeLine}  |  Type: {typeLine}  |  Status: {statusLine}{searchLine}",
+            RestaurantName = restaurantName,
+            RestaurantAddress = address,
+            RestaurantPhone = phone,
+            Columns = new List<string> { "Order #", "Date / Time", "Type", "Status", "Customer", "Items", "Total (Rs.)" },
+            Rows = Orders.Select(o => new List<string>
+            {
+                o.OrderNumber ?? "-",
+                o.CreatedAt.ToLocalTime().ToString("dd/MM/yyyy hh:mm tt"),
+                o.OrderType.ToString(),
+                o.Status.ToString(),
+                o.Customer?.Name ?? "-",
+                o.OrderItems?.Sum(i => i.Quantity).ToString() ?? "0",
+                $"{o.GrandTotal / 100m:N2}"
+            }).ToList(),
+            Summary = new List<(string, string)>
+            {
+                ("Total Orders",  ResultCount.ToString()),
+                ("Total Revenue", $"Rs. {TotalRevenue / 100m:N2}")
+            },
+            Footer = "Generated from Restaurant POS — Order History"
+        };
+
+        var preview = new ReportPreviewWindow(report)
+        {
+            Owner = System.Windows.Application.Current.MainWindow
+        };
+        preview.ShowDialog();
     }
 }
