@@ -13,6 +13,8 @@ public partial class CloseShiftWindow : Window
 
     public long CountedCashPaisa { get; private set; }
     public string ClosingNotes { get; private set; } = string.Empty;
+    /// <summary>True if the user ticked "Create database backup when closing shift".</summary>
+    public bool CreateBackup { get; private set; }
 
     public CloseShiftWindow(
         DateTime shiftStartLocal,
@@ -92,6 +94,7 @@ public partial class CloseShiftWindow : Window
         decimal.TryParse(TxtCountedCash.Text.Replace(",", "").Trim(), out var counted);
         CountedCashPaisa = (long)(counted * 100);
         ClosingNotes = TxtNotes.Text.Trim();
+        CreateBackup = ChkBackup.IsChecked == true;
         DialogResult = true;
     }
 

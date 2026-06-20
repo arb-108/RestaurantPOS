@@ -3080,11 +3080,20 @@ public partial class MainPOSViewModel : BaseViewModel
     {
         try
         {
-            // Role-based: Admin/Manager see all, Cashier sees only own orders
+            // Billing tab is now shift-scoped: only show orders attached to the
+            // currently-open shift. If no shift is open, the list stays empty.
+            var activeShiftId = await ShiftManagementViewModel.GetActiveShiftIdAsync(_db);
+            if (activeShiftId == null)
+            {
+                BillingHistory.Clear();
+                BillingSummary = "No active shift — open a shift to view its bills.";
+                return;
+            }
+
+            // Role-based: Admin/Manager see all in shift, Cashier sees only own orders in shift
             int? cashierFilter = IsAdminOrManager ? null : _loggedInUser?.Id;
 
-            var orders = await _orderService.GetBillingHistoryAsync(
-                BillingFromDate, BillingToDate, cashierFilter);
+            var orders = await _orderService.GetBillingHistoryByShiftAsync(activeShiftId, cashierFilter);
 
             var list = orders.ToList();
 
@@ -3127,8 +3136,10 @@ public partial class MainPOSViewModel : BaseViewModel
         }
     }
 
-    partial void OnBillingFromDateChanged(DateTime value) => _ = LoadBillingHistoryAsync();
-    partial void OnBillingToDateChanged(DateTime value) => _ = LoadBillingHistoryAsync();
+    // Date-range billing is replaced by shift-scoped billing; the date
+    // properties remain for backward compatibility but no longer trigger reloads.
+    partial void OnBillingFromDateChanged(DateTime value) { }
+    partial void OnBillingToDateChanged(DateTime value) { }
 
     [RelayCommand]
     private async Task SearchBillingHistoryAsync()

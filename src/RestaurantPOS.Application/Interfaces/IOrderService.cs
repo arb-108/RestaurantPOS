@@ -39,5 +39,10 @@ public interface IOrderService
     Task UpdateOrderDiscountAsync(int orderId, long discountAmount);
     Task UpdateOrderAdjustmentAsync(int orderId, long adjustment);
     Task<IEnumerable<Order>> GetBillingHistoryAsync(DateTime fromDate, DateTime toDate, int? cashierId = null);
+    /// <summary>
+    /// Get all closed/void orders attached to a specific shift. Returns empty if shiftId is null.
+    /// Used by the POS Billing tab to scope visibility to the active shift only.
+    /// </summary>
+    Task<IEnumerable<Order>> GetBillingHistoryByShiftAsync(int? shiftId, int? cashierId = null);
     Task UpdateOrderNotesAsync(int orderId, string? notes, int? customerId = null);
 }

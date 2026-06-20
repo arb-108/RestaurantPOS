@@ -135,6 +135,7 @@
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="Auto"/>
@@ -171,8 +172,18 @@
                               SelectedItem="{Binding SelectedStatusFilter}"/>
                 </StackPanel>
 
+                <!-- Shift Filter (shift-wise orders) -->
+                <StackPanel Grid.Column="4" Orientation="Vertical" Margin="0,0,16,0">
+                    <TextBlock Text="Shift" FontSize="10" FontWeight="SemiBold" Foreground="#666" Margin="0,0,0,3"/>
+                    <ComboBox Style="{StaticResource FilterComboBox}" Width="260"
+                              ItemsSource="{Binding ShiftFilters}"
+                              SelectedItem="{Binding SelectedShiftFilter}"
+                              DisplayMemberPath="Display"
+                              ToolTip="Show orders for a specific shift (or All Shifts)"/>
+                </StackPanel>
+
                 <!-- Search -->
-                <StackPanel Grid.Column="4" Orientation="Vertical" Margin="0,0,12,0" MinWidth="260">
+                <StackPanel Grid.Column="5" Orientation="Vertical" Margin="0,0,12,0" MinWidth="200">
                     <TextBlock Text="Search" FontSize="10" FontWeight="SemiBold" Foreground="#666" Margin="0,0,0,3"/>
                     <TextBox Style="{StaticResource FilterTextBox}"
                              Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged, Delay=300}"
@@ -180,14 +191,14 @@
                 </StackPanel>
 
                 <!-- Refresh -->
-                <Button Grid.Column="5" Content="Refresh"
+                <Button Grid.Column="6" Content="Refresh"
                         Style="{StaticResource PrimarySolidButton}"
                         Command="{Binding SearchOrdersCommand}"
                         Width="100" Height="30" VerticalAlignment="Bottom"
                         Margin="0,0,8,0"/>
 
                 <!-- Print A4 Report -->
-                <Button Grid.Column="6" Content="Print Report"
+                <Button Grid.Column="7" Content="Print Report"
                         Command="{Binding PrintOrderHistoryReportCommand}"
                         Width="120" Height="30" VerticalAlignment="Bottom"
                         Background="#27AE60" Foreground="White"

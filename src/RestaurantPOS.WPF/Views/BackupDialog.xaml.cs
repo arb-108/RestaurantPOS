@@ -17,7 +17,7 @@ namespace RestaurantPOS.WPF.Views;
 public partial class BackupDialog : Window
 {
     private readonly IDatabaseMaintenanceService _maintenance;
-    private readonly string _backupPath;
+    private string _backupPath = DatabaseConfig.GetBackupPath();
     private bool _isBusy;
 
     /// <summary>True if any operation in this dialog added/removed backup files.</summary>
@@ -27,7 +27,6 @@ public partial class BackupDialog : Window
     {
         InitializeComponent();
         _maintenance = maintenance;
-        _backupPath = DatabaseConfig.GetBackupPath();
         Directory.CreateDirectory(_backupPath);
 
         TxtBackupPath.Text = _backupPath;
@@ -318,5 +317,69 @@ public partial class BackupDialog : Window
             DialogResult = BackupListChanged;
             Close();
         }
+    }
+
+    // ─────────────────────────────────────────────
+    //  Change / reset backup folder
+    // ─────────────────────────────────────────────
+    private void ChangePath_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isBusy) return;
+
+        // OpenFolderDialog (WPF 9 / .NET 8+). Falls back gracefully if missing.
+        var dlg = new OpenFolderDialog
+        {
+            Title = "Choose a folder for database backups",
+            InitialDirectory = _backupPath
+        };
+        if (dlg.ShowDialog() != true) return;
+
+        var newPath = dlg.FolderName;
+        if (string.IsNullOrWhiteSpace(newPath)) return;
+
+        // Validate write access by attempting to create the folder + a probe file.
+        try
+        {
+            Directory.CreateDirectory(newPath);
+            var probe = Path.Combine(newPath, $".write-probe-{Guid.NewGuid():N}.tmp");
+            File.WriteAllText(probe, "ok");
+            File.Delete(probe);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"Cannot write to that folder:\n{ex.Message}\n\nKeeping existing path.",
+                "Folder not writable", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+
+        // Persist to dbconfig.json.
+        var settings = DatabaseConfig.GetSettings();
+        settings.BackupPath = newPath;
+        DatabaseConfig.SaveSettings(settings);
+
+        _backupPath = newPath;
+        TxtBackupPath.Text = _backupPath;
+
+        SetStatus("Backup folder updated",
+            $"New backups will be saved to:\n{newPath}\n\nNote: SQL Server's service account must also be able to write here. If a backup fails with an access error, the app will automatically fall back to the default ProgramData folder.",
+            isError: false);
+
+        _ = RefreshInfoAsync();
+    }
+
+    private void ResetPath_Click(object sender, RoutedEventArgs e)
+    {
+        if (_isBusy) return;
+
+        var settings = DatabaseConfig.GetSettings();
+        settings.BackupPath = null;
+        DatabaseConfig.SaveSettings(settings);
+
+        _backupPath = DatabaseConfig.GetBackupPath();
+        Directory.CreateDirectory(_backupPath);
+        TxtBackupPath.Text = _backupPath;
+
+        SetStatus("Reset to default", $"Backups will be saved to: {_backupPath}", isError: false);
+        _ = RefreshInfoAsync();
     }
 }

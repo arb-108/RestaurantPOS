@@ -19,6 +19,17 @@ public partial class OrderHistoryViewModel : BaseViewModel
     private readonly IPrintService _printService;
     private readonly ISettingsService _settingsService;
 
+    // Serializes SearchOrdersAsync so multiple filter changes (or the initial
+    // load + first selection trigger) cannot run two queries on the same
+    // DbContext concurrently. Concurrent use of PosDbContext throws
+    // "Collection was modified; enumeration operation may not execute".
+    private readonly System.Threading.SemaphoreSlim _searchLock = new(1, 1);
+
+    // True while LoadShiftFiltersAsync is populating the dropdown — used to
+    // suppress the OnSelectedShiftFilterChanged auto-search that would
+    // otherwise race against LoadDataAsync's own SearchOrdersAsync call.
+    private bool _suppressFilterReload;
+
     public ObservableCollection<Order> Orders { get; } = [];
 
     [ObservableProperty]
@@ -45,6 +56,12 @@ public partial class OrderHistoryViewModel : BaseViewModel
     public IReadOnlyList<string> OrderTypeFilters { get; } = new[] { "All", "DineIn", "TakeAway", "Delivery" };
     public IReadOnlyList<string> StatusFilters { get; } = new[] { "All", "Closed", "Void" };
 
+    // ── Shift filter dropdown ──
+    public ObservableCollection<ShiftFilterOption> ShiftFilters { get; } = [];
+
+    [ObservableProperty]
+    private ShiftFilterOption? _selectedShiftFilter;
+
     /// <summary>Label for the toggle button — reflects current mode.</summary>
     public string ShowAllLabel => ShowAllOrders ? "Show By Date" : "Show All Orders";
 
@@ -69,11 +86,74 @@ public partial class OrderHistoryViewModel : BaseViewModel
     [RelayCommand]
     private async Task LoadDataAsync()
     {
+        await LoadShiftFiltersAsync();
         await SearchOrdersAsync();
+    }
+
+    /// <summary>
+    /// Rebuild the Shift dropdown from the latest 50 shifts. Adds an "All Shifts"
+    /// sentinel at position 0. Keeps the current selection if still present.
+    /// Suppresses the auto-reload triggered by the SelectedShiftFilter setter
+    /// — the caller (LoadDataAsync) runs SearchOrdersAsync explicitly afterwards.
+    /// </summary>
+    private async Task LoadShiftFiltersAsync()
+    {
+        // AsNoTracking is critical here: PosDbContext is long-lived (scoped/singleton),
+        // so a previously-loaded Shift with EndedAt=NULL stays in the change tracker.
+        // Without AsNoTracking, re-querying returns the CACHED entity — even after we
+        // close that shift from another view. The dropdown then shows it as still
+        // "Active" until the app is restarted. AsNoTracking bypasses the cache.
+        var shifts = await _db.Shifts
+            .AsNoTracking()
+            .Include(s => s.User)
+            .OrderByDescending(s => s.StartedAt)
+            .Take(50)
+            .ToListAsync();
+
+        _suppressFilterReload = true;
+        try
+        {
+            var previousId = SelectedShiftFilter?.ShiftId;
+            ShiftFilters.Clear();
+            ShiftFilters.Add(new ShiftFilterOption { ShiftId = null, Display = "All Shifts" });
+
+            foreach (var s in shifts)
+            {
+                var startLocal = s.StartedAt.ToLocalTime();
+                var endLabel = s.EndedAt.HasValue
+                    ? s.EndedAt.Value.ToLocalTime().ToString("dd MMM hh:mm tt")
+                    : "Active";
+                var who = s.User?.FullName ?? s.User?.Username ?? "—";
+                var label = $"#{s.Id} • {who} • {startLocal:dd MMM hh:mm tt} → {endLabel}";
+                ShiftFilters.Add(new ShiftFilterOption { ShiftId = s.Id, Display = label });
+            }
+
+            SelectedShiftFilter = ShiftFilters.FirstOrDefault(o => o.ShiftId == previousId) ?? ShiftFilters[0];
+        }
+        finally
+        {
+            _suppressFilterReload = false;
+        }
     }
 
     [RelayCommand]
     private async Task SearchOrdersAsync()
+    {
+        // Serialize: if a previous Search is still in flight (e.g. rapid filter
+        // changes, or the initial-load path), wait for it to finish before
+        // touching the shared DbContext again.
+        await _searchLock.WaitAsync();
+        try
+        {
+            await SearchOrdersCoreAsync();
+        }
+        finally
+        {
+            _searchLock.Release();
+        }
+    }
+
+    private async Task SearchOrdersCoreAsync()
     {
         IsLoading = true;
         StatusMessage = "Loading orders...";
@@ -81,7 +161,10 @@ public partial class OrderHistoryViewModel : BaseViewModel
 
         // Use a direct DB query with full navigation includes so the grid columns
         // (Customer, Phone, Cashier, Items) are populated in both modes.
+        // AsNoTracking — read-only grid; avoids stale entity reads from the
+        // long-lived DbContext (same reason as LoadShiftFiltersAsync above).
         var query = _db.Orders
+            .AsNoTracking()
             .Include(o => o.OrderItems).ThenInclude(oi => oi.MenuItem)
             .Include(o => o.Customer)
             .Include(o => o.Cashier)
@@ -94,6 +177,12 @@ public partial class OrderHistoryViewModel : BaseViewModel
             var start = FromDate.Date.ToUniversalTime();
             var end = FromDate.Date.AddDays(1).ToUniversalTime();
             query = query.Where(o => o.CreatedAt >= start && o.CreatedAt < end);
+        }
+
+        // Shift filter — if a specific shift is selected, narrow to its orders
+        if (SelectedShiftFilter?.ShiftId is int shiftId)
+        {
+            query = query.Where(o => o.ShiftId == shiftId);
         }
 
         fetched = await query
@@ -143,15 +232,38 @@ public partial class OrderHistoryViewModel : BaseViewModel
 
     partial void OnFromDateChanged(DateTime value)
     {
+        if (_suppressFilterReload) return;
         if (!ShowAllOrders) _ = SearchOrdersAsync();
     }
 
-    partial void OnSearchTextChanged(string value) => _ = SearchOrdersAsync();
-    partial void OnSelectedOrderTypeFilterChanged(string value) => _ = SearchOrdersAsync();
-    partial void OnSelectedStatusFilterChanged(string value) => _ = SearchOrdersAsync();
+    partial void OnSearchTextChanged(string value)
+    {
+        if (_suppressFilterReload) return;
+        _ = SearchOrdersAsync();
+    }
+
+    partial void OnSelectedOrderTypeFilterChanged(string value)
+    {
+        if (_suppressFilterReload) return;
+        _ = SearchOrdersAsync();
+    }
+
+    partial void OnSelectedStatusFilterChanged(string value)
+    {
+        if (_suppressFilterReload) return;
+        _ = SearchOrdersAsync();
+    }
+
+    partial void OnSelectedShiftFilterChanged(ShiftFilterOption? value)
+    {
+        if (_suppressFilterReload) return;
+        _ = SearchOrdersAsync();
+    }
+
     partial void OnShowAllOrdersChanged(bool value)
     {
         OnPropertyChanged(nameof(ShowAllLabel));
+        if (_suppressFilterReload) return;
         _ = SearchOrdersAsync();
     }
 
@@ -177,8 +289,18 @@ public partial class OrderHistoryViewModel : BaseViewModel
         var address = await _settingsService.GetSettingAsync("ReceiptAddress") ?? "";
         var phone = await _settingsService.GetSettingAsync("ReceiptPhone") ?? "";
 
+        // Use the same 3-level fallback the main POS uses, otherwise a Receipt
+        // printer row without IsDefault=true (or with null SystemPrinterName)
+        // makes the reprint silently fall through to no-printer mode.
         var receiptPrinter = await _db.Set<Printer>()
-            .FirstOrDefaultAsync(p => p.Type == PrinterType.Receipt);
+            .Where(p => p.IsActive && p.IsDefault && p.Type == PrinterType.Receipt)
+            .FirstOrDefaultAsync()
+            ?? await _db.Set<Printer>()
+                .Where(p => p.IsActive && p.Type == PrinterType.Receipt)
+                .FirstOrDefaultAsync()
+            ?? await _db.Set<Printer>()
+                .Where(p => p.IsActive && p.SystemPrinterName != null)
+                .FirstOrDefaultAsync();
         var printerName = receiptPrinter?.SystemPrinterName;
 
         var receiptData = new ReceiptData
@@ -293,4 +415,15 @@ public partial class OrderHistoryViewModel : BaseViewModel
         };
         preview.ShowDialog();
     }
+}
+
+/// <summary>
+/// Dropdown option for the Shift filter on the OrderHistory toolbar.
+/// ShiftId == null means "All Shifts" (no filter).
+/// </summary>
+public class ShiftFilterOption
+{
+    public int? ShiftId { get; init; }
+    public string Display { get; init; } = string.Empty;
+    public override string ToString() => Display;
 }

@@ -54,8 +54,20 @@ public static class DatabaseConfig
         options.EnableThreadSafetyChecks(false);
     }
 
-    /// <summary>Get the backup directory path. Uses C:\ProgramData\RestaurantPOS\Backups.</summary>
-    public static string GetBackupPath() => BackupRootPath;
+    /// <summary>
+    /// Get the backup directory path. Honors the user-configured BackupPath
+    /// in dbconfig.json if set; otherwise falls back to C:\ProgramData\RestaurantPOS\Backups.
+    /// </summary>
+    public static string GetBackupPath()
+    {
+        var s = GetSettings();
+        if (!string.IsNullOrWhiteSpace(s.BackupPath))
+            return s.BackupPath!;
+        return BackupRootPath;
+    }
+
+    /// <summary>The default (built-in) backup path. Useful for "Reset to default" UI.</summary>
+    public static string GetDefaultBackupPath() => BackupRootPath;
 
     /// <summary>Get a copy of the current settings.</summary>
     public static DbConfigSettings GetSettings()
@@ -156,4 +168,9 @@ public class DbConfigSettings
     public bool IntegratedSecurity { get; set; } = true;
     public string? Username { get; set; }
     public string? Password { get; set; }
+    /// <summary>
+    /// Custom backup folder. null/empty = use the default at
+    /// C:\ProgramData\RestaurantPOS\Backups. Settable from the Backup dialog.
+    /// </summary>
+    public string? BackupPath { get; set; }
 }

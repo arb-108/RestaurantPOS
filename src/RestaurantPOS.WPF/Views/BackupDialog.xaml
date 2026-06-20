@@ -131,12 +131,27 @@
                     </Border>
                 </Grid>
 
-                <!-- Backup folder -->
+                <!-- Backup folder (editable) -->
                 <Border Grid.Row="1" Background="#FAF5FF" CornerRadius="4" Padding="12" Margin="0,10,0,0">
-                    <StackPanel>
-                        <TextBlock Text="Backup Folder" FontSize="11" Foreground="#6B7280"/>
-                        <TextBlock x:Name="TxtBackupPath" Text="-" FontSize="11" Foreground="#7C3AED" TextWrapping="Wrap"/>
-                    </StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Backup Folder" FontSize="11" Foreground="#6B7280"/>
+                            <TextBlock x:Name="TxtBackupPath" Text="-" FontSize="11" Foreground="#7C3AED" TextWrapping="Wrap"/>
+                        </StackPanel>
+                        <Button Grid.Column="1" Style="{StaticResource SecondaryBtn}"
+                                Content="Change..." Width="90" Height="28" Margin="8,0,4,0"
+                                VerticalAlignment="Center" Click="ChangePath_Click"
+                                ToolTip="Choose a different folder for storing .bak files"/>
+                        <Button Grid.Column="2" Style="{StaticResource SecondaryBtn}"
+                                Content="Reset" Width="70" Height="28"
+                                VerticalAlignment="Center" Click="ResetPath_Click"
+                                ToolTip="Restore the default (C:\ProgramData\RestaurantPOS\Backups)"/>
+                    </Grid>
                 </Border>
 
                 <!-- Action buttons -->

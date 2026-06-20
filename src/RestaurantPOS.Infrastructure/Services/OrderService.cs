@@ -488,6 +488,28 @@ public class OrderService : IOrderService
             .ToListAsync();
     }
 
+    public async Task<IEnumerable<Order>> GetBillingHistoryByShiftAsync(int? shiftId, int? cashierId = null)
+    {
+        if (shiftId == null) return [];
+
+        var query = _db.Orders
+            .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.MenuItem)
+            .Include(o => o.Payments)
+                .ThenInclude(p => p.PaymentMethod)
+            .Include(o => o.Cashier)
+            .Include(o => o.Customer)
+            .Where(o => o.ShiftId == shiftId.Value)
+            .Where(o => o.Status == OrderStatus.Closed || o.Status == OrderStatus.Void);
+
+        if (cashierId.HasValue)
+            query = query.Where(o => o.CashierId == cashierId.Value);
+
+        return await query
+            .OrderByDescending(o => o.CreatedAt)
+            .ToListAsync();
+    }
+
     // ═══ Stock Deduction on Checkout ═══
     private async Task DeductStockForOrderAsync(Order order)
     {

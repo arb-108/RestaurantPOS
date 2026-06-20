@@ -760,15 +760,16 @@
                             <Border Grid.Row="0" Background="White" CornerRadius="3"
                                     Padding="6,4" Margin="0,0,0,4">
                                 <WrapPanel VerticalAlignment="Center">
-                                    <TextBlock Text="From:" FontSize="11" FontWeight="SemiBold"
-                                               Foreground="#333" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                    <DatePicker SelectedDate="{Binding BillingFromDate}"
-                                                FontSize="11" Width="110" Margin="0,0,8,0"/>
-
-                                    <TextBlock Text="To:" FontSize="11" FontWeight="SemiBold"
-                                               Foreground="#333" VerticalAlignment="Center" Margin="0,0,4,0"/>
-                                    <DatePicker SelectedDate="{Binding BillingToDate}"
-                                                FontSize="11" Width="110" Margin="0,0,8,0"/>
+                                    <!-- Shift-scoped billing: only orders from the currently-open shift are shown.
+                                         Date-range pickers removed — see ViewModel LoadBillingHistoryAsync. -->
+                                    <Border Background="#E8F5E9" CornerRadius="3" Padding="8,3" Margin="0,0,8,0"
+                                            VerticalAlignment="Center">
+                                        <TextBlock FontSize="11" FontWeight="SemiBold" Foreground="#2E7D32"
+                                                   VerticalAlignment="Center">
+                                            <Run Text="&#xE823;" FontFamily="Segoe MDL2 Assets"/>
+                                            <Run Text=" Shift bills only"/>
+                                        </TextBlock>
+                                    </Border>
 
                                     <TextBox Text="{Binding BillingSearchText, UpdateSourceTrigger=PropertyChanged}"
                                              FontSize="11" Width="140" Padding="4,3" Margin="0,0,4,0"
@@ -788,7 +789,7 @@
                                         </Button.Template>
                                     </Button>
 
-                                    <Button Content="Load" FontSize="11" FontWeight="SemiBold"
+                                    <Button Content="Refresh" FontSize="11" FontWeight="SemiBold"
                                             Height="26" Padding="10,0" Margin="6,0,0,0"
                                             Background="#4CAF50" Foreground="White" Cursor="Hand"
                                             BorderThickness="0"

@@ -128,6 +128,18 @@
                         <Style TargetType="Border"><Setter Property="CornerRadius" Value="8"/></Style>
                     </TextBox.Resources>
                 </TextBox>
+
+                <!-- Auto-backup on close (rotation keeps the 7 most recent) -->
+                <Border Background="#EFF6FF" CornerRadius="8" Padding="14,10" Margin="0,14,0,0">
+                    <StackPanel>
+                        <CheckBox x:Name="ChkBackup" FontSize="13" FontWeight="SemiBold"
+                                  Foreground="#1E40AF" Content="Create database backup when closing shift"
+                                  IsChecked="True"/>
+                        <TextBlock FontSize="11" Foreground="#1E40AF" Opacity="0.85"
+                                   Margin="22,4,0,0" TextWrapping="Wrap"
+                                   Text="Saves a .bak in the backup folder and keeps only the 7 most recent (the oldest is auto-deleted)."/>
+                    </StackPanel>
+                </Border>
             </StackPanel>
         </ScrollViewer>
 

@@ -28,8 +28,11 @@ namespace RestaurantPOS.Infrastructure.Services;
 public class SqlServerMaintenanceService : IDatabaseMaintenanceService
 {
     private readonly PosDbContext _db;
-    private readonly string _backupPath;
-    private readonly string _logPath;
+
+    // Resolved dynamically each access so the user can change the backup path
+    // from the Backup dialog and have it take effect immediately — no app restart.
+    private string _backupPath => DatabaseConfig.GetBackupPath();
+    private string _logPath => Path.Combine(_backupPath, "backup.log");
 
     private bool? _compressionSupported; // null = not yet detected
     private bool _aclGranted;            // one-time per session
@@ -37,8 +40,6 @@ public class SqlServerMaintenanceService : IDatabaseMaintenanceService
     public SqlServerMaintenanceService(PosDbContext db)
     {
         _db = db;
-        _backupPath = DatabaseConfig.GetBackupPath(); // C:\ProgramData\RestaurantPOS\Backups
-        _logPath = Path.Combine(_backupPath, "backup.log");
     }
 
     public string BackupExtension => ".bak";

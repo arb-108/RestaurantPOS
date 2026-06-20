@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.EntityFrameworkCore;
+using RestaurantPOS.Application.Interfaces;
 using RestaurantPOS.Domain.Entities;
 using RestaurantPOS.Domain.Enums;
 using RestaurantPOS.Infrastructure.Data;
@@ -14,6 +15,7 @@ public partial class ShiftManagementViewModel : BaseViewModel
 {
     private readonly PosDbContext _db;
     private readonly MainWindowViewModel _mainVm;
+    private readonly IDatabaseMaintenanceService _maintenance;
 
     // ── Current Shift State ──
     [ObservableProperty] private bool _hasActiveShift;
@@ -55,10 +57,14 @@ public partial class ShiftManagementViewModel : BaseViewModel
 
     private System.Windows.Threading.DispatcherTimer? _refreshTimer;
 
-    public ShiftManagementViewModel(PosDbContext db, MainWindowViewModel mainVm)
+    public ShiftManagementViewModel(
+        PosDbContext db,
+        MainWindowViewModel mainVm,
+        IDatabaseMaintenanceService maintenance)
     {
         _db = db;
         _mainVm = mainVm;
+        _maintenance = maintenance;
         Title = "Shift Management";
     }
 
@@ -233,8 +239,13 @@ public partial class ShiftManagementViewModel : BaseViewModel
     [RelayCommand]
     private async Task OpenShiftAsync()
     {
-        if (HasActiveShift)
+        // Authoritative DB check — HasActiveShift is in-memory and can be
+        // stale (e.g. right after app restart, or if a shift was opened from
+        // another terminal). Without this, two active shifts can coexist.
+        var existingActiveId = await GetActiveShiftIdAsync(_db);
+        if (existingActiveId != null)
         {
+            await RefreshActiveShiftAsync();
             MessageBox.Show("A shift is already active. Please close the current shift first.",
                 "Shift Active", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
@@ -254,6 +265,17 @@ public partial class ShiftManagementViewModel : BaseViewModel
 
         if (dlg.ShowDialog() == true)
         {
+            // Final guard right before insert (in case another terminal opened
+            // a shift while this dialog was on screen).
+            var raceCheck = await GetActiveShiftIdAsync(_db);
+            if (raceCheck != null)
+            {
+                await RefreshActiveShiftAsync();
+                MessageBox.Show("Another active shift was just created. Cannot open a second one.",
+                    "Shift Active", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
             var shift = new Shift
             {
                 UserId = user.Id,
@@ -397,6 +419,34 @@ public partial class ShiftManagementViewModel : BaseViewModel
             await RefreshActiveShiftAsync();
             await LoadHistoryAsync();
             _mainVm.UpdateShiftStatus(false, null);
+
+            // Optional auto-backup on shift close (checkbox in CloseShiftWindow).
+            // Uses the existing rotation logic — keeps last 7, drops the oldest.
+            if (dlg.CreateBackup)
+            {
+                try
+                {
+                    var result = await _maintenance.BackupWithRotationAsync(keepLast: 7);
+                    if (result.Success)
+                    {
+                        MessageBox.Show(
+                            $"Shift closed and backup created.\n\n{result.BackupFilePath}",
+                            "Backup OK", MessageBoxButton.OK, MessageBoxImage.Information);
+                    }
+                    else
+                    {
+                        MessageBox.Show(
+                            $"Shift closed, but backup FAILED:\n{result.Error ?? result.Message}",
+                            "Backup Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show(
+                        $"Shift closed, but backup threw an error:\n{ex.Message}",
+                        "Backup Failed", MessageBoxButton.OK, MessageBoxImage.Warning);
+                }
+            }
         }
     }
 
