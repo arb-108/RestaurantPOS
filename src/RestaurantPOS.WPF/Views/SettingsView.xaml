@@ -350,8 +350,61 @@
                         </DataGrid.Columns>
                     </DataGrid>
 
+                    <!-- Row 1 holds BOTH the print-role and station assignments.
+                         Scrollable + capped height so it never clips the DataGrid above. -->
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" MaxHeight="320">
+                    <StackPanel>
+
+                    <!-- Print Role → Printer Assignments (K-Slip / Bill / Reports) -->
+                    <Border Background="#EFF6FF" CornerRadius="8" Padding="12" Margin="0,12,0,0" BorderBrush="#BFDBFE" BorderThickness="1">
+                        <StackPanel>
+                            <TextBlock Text="Print Role → Printer Assignments" FontSize="13" FontWeight="Bold" Foreground="#1E40AF" Margin="0,0,0,2"/>
+                            <TextBlock Text="Choose which printer each print job uses. Leave (None) to auto-pick by printer type."
+                                       FontSize="11" Foreground="#3B82F6" Margin="0,0,0,8" TextWrapping="Wrap"/>
+
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="250"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Kitchen Slip (K-Slip)" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="→" FontSize="14" Foreground="#9CA3AF" Margin="8,0" VerticalAlignment="Center"/>
+                                <ComboBox Grid.Column="2" FontSize="12" Padding="6,4"
+                                          ItemsSource="{Binding PrinterNames}"
+                                          SelectedItem="{Binding KSlipPrinterName, Mode=TwoWay}"/>
+                            </Grid>
+
+                            <Grid Margin="0,4">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="250"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Bill / Receipt (&amp; Reprint)" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="→" FontSize="14" Foreground="#9CA3AF" Margin="8,0" VerticalAlignment="Center"/>
+                                <ComboBox Grid.Column="2" FontSize="12" Padding="6,4"
+                                          ItemsSource="{Binding PrinterNames}"
+                                          SelectedItem="{Binding BillPrinterName, Mode=TwoWay}"/>
+                            </Grid>
+
+                            <Grid Margin="0,2">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="180"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="250"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="Reports" FontSize="12" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="→" FontSize="14" Foreground="#9CA3AF" Margin="8,0" VerticalAlignment="Center"/>
+                                <ComboBox Grid.Column="2" FontSize="12" Padding="6,4"
+                                          ItemsSource="{Binding PrinterNames}"
+                                          SelectedItem="{Binding ReportPrinterName, Mode=TwoWay}"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+
                     <!-- Station → Printer Assignments (with dropdown) -->
-                    <Border Grid.Row="1" Background="#FAFBFC" CornerRadius="8" Padding="12" Margin="0,12,0,0" BorderBrush="#E5E7EB" BorderThickness="1">
+                    <Border Background="#FAFBFC" CornerRadius="8" Padding="12" Margin="0,12,0,0" BorderBrush="#E5E7EB" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="Station → Printer Assignments" FontSize="13" FontWeight="Bold" Foreground="#1E293B" Margin="0,0,0,8"/>
                             <ItemsControl ItemsSource="{Binding StationAssignments}">
@@ -375,6 +428,9 @@
                             </ItemsControl>
                         </StackPanel>
                     </Border>
+
+                    </StackPanel>
+                    </ScrollViewer>
                 </Grid>
 
                 <!-- ══════════════════════════════════════════════ -->

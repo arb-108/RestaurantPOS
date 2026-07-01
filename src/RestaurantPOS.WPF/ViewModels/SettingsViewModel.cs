@@ -62,6 +62,32 @@ public partial class SettingsViewModel : BaseViewModel
     // Station → Printer assignment
     public ObservableCollection<StationPrinterAssignment> StationAssignments { get; } = [];
 
+    // Print-role → Printer assignment (Kitchen Slip / Bill / Reports).
+    // Bound TwoWay to dropdowns; values are printer Names (or "(None)").
+    // Saving happens in the partial change handlers below.
+    [ObservableProperty] private string _kSlipPrinterName = "(None)";
+    [ObservableProperty] private string _billPrinterName = "(None)";
+    [ObservableProperty] private string _reportPrinterName = "(None)";
+
+    // Guards so loading the saved values (and repopulating PrinterNames) doesn't
+    // trigger a save loop or write back a transient "(None)".
+    private bool _loadingPrinterRoles;
+
+    partial void OnKSlipPrinterNameChanged(string value)
+    {
+        if (!_loadingPrinterRoles) _ = UpdatePrinterRoleAsync(PrinterRoleResolver.KSlipKey, value);
+    }
+
+    partial void OnBillPrinterNameChanged(string value)
+    {
+        if (!_loadingPrinterRoles) _ = UpdatePrinterRoleAsync(PrinterRoleResolver.BillKey, value);
+    }
+
+    partial void OnReportPrinterNameChanged(string value)
+    {
+        if (!_loadingPrinterRoles) _ = UpdatePrinterRoleAsync(PrinterRoleResolver.ReportKey, value);
+    }
+
     // OnSelectedPrinterChanged — no form to populate, editing via popup window
 
     // ══════════════════════════════════════════════
@@ -284,15 +310,55 @@ public partial class SettingsViewModel : BaseViewModel
 
     private async Task LoadPrintersAsync()
     {
-        var printers = await _db.Printers.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
-        Printers.Clear();
-        PrinterNames.Clear();
-        PrinterNames.Add("(None)");
-        foreach (var p in printers)
+        // Guard the ENTIRE load: repopulating PrinterNames makes the ComboBoxes
+        // momentarily clear their SelectedItem (writing back "(None)" via the
+        // TwoWay binding). Suppressing saves across the whole method — and
+        // setting the saved role values LAST, after PrinterNames is rebuilt —
+        // ensures the dropdowns end up showing the persisted selection.
+        _loadingPrinterRoles = true;
+        try
         {
-            Printers.Add(p);
-            PrinterNames.Add(p.Name);
+            var printers = await _db.Printers.Where(p => p.IsActive).OrderBy(p => p.Name).ToListAsync();
+            Printers.Clear();
+            PrinterNames.Clear();
+            PrinterNames.Add("(None)");
+            foreach (var p in printers)
+            {
+                Printers.Add(p);
+                PrinterNames.Add(p.Name);
+            }
+
+            // If a saved name no longer matches a printer, show "(None)".
+            string Resolve(string? name) =>
+                !string.IsNullOrWhiteSpace(name) && PrinterNames.Contains(name) ? name! : "(None)";
+
+            KSlipPrinterName  = Resolve(await _settingsService.GetSettingAsync(PrinterRoleResolver.KSlipKey));
+            BillPrinterName   = Resolve(await _settingsService.GetSettingAsync(PrinterRoleResolver.BillKey));
+            ReportPrinterName = Resolve(await _settingsService.GetSettingAsync(PrinterRoleResolver.ReportKey));
         }
+        finally
+        {
+            _loadingPrinterRoles = false;
+        }
+    }
+
+    /// <summary>Persist a single print-role assignment. Called by the View's dropdown handler.</summary>
+    public async Task UpdatePrinterRoleAsync(string roleKey, string printerName)
+    {
+        if (_loadingPrinterRoles) return;
+
+        // Store empty string for "(None)" so resolution falls back to type-based.
+        var value = printerName == "(None)" ? string.Empty : printerName;
+        await _settingsService.SetSettingAsync(roleKey, value);
+
+        var roleLabel = roleKey switch
+        {
+            PrinterRoleResolver.KSlipKey  => "Kitchen Slip",
+            PrinterRoleResolver.BillKey   => "Bill / Receipt",
+            PrinterRoleResolver.ReportKey => "Reports",
+            _ => "Printer"
+        };
+        StatusMessage = $"{roleLabel} → {printerName}";
     }
 
     private async Task LoadStationAssignmentsAsync()

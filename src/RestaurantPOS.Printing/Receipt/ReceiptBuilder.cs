@@ -215,14 +215,14 @@ public class ReceiptBuilder
         else
             WriteText(ms, "Thank you for dining with us!");
 
-        Write(ms, EscPos.BoldOn);
-        WriteText(ms, $"*** {d.RestaurantName.ToUpper()} ***");
-        Write(ms, EscPos.BoldOff);
-
         if (!string.IsNullOrWhiteSpace(d.FooterMessage))
             WriteText(ms, d.FooterMessage);
 
         WriteText(ms, d.DateTime.ToString("dd/MM/yyyy hh:mm:ss tt"));
+
+        // Permanent software credit line (bottom of every receipt).
+        WriteText(ms, EscPos.DashLine(_width));
+        WriteText(ms, "Software : arb108.com | +923394079675");
 
         Write(ms, EscPos.FeedLines5);
         Write(ms, EscPos.PartialCut);

@@ -291,16 +291,9 @@ public partial class ReportsViewModel : BaseViewModel
                               ?? "KFC Restaurant";
             _restaurantAddress = await _settingsService.GetSettingAsync("ReceiptAddress") ?? string.Empty;
             _restaurantPhone = await _settingsService.GetSettingAsync("ReceiptPhone") ?? string.Empty;
-            var printer = await _db.Printers
-                .Where(p => p.IsActive && p.Type == Domain.Enums.PrinterType.Report && p.SystemPrinterName != null)
-                .FirstOrDefaultAsync()
-                ?? await _db.Printers
-                    .Where(p => p.IsActive && p.Type == Domain.Enums.PrinterType.Receipt && p.SystemPrinterName != null)
-                    .FirstOrDefaultAsync()
-                ?? await _db.Printers
-                    .Where(p => p.IsActive && p.SystemPrinterName != null)
-                    .FirstOrDefaultAsync();
-            _configuredPrinter = printer?.SystemPrinterName;
+            // Reports use the Report role printer (Settings → Print Role
+            // Assignments), falling back to PrinterType-based resolution.
+            _configuredPrinter = await PrinterRoleResolver.ResolveReportAsync(_db);
         }
         catch { }
     }

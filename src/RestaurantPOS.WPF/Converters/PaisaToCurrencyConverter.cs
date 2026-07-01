@@ -484,9 +484,15 @@ public class CategoryImageConverter : IValueConverter
 
         if (!System.IO.Path.IsPathRooted(imagePath))
         {
-            var baseDir = System.IO.Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory, "Assets", "Images");
-            imagePath = System.IO.Path.Combine(baseDir, imagePath);
+            // 1) User-uploaded images live in the writable ProgramData folder.
+            var uploaded = System.IO.Path.Combine(
+                RestaurantPOS.Infrastructure.Data.DatabaseConfig.GetImagesPath(), imagePath);
+
+            // 2) Original seeded images are bundled in the install's Assets\Images.
+            var bundled = System.IO.Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory, "Assets", "Images", imagePath);
+
+            imagePath = System.IO.File.Exists(uploaded) ? uploaded : bundled;
         }
 
         if (!System.IO.File.Exists(imagePath))

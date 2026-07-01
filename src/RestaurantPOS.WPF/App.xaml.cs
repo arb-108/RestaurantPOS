@@ -13,11 +13,28 @@ public partial class App : System.Windows.Application
 {
     private IHost? _host;
 
+    // Held for the whole process lifetime so a second launch sees it's taken.
+    private static System.Threading.Mutex? _singleInstanceMutex;
+
     /// <summary>Exposes the DI service provider for use by popup windows.</summary>
     public IServiceProvider Services => _host!.Services;
 
     protected override async void OnStartup(System.Windows.StartupEventArgs e)
     {
+        // ── Single-instance guard ──
+        // Rapid double-clicks (or relaunching while already open) must NOT spawn
+        // multiple POS windows. A named mutex makes only the first launch win;
+        // later launches focus the existing window and exit.
+        _singleInstanceMutex = new System.Threading.Mutex(
+            initiallyOwned: true, name: "RestaurantPOS_SingleInstance_Mutex", out var isNewInstance);
+
+        if (!isNewInstance)
+        {
+            TryActivateExistingInstance();
+            Shutdown(0);
+            return;
+        }
+
         // Configure Serilog
         var logPath = System.IO.Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
@@ -161,49 +178,81 @@ public partial class App : System.Windows.Application
     // the user closed the dialog without resolving the connection.
     private static async Task<bool> EnsureDatabaseReachableAsync()
     {
+        // ── Phase 1: silent grace period ──
+        // On a fresh boot, SQL Server Express (and SQL Browser, which resolves a
+        // named instance like .\SQLEXPRESS) may still be starting when the app
+        // launches. Retry quietly for ~30s before showing the settings dialog —
+        // otherwise the user sees a connection error that "fixes itself" if they
+        // simply wait and reopen.
+        var lastError = await TryConnectWithGraceAsync(attempts: 7, delaySeconds: 5);
+        if (lastError == null)
+            return true;
+
+        // ── Phase 2: still unreachable → let the user fix server/instance/auth ──
         const int maxAttempts = 5;
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            var dlg = new Views.DatabaseSettingsDialog
+            {
+                WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
+            };
+
+            // Show the failure reason on the dialog title so the user has context.
+            dlg.Title = $"Database Connection Failed — {(lastError.InnerException?.Message ?? lastError.Message)}";
+
+            var result = dlg.ShowDialog();
+            if (result != true || !dlg.SettingsSaved)
+            {
+                // User cancelled / closed without saving — give up.
+                System.Windows.MessageBox.Show(
+                    "Database connection not configured. The application will exit.",
+                    "Setup Required", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                return false;
+            }
+
+            // Saved new settings — flush cache and retry (with a short grace too).
+            DatabaseConfig.ResetCache();
+            lastError = await TryConnectWithGraceAsync(attempts: 3, delaySeconds: 2);
+            if (lastError == null)
+                return true;
+        }
+
+        Log.Fatal("Exceeded SQL Server pre-flight retry budget");
+        return false;
+    }
+
+    /// <summary>
+    /// Tries to open a connection to the master DB, retrying with a delay between
+    /// attempts. Returns null on success, or the last exception on failure.
+    /// </summary>
+    private static async Task<Exception?> TryConnectWithGraceAsync(int attempts, int delaySeconds)
+    {
+        Exception? last = null;
+        for (var i = 1; i <= attempts; i++)
         {
             try
             {
                 var connStr = DatabaseConfig.GetConnectionString();
                 // Connect to master so a missing target DB doesn't mask a real
-                // server/instance/auth problem — we only need to prove the
-                // instance accepts logins.
-                var masterConn = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connStr) { InitialCatalog = "master" }.ToString();
+                // server/instance/auth problem. Longer timeout absorbs a cold start.
+                var masterConn = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(connStr)
+                {
+                    InitialCatalog = "master",
+                    ConnectTimeout = 30
+                }.ToString();
                 await using var conn = new Microsoft.Data.SqlClient.SqlConnection(masterConn);
                 await conn.OpenAsync();
-                return true;
+                return null;
             }
             catch (Exception ex)
             {
-                Log.Warning(ex, "SQL Server pre-flight failed (attempt {Attempt}/{Max})", attempt, maxAttempts);
-
-                var dlg = new Views.DatabaseSettingsDialog
-                {
-                    WindowStartupLocation = System.Windows.WindowStartupLocation.CenterScreen
-                };
-
-                // Show the failure reason on the dialog title so the user has context.
-                dlg.Title = $"Database Connection Failed — {(ex.InnerException?.Message ?? ex.Message)}";
-
-                var result = dlg.ShowDialog();
-                if (result != true || !dlg.SettingsSaved)
-                {
-                    // User cancelled / closed without saving — give up.
-                    System.Windows.MessageBox.Show(
-                        "Database connection not configured. The application will exit.",
-                        "Setup Required", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
-                    return false;
-                }
-
-                // Saved settings — flush cache and retry the loop.
-                DatabaseConfig.ResetCache();
+                last = ex;
+                Log.Warning(ex, "SQL Server pre-flight failed (attempt {Attempt}/{Max})", i, attempts);
+                if (i < attempts)
+                    await Task.Delay(TimeSpan.FromSeconds(delaySeconds));
             }
         }
-
-        Log.Fatal("Exceeded SQL Server pre-flight retry budget");
-        return false;
+        return last;
     }
 
     /// <summary>
@@ -420,6 +469,42 @@ public partial class App : System.Windows.Application
             _host.Dispose();
         }
         Log.CloseAndFlush();
+
+        try { _singleInstanceMutex?.ReleaseMutex(); } catch { /* not owned / already gone */ }
+        _singleInstanceMutex?.Dispose();
+
         base.OnExit(e);
     }
+
+    // Bring the already-running POS window to the foreground when a second launch
+    // is blocked, so the user sees the existing window instead of "nothing happened".
+    private static void TryActivateExistingInstance()
+    {
+        try
+        {
+            var current = System.Diagnostics.Process.GetCurrentProcess();
+            var other = System.Diagnostics.Process
+                .GetProcessesByName(current.ProcessName)
+                .FirstOrDefault(p => p.Id != current.Id && p.MainWindowHandle != IntPtr.Zero);
+
+            if (other != null)
+            {
+                var h = other.MainWindowHandle;
+                if (IsIconic(h)) ShowWindow(h, SW_RESTORE);
+                SetForegroundWindow(h);
+            }
+        }
+        catch { /* best effort — preventing the second instance is what matters */ }
+    }
+
+    private const int SW_RESTORE = 9;
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    private static extern bool IsIconic(IntPtr hWnd);
 }

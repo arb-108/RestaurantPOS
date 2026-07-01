@@ -45,10 +45,10 @@ public partial class LoginWindow : System.Windows.Window
 
     private void Window_Loaded(object sender, RoutedEventArgs e)
     {
-        // Load logo from Assets/Images/mainlogo.png (Content file, copied to output)
+        // Load logo from Assets/Images/loginScreenLogoMain.png (Content file, copied to output)
         try
         {
-            var path = Path.Combine(AppContext.BaseDirectory, "Assets", "Images", "mainlogo.png");
+            var path = Path.Combine(AppContext.BaseDirectory, "Assets", "Images", "loginScreenLogoMain.png");
             if (File.Exists(path))
             {
                 var bmp = new BitmapImage();

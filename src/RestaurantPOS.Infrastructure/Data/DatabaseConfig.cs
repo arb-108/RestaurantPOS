@@ -25,6 +25,12 @@ public static class DatabaseConfig
         Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
         "RestaurantPOS", "Backups");
 
+    // Uploaded category/menu images go to ProgramData (machine-wide, writable by
+    // all users) — NOT the install folder under Program Files, which is read-only.
+    private static readonly string ImagesRootPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+        "RestaurantPOS", "Images");
+
     private static readonly string ConfigFilePath = Path.Combine(AppDataPath, "dbconfig.json");
 
     private static DbConfigSettings? _cached;
@@ -68,6 +74,17 @@ public static class DatabaseConfig
 
     /// <summary>The default (built-in) backup path. Useful for "Reset to default" UI.</summary>
     public static string GetDefaultBackupPath() => BackupRootPath;
+
+    /// <summary>
+    /// Writable folder for uploaded category/menu images
+    /// (C:\ProgramData\RestaurantPOS\Images). Created on first use.
+    /// </summary>
+    public static string GetImagesPath()
+    {
+        if (!Directory.Exists(ImagesRootPath))
+            Directory.CreateDirectory(ImagesRootPath);
+        return ImagesRootPath;
+    }
 
     /// <summary>Get a copy of the current settings.</summary>
     public static DbConfigSettings GetSettings()

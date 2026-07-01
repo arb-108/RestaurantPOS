@@ -289,19 +289,9 @@ public partial class OrderHistoryViewModel : BaseViewModel
         var address = await _settingsService.GetSettingAsync("ReceiptAddress") ?? "";
         var phone = await _settingsService.GetSettingAsync("ReceiptPhone") ?? "";
 
-        // Use the same 3-level fallback the main POS uses, otherwise a Receipt
-        // printer row without IsDefault=true (or with null SystemPrinterName)
-        // makes the reprint silently fall through to no-printer mode.
-        var receiptPrinter = await _db.Set<Printer>()
-            .Where(p => p.IsActive && p.IsDefault && p.Type == PrinterType.Receipt)
-            .FirstOrDefaultAsync()
-            ?? await _db.Set<Printer>()
-                .Where(p => p.IsActive && p.Type == PrinterType.Receipt)
-                .FirstOrDefaultAsync()
-            ?? await _db.Set<Printer>()
-                .Where(p => p.IsActive && p.SystemPrinterName != null)
-                .FirstOrDefaultAsync();
-        var printerName = receiptPrinter?.SystemPrinterName;
+        // Reprint uses the Bill role printer (Settings → Print Role Assignments),
+        // falling back to PrinterType-based resolution for older configs.
+        var printerName = await PrinterRoleResolver.ResolveBillAsync(_db);
 
         var receiptData = new ReceiptData
         {

@@ -566,26 +566,12 @@ public partial class MainPOSViewModel : BaseViewModel
             _receiptHeader = await _settingsService.GetSettingAsync("ReceiptHeader") ?? "";
             _receiptFooter = await _settingsService.GetSettingAsync("ReceiptFooter") ?? "";
 
-            // Load default receipt printer (or the only one if just one exists)
-            var receiptPrinter = await _db.Printers
-                .Where(p => p.IsActive && p.IsDefault && p.Type == Domain.Enums.PrinterType.Receipt)
-                .FirstOrDefaultAsync()
-                ?? await _db.Printers
-                    .Where(p => p.IsActive && p.Type == Domain.Enums.PrinterType.Receipt)
-                    .FirstOrDefaultAsync()
-                ?? await _db.Printers
-                    .Where(p => p.IsActive && p.SystemPrinterName != null)
-                    .FirstOrDefaultAsync();
-            _configuredReceiptPrinter = receiptPrinter?.SystemPrinterName;
-
-            // Load default KOT printer (fall back to receipt printer)
-            var kotPrinter = await _db.Printers
-                .Where(p => p.IsActive && p.IsDefault && p.Type == Domain.Enums.PrinterType.KOT)
-                .FirstOrDefaultAsync()
-                ?? await _db.Printers
-                    .Where(p => p.IsActive && p.Type == Domain.Enums.PrinterType.KOT)
-                    .FirstOrDefaultAsync();
-            _configuredKotPrinter = kotPrinter?.SystemPrinterName;
+            // Resolve printers by ROLE (Settings → Print Role Assignments).
+            // Bill / reprint → Bill role; Kitchen slip → KSlip role.
+            // PrinterRoleResolver falls back to PrinterType-based lookup when
+            // no explicit role assignment exists, so older configs still work.
+            _configuredReceiptPrinter = await PrinterRoleResolver.ResolveBillAsync(_db);
+            _configuredKotPrinter = await PrinterRoleResolver.ResolveKSlipAsync(_db);
         }
         catch { /* Non-fatal — use defaults */ }
     }

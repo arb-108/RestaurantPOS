@@ -382,24 +382,15 @@ public partial class PrintPreviewWindow : Window
         else
             AddCenteredText(p, "Thank you for dining with us!", 8, FontWeights.SemiBold, "#333");
 
-        AddCenteredText(p, $"*** {d.RestaurantName.ToUpper()} ***", 8, FontWeights.Bold, "#000");
-
         if (!string.IsNullOrWhiteSpace(d.FooterMessage))
             AddCenteredText(p, d.FooterMessage, 7, FontWeights.Normal, "#666");
 
         AddCenteredText(p, d.DateTime.ToString("dd/MM/yyyy hh:mm:ss tt"), 7, FontWeights.Normal, "#999");
         AddSpacer(p, 4);
 
-        // Barcode-style decoration
-        p.Children.Add(new TextBlock
-        {
-            Text = "||||| |||| ||||| |||| ||||| ||||",
-            FontFamily = new FontFamily("Consolas"),
-            FontSize = 9,
-            Foreground = Brushes.Black,
-            HorizontalAlignment = HorizontalAlignment.Center,
-            Margin = new Thickness(0, 2, 0, 4)
-        });
+        // Permanent software credit line (bottom of every receipt).
+        AddCenteredText(p, "Software : arb108.com | +923394079675", 8, FontWeights.SemiBold, "#000");
+        AddSpacer(p, 4);
     }
 
     /// <summary>Label : Value info row (like "Order # 49179")</summary>

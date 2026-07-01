@@ -416,14 +416,17 @@ public partial class MenuManagementViewModel : BaseViewModel
             };
             if (ofd.ShowDialog() != true) return;
 
-            // Copy to Assets\Images folder with category-friendly name
-            var imagesDir = System.IO.Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory, "Assets", "Images");
-            System.IO.Directory.CreateDirectory(imagesDir);
+            // Save uploaded image to the writable ProgramData images folder.
+            // (The install folder under Program Files is read-only, which caused
+            //  "Access to the path ... is denied" on client machines.)
+            var imagesDir = Infrastructure.Data.DatabaseConfig.GetImagesPath();
 
             var ext = System.IO.Path.GetExtension(ofd.FileName);
-            var fileName = FilterCategory.Name.ToLowerInvariant()
-                .Replace(" & ", "-").Replace(" ", "-").Replace("/", "-") + ext;
+            // Unique-per-upload name so a new image isn't masked by the converter's
+            // file cache and never collides with the bundled seed images.
+            var safeName = FilterCategory.Name.ToLowerInvariant()
+                .Replace(" & ", "-").Replace(" ", "-").Replace("/", "-");
+            var fileName = $"{safeName}-{DateTime.Now:yyyyMMddHHmmss}{ext}";
             var destPath = System.IO.Path.Combine(imagesDir, fileName);
 
             // Read source bytes first, then write with FileShare to avoid lock conflicts
@@ -433,20 +436,13 @@ public partial class MenuManagementViewModel : BaseViewModel
                        System.IO.FileAccess.Write, System.IO.FileShare.ReadWrite))
                 await fs.WriteAsync(srcBytes);
 
-            // Also copy to source Assets\Images so it persists across builds
-            var srcImagesDir = @"D:\Software\KFC\src\RestaurantPOS.WPF\Assets\Images";
-            System.IO.Directory.CreateDirectory(srcImagesDir);
-            var srcDestPath = System.IO.Path.Combine(srcImagesDir, fileName);
-            using (var fs = new System.IO.FileStream(srcDestPath, System.IO.FileMode.Create,
-                       System.IO.FileAccess.Write, System.IO.FileShare.ReadWrite))
-                await fs.WriteAsync(srcBytes);
-
-            // Update DB — entity is already tracked, just set property and save
+            // Store the relative file name; the converter resolves it from the
+            // ProgramData images folder (and falls back to bundled Assets\Images).
             FilterCategory.ImagePath = fileName;
             await _db.SaveChangesAsync();
 
             System.Windows.MessageBox.Show(
-                $"Image set for {FilterCategory.Name}!\nFile: {fileName}\n\nRestart the app to see changes on POS cards.",
+                $"Image set for {FilterCategory.Name}!\nFile: {fileName}",
                 "Image Uploaded", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
             StatusMessage = $"Image set for {FilterCategory.Name}: {fileName}";
         }
